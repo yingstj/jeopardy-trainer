@@ -3,6 +3,11 @@
 
 echo "Starting Jeopardy AI Trainer..."
 
+# Debug: Check environment
+echo "DATABASE_URL: ${DATABASE_URL:0:30}..."
+echo "PGDATABASE: $PGDATABASE"
+echo "PGHOST: $PGHOST"
+
 # Run database initialization
 echo "Checking database..."
 python init_db.py

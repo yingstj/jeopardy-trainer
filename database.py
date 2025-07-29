@@ -27,7 +27,12 @@ class JeopardyDatabase:
         Otherwise, use SQLite.
         """
         self.db_url = db_url or os.environ.get('DATABASE_URL', 'sqlite:///data/jeopardy.db')
-        self.db_type = 'postgresql' if self.db_url.startswith('postgresql://') else 'sqlite'
+        
+        # Railway sometimes provides postgres:// instead of postgresql://
+        if self.db_url.startswith('postgres://'):
+            self.db_url = self.db_url.replace('postgres://', 'postgresql://', 1)
+            
+        self.db_type = 'postgresql' if self.db_url.startswith(('postgresql://', 'postgres://')) else 'sqlite'
         
         if self.db_type == 'postgresql' and not POSTGRESQL_AVAILABLE:
             raise RuntimeError("PostgreSQL URL provided but psycopg2 is not installed")
@@ -37,6 +42,9 @@ class JeopardyDatabase:
             self.db_path = self.db_url.replace('sqlite:///', '')
             if self.db_path == self.db_url:  # No sqlite:/// prefix
                 self.db_path = self.db_url
+            # Handle empty path
+            if not self.db_path or self.db_path == 'sqlite:':
+                self.db_path = 'data/jeopardy.db'
         
         logger.info(f"Using {self.db_type} database")
         self.init_db()

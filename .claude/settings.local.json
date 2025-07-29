@@ -10,7 +10,12 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(railway run:*)",
+      "Bash(railway logs:*)",
+      "Bash(pip3 install:*)",
+      "Bash(chmod:*)",
+      "Bash(railway domain:*)"
     ],
     "deny": []
   }
