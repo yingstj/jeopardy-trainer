@@ -1,0 +1,1982 @@
+[
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9000
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9001
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9002
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9003
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9004
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9005
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9006
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 400,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 800,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9007
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 600,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 1200,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9008
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 800,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 1600,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9009
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "He was the first president born in the 20th century",
+    "answer": "John F. Kennedy",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "U.S. PRESIDENTS",
+    "question": "This president served the shortest term in office, dying after just 31 days",
+    "answer": "William Henry Harrison",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "SCIENCE",
+    "question": "This element with atomic number 79 is a precious metal often used in jewelry",
+    "answer": "Gold",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "SCIENCE",
+    "question": "The speed of light in a vacuum is approximately 186,000 miles per this unit of time",
+    "answer": "Second",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "This European capital on the Danube River was once two separate cities: Buda and Pest",
+    "answer": "Budapest",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "WORLD CAPITALS",
+    "question": "The capital of Australia, it was purpose-built and is located between Sydney and Melbourne",
+    "answer": "Canberra",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features the famous line 'To be or not to be'",
+    "answer": "Hamlet",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "LITERATURE",
+    "question": "George Orwell wrote this dystopian novel featuring Big Brother in 1949",
+    "answer": "1984",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1975 Steven Spielberg film made people afraid to go in the water",
+    "answer": "Jaws",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "MOVIES",
+    "question": "Tom Hanks won consecutive Best Actor Oscars for Philadelphia and this 1994 film",
+    "answer": "Forrest Gump",
+    "value": 1000,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "SPORTS",
+    "question": "This NFL team has won the most Super Bowl championships with 6 titles",
+    "answer": "New England Patriots",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "SPORTS",
+    "question": "Michael Jordan won 6 NBA championships with this team in the 1990s",
+    "answer": "Chicago Bulls",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "HISTORY",
+    "question": "This French military leader crowned himself Emperor in 1804",
+    "answer": "Napoleon Bonaparte",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "HISTORY",
+    "question": "The ancient city of Troy was located in what is now this country",
+    "answer": "Turkey",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This African country is home to Victoria Falls",
+    "answer": "Zimbabwe (or Zambia)",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "The world's largest desert, it covers most of North Africa",
+    "answer": "Sahara",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "MUSIC",
+    "question": "This 'King of Pop' released the best-selling album of all time, 'Thriller'",
+    "answer": "Michael Jackson",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "MUSIC",
+    "question": "This British band sang 'Bohemian Rhapsody' and was fronted by Freddie Mercury",
+    "answer": "Queen",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company, founded by Steve Jobs, Steve Wozniak, and Ronald Wayne, introduced the iPhone in 2007",
+    "answer": "Apple",
+    "value": 2000,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  },
+  {
+    "category": "FINAL JEOPARDY",
+    "question": "This American author wrote 'The Great Gatsby' and was named after the author of 'The Star-Spangled Banner'",
+    "answer": "F. Scott Fitzgerald",
+    "value": 0,
+    "round": "Final Jeopardy!",
+    "air_date": "2024-01-01",
+    "show_number": 9010
+  }
+]
