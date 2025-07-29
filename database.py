@@ -29,8 +29,10 @@ class JeopardyDatabase:
         self.db_url = db_url or os.environ.get('DATABASE_URL', 'sqlite:///data/jeopardy.db')
         
         # Debug logging
-        logger.info(f"DATABASE_URL from env: {os.environ.get('DATABASE_URL', 'NOT SET')[:50]}...")
+        env_url = os.environ.get('DATABASE_URL', 'NOT SET')
+        logger.info(f"DATABASE_URL from env: {env_url[:50] if env_url != 'NOT SET' else 'NOT SET'}...")
         logger.info(f"Using db_url: {self.db_url[:50]}...")
+        logger.info(f"Environment variables: {list(os.environ.keys())}")
         
         # Railway sometimes provides postgres:// instead of postgresql://
         if self.db_url.startswith('postgres://'):
