@@ -20,7 +20,7 @@ cats = db.get_categories()
 if len(cats) == 0:
     print('Database empty, loading sample data...')
     import subprocess
-    subprocess.run(['python', 'data_processor.py', '--load-file', 'data/questions_sample.json'])
+    subprocess.run(['python', 'data_processor.py', '--load-file', 'data/jeopardy_questions_fixed.json'])
 else:
     print(f'Database has {len(cats)} categories')
 "
