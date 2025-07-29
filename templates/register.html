@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Jeopardy AI Trainer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="container-main">
+            <h2 class="text-center mb-4" style="color: #FFD700;">
+                <i class="fas fa-user-plus"></i> Create Account
+            </h2>
+            
+            <form method="POST" action="{{ url_for('auth.register') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" 
+                           placeholder="Choose a username" value="{{ username or '' }}" 
+                           required autofocus minlength="3">
+                    <small class="form-text text-muted">At least 3 characters</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           placeholder="your@email.com" value="{{ email or '' }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Choose a strong password" required minlength="8">
+                    <small class="form-text text-muted">
+                        Must contain: 8+ characters, uppercase, lowercase, and number
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirm_password" 
+                           name="confirm_password" placeholder="Confirm your password" required>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-jeopardy">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <p>Already have an account?</p>
+                    <a href="{{ url_for('auth.login') }}" class="text-warning">
+                        <i class="fas fa-sign-in-alt"></i> Login here
+                    </a>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('landing') }}" class="text-warning">
+                        <i class="fas fa-home"></i> Back to Home
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Client-side password validation
+document.getElementById('password').addEventListener('input', function() {
+    const password = this.value;
+    const feedback = [];
+    
+    if (password.length < 8) feedback.push('8+ characters');
+    if (!/[A-Z]/.test(password)) feedback.push('uppercase letter');
+    if (!/[a-z]/.test(password)) feedback.push('lowercase letter');
+    if (!/\d/.test(password)) feedback.push('number');
+    
+    const helpText = this.nextElementSibling;
+    if (feedback.length > 0) {
+        helpText.textContent = 'Password needs: ' + feedback.join(', ');
+        helpText.classList.remove('text-success');
+        helpText.classList.add('text-warning');
+    } else {
+        helpText.textContent = 'Password strength: Good!';
+        helpText.classList.remove('text-warning');
+        helpText.classList.add('text-success');
+    }
+});
+
+// Confirm password validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirm = this.value;
+    
+    if (password !== confirm) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

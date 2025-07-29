@@ -1,0 +1,40 @@
+# Web Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Data Science & AI
+numpy==1.26.3
+
+# Database
+# SQLite3 is included with Python standard library
+
+# Data Processing
+python-dateutil==2.8.2
+
+# HTTP Security
+certifi==2024.2.2
+urllib3==2.2.1
+idna==3.6
+charset-normalizer==3.3.2
+
+# Development Tools (optional but recommended)
+python-dotenv==1.0.1  # For environment variables
+pytest==8.0.0  # For testing
+pytest-cov==4.1.0  # For test coverage
+black==24.1.1  # For code formatting
+flake8==7.0.0  # For code linting
+
+# Logging enhancements (optional)
+colorlog==6.8.2  # For colored logging output
+
+# Performance monitoring (optional)
+flask-cors==4.0.0  # For CORS support if needed
+
+# Production deployment
+gunicorn==21.2.0  # Production WSGI server
+psycopg2-binary==2.9.9  # PostgreSQL adapter for Railway deployment

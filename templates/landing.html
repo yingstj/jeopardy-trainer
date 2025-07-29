@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Jeopardy AI Trainer{% endblock %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <h1 class="jeopardy-header">JEOPARDY!</h1>
+    <h2 style="color: #FFD700;">AI-Powered Training System</h2>
+</div>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="container-main">
+            <div class="text-center mb-5">
+                <h3 style="color: #FFD700;">Test Your Knowledge. Track Your Progress. Become a Champion.</h3>
+                <p class="lead mt-3">
+                    Train with thousands of real Jeopardy questions, get AI-powered hints, 
+                    and track your performance across categories.
+                </p>
+            </div>
+            
+            <div class="row text-center mb-5">
+                <div class="col-md-4 mb-3">
+                    <div class="feature-box p-3">
+                        <i class="fas fa-brain fa-3x mb-3" style="color: #FFD700;"></i>
+                        <h4>Smart Learning</h4>
+                        <p>AI adapts to your skill level and focuses on areas where you need improvement</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="feature-box p-3">
+                        <i class="fas fa-chart-line fa-3x mb-3" style="color: #FFD700;"></i>
+                        <h4>Track Progress</h4>
+                        <p>Detailed statistics show your performance by category and difficulty</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="feature-box p-3">
+                        <i class="fas fa-trophy fa-3x mb-3" style="color: #FFD700;"></i>
+                        <h4>Real Questions</h4>
+                        <p>Practice with authentic Jeopardy questions from actual shows</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="d-grid gap-3">
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-jeopardy btn-lg">
+                                <i class="fas fa-user-plus"></i> Create Free Account
+                            </a>
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-warning btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Login to Continue
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-5 text-center">
+                <h4 style="color: #FFD700;">How It Works</h4>
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="step-box">
+                            <div class="step-number">1</div>
+                            <h5>Sign Up</h5>
+                            <p>Create your free account in seconds</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-box">
+                            <div class="step-number">2</div>
+                            <h5>Choose Topics</h5>
+                            <p>Select categories and difficulty levels</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-box">
+                            <div class="step-number">3</div>
+                            <h5>Practice</h5>
+                            <p>Answer questions and get instant feedback</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-box">
+                            <div class="step-number">4</div>
+                            <h5>Improve</h5>
+                            <p>Track progress and master new topics</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.feature-box {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    transition: all 0.3s;
+    height: 100%;
+}
+
+.feature-box:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px);
+}
+
+.step-box {
+    padding: 20px;
+}
+
+.step-number {
+    background-color: #FFD700;
+    color: #060CE9;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.btn-outline-warning {
+    color: #FFD700;
+    border-color: #FFD700;
+}
+
+.btn-outline-warning:hover {
+    background-color: #FFD700;
+    color: #060CE9;
+}
+</style>
+{% endblock %}
