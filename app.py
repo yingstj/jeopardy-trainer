@@ -226,6 +226,54 @@ def unauthorized(e):
     """Redirect to login page for unauthorized access."""
     return redirect(url_for('auth.login'))
 
+@app.route('/admin/fix-db')
+@login_required
+def fix_database():
+    """Fix database by clearing bad questions and loading good ones."""
+    try:
+        # Security check
+        if session.get('user_id') != 1:
+            return "Access denied", 403
+            
+        result = "<h1>Database Fix</h1><pre>"
+        
+        # Clear bad questions
+        result += "Clearing old questions with bad answers...\n"
+        with db.get_connection() as conn:
+            if db.db_type == 'postgresql':
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM user_progress')
+                cursor.execute('DELETE FROM questions')
+                conn.commit()
+                cursor.close()
+            else:
+                conn.execute('DELETE FROM user_progress')
+                conn.execute('DELETE FROM questions')
+                conn.commit()
+        
+        result += "Old questions cleared\n\n"
+        
+        # Load new questions
+        result += "Loading properly formatted questions...\n"
+        count = db.load_questions_from_json('data/jeopardy_questions_fixed.json')
+        result += f"Loaded {count} questions\n\n"
+        
+        # Verify
+        questions = db.get_questions(count=5)
+        result += "Sample questions:\n"
+        for q in questions[:3]:
+            result += f"- {q['category']}: {q['question'][:50]}...\n"
+            result += f"  Answer: {q['answer']}\n\n"
+        
+        result += "</pre>"
+        result += '<p><a href="/admin/db">View Database</a></p>'
+        result += '<p><a href="/">Back to Game</a></p>'
+        
+        return result
+        
+    except Exception as e:
+        return f"<h1>Error</h1><pre>{str(e)}</pre>", 500
+
 @app.route('/admin/db')
 @login_required
 def db_viewer_overview():
