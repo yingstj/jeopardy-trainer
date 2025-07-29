@@ -226,6 +226,69 @@ def unauthorized(e):
     """Redirect to login page for unauthorized access."""
     return redirect(url_for('auth.login'))
 
+@app.route('/admin/db')
+@login_required
+def db_viewer_overview():
+    """Database viewer for checking database contents."""
+    try:
+        # Get database stats
+        categories = db.get_categories()
+        total_questions = sum(count for _, count in categories)
+        
+        # Get user count
+        with db.get_connection() as conn:
+            if db.db_type == 'postgresql':
+                cursor = conn.cursor()
+                cursor.execute('SELECT COUNT(*) FROM users')
+                user_count = cursor.fetchone()[0]
+                cursor.close()
+            else:
+                user_count = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+        
+        # Get sample questions
+        sample_questions = db.get_questions(count=10)
+        
+        return f"""
+        <html>
+        <head>
+            <title>Database Viewer</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .stat {{ background: #f0f0f0; padding: 10px; margin: 10px 0; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background: #4CAF50; color: white; }}
+            </style>
+        </head>
+        <body>
+            <h1>Jeopardy Database Viewer</h1>
+            
+            <div class="stat">
+                <strong>Database Type:</strong> {db.db_type.upper()}<br>
+                <strong>Total Questions:</strong> {total_questions}<br>
+                <strong>Total Categories:</strong> {len(categories)}<br>
+                <strong>Total Users:</strong> {user_count}
+            </div>
+            
+            <h2>Top Categories</h2>
+            <table>
+                <tr><th>Category</th><th>Count</th></tr>
+                {''.join(f'<tr><td>{cat}</td><td>{count}</td></tr>' for cat, count in categories[:10])}
+            </table>
+            
+            <h2>Sample Questions</h2>
+            <table>
+                <tr><th>Category</th><th>Question</th><th>Answer</th><th>Value</th></tr>
+                {''.join(f'<tr><td>{q["category"]}</td><td>{q["question"][:50]}...</td><td>{q["answer"]}</td><td>${q["value"]}</td></tr>' for q in sample_questions)}
+            </table>
+            
+            <p><a href="/">Back to Game</a></p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"<h1>Error</h1><p>{str(e)}</p><p>Database URL: {os.environ.get('DATABASE_URL', 'Not set')}</p>", 500
+
 if __name__ == '__main__':
     # Database is automatically initialized by JeopardyDatabase class
     app.run(debug=True, port=5000)
