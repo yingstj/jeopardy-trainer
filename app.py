@@ -8,6 +8,7 @@ import logging
 from auth import auth_bp, login_required
 from database import JeopardyDatabase
 from ai_engine import AdaptiveLearningEngine
+from answer_checker import AnswerChecker
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 db_url = os.environ.get('DATABASE_URL')
 db = JeopardyDatabase(db_url)
 ai_engine = AdaptiveLearningEngine()
+answer_checker = AnswerChecker()
 
 # Database initialization is handled by JeopardyDatabase class
 
@@ -65,6 +67,31 @@ def get_categories():
     categories = db.get_categories()
     return jsonify([{'name': cat[0], 'count': cat[1]} for cat in categories])
 
+@app.route('/api/check-answer', methods=['POST'])
+@login_required
+def check_answer():
+    """Check user's answer with fuzzy matching."""
+    data = request.json
+    user_answer = data.get('user_answer', '').strip()
+    correct_answer = data.get('correct_answer', '').strip()
+    
+    if not user_answer or not correct_answer:
+        return jsonify({
+            'is_correct': False,
+            'feedback': 'Please provide an answer'
+        })
+    
+    # Check answer with fuzzy matching
+    is_correct, confidence, reason = answer_checker.check_answer(user_answer, correct_answer)
+    feedback = answer_checker.get_feedback(user_answer, correct_answer, is_correct, confidence, reason)
+    
+    return jsonify({
+        'is_correct': is_correct,
+        'confidence': confidence,
+        'reason': reason,
+        'feedback': feedback
+    })
+
 @app.route('/api/progress', methods=['POST'])
 @login_required
 def save_progress():
@@ -75,6 +102,13 @@ def save_progress():
     
     if not session_id or not user_id:
         return jsonify({'error': 'No session found'}), 400
+    
+    # Use fuzzy matching if user_answer is provided
+    if 'user_answer' in data and 'correct_answer' in data:
+        user_answer = data['user_answer'].strip()
+        correct_answer = data['correct_answer'].strip()
+        is_correct, confidence, reason = answer_checker.check_answer(user_answer, correct_answer)
+        data['is_correct'] = is_correct
     
     db.save_answer(
         user_id=user_id,

@@ -1801,11 +1801,37 @@
             stopTimer();
             
             const userAnswer = answerInput.value.trim();
-            const normalizedUser = normalize(userAnswer);
-            const normalizedCorrect = normalize(currentClue.correct_response);
             const responseTime = Date.now() - startTime;
             
-            const isCorrect = !isTimeout && normalizedUser === normalizedCorrect;
+            let isCorrect = false;
+            let feedback = '';
+            
+            // Check answer using fuzzy matching API
+            if (!isTimeout && userAnswer) {
+                try {
+                    const response = await fetch('/api/check-answer', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_answer: userAnswer,
+                            correct_answer: currentClue.correct_response
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    isCorrect = result.is_correct;
+                    feedback = result.feedback || '';
+                } catch (error) {
+                    console.error('Error checking answer:', error);
+                    // Fallback to simple check
+                    const normalizedUser = normalize(userAnswer);
+                    const normalizedCorrect = normalize(currentClue.correct_response);
+                    isCorrect = normalizedUser === normalizedCorrect;
+                }
+            }
+            
             let earnings = 0;
             
             // Save progress to API
@@ -1854,14 +1880,19 @@
             
             if (isCorrect) {
                 if (currentMode === 'final') {
-                    resultDiv.innerHTML = `✅ Correct! You won ${earnings}!`;
+                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} You won ${earnings}!`;
                 } else {
-                    resultDiv.innerHTML = `✅ Correct! ${earnings > 0 ? `+${earnings}` : 'Well done!'}`;
+                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} ${earnings > 0 ? `+${earnings}` : ''}`;
                 }
             } else if (isTimeout) {
                 resultDiv.innerHTML = `⏰ Time's up! The correct answer was: <strong>${currentClue.correct_response}</strong>`;
             } else {
-                resultDiv.innerHTML = `❌ Incorrect. The correct answer was: <strong>${currentClue.correct_response}</strong>`;
+                // Use feedback from fuzzy matching if available
+                if (feedback && feedback.includes('✗')) {
+                    resultDiv.innerHTML = feedback;
+                } else {
+                    resultDiv.innerHTML = `❌ Incorrect. The correct answer was: <strong>${currentClue.correct_response}</strong>`;
+                }
                 if (currentMode === 'final' && earnings < 0) {
                     resultDiv.innerHTML += ` You lose ${Math.abs(earnings)}.`;
                 }
