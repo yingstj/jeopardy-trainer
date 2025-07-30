@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Large data files
+data/*.csv
+data/*.tsv
+data/*.zip
+data/jeopardy_100k_generated.json
+data/jeopardy_github_100k.json
+data/temp_batch_*.json
+data/combined_season*.tsv
+
+# Database (if you want to keep it local)
+# Uncomment the next line if you don't want to commit the database
+# data/jeopardy.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local settings
+.env
+.env.local
+.claude/settings.local.json
+
+# Logs
+*.log

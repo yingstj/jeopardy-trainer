@@ -41,7 +41,7 @@ def index():
     if 'session_id' not in session:
         session['session_id'] = os.urandom(16).hex()
         db.create_session(session['session_id'], session['user_id'])
-    return render_template('jeopardy_trainer.html')
+    return render_template('jeopardy_simple.html')
 
 @app.route('/api/questions')
 @login_required
@@ -175,7 +175,7 @@ def load_questions():
 def get_ai_questions():
     """Get AI-recommended questions based on user performance."""
     user_id = session.get('user_id')
-    count = int(request.args.get('count', 10))
+    count = int(request.args.get('count', 30))  # Changed default to 30 for full board
     category = request.args.get('category')
     mode = request.args.get('mode', 'adaptive')
     
@@ -207,11 +207,13 @@ def get_ai_questions():
             
             formatted_questions.append(formatted)
         
-        return jsonify(formatted_questions)
+        return jsonify({'questions': formatted_questions})  # Wrap in questions object
     
     except Exception as e:
         logger.error(f"Error getting AI questions: {e}")
-        return jsonify({'error': 'Failed to get AI recommendations'}), 500
+        # Fallback to regular questions if AI fails
+        questions = db.get_questions(count=count, category=category)
+        return jsonify({'questions': questions})
 
 @app.route('/api/ai/insights')
 @login_required
