@@ -208,6 +208,30 @@
             font-size: 0.9em;
         }
 
+        
+        .board-clue {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px 10px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+        }
+        
+        .board-clue:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+        
+        .board-clue.completed {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
         .board-value {
             background: var(--primary-color);
             color: white;
@@ -751,7 +775,186 @@
                 --text-primary: black;
             }
         }
-    </style>
+    
+
+/* Study Plan Modal Styles */
+#study-plan-section {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#study-plan-section.active {
+    display: block !important;
+}
+
+.study-plan-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    display: none;
+}
+
+.study-plan-overlay.active {
+    display: block;
+}
+
+.study-plan h3 {
+    color: var(--accent-color);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-study-plan {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.close-study-plan:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.plan-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.plan-step:hover {
+    background: rgba(255, 215, 0, 0.2);
+    transform: translateX(5px);
+}
+
+.step-number {
+    background: var(--accent-color);
+    color: #000;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-action {
+    margin-top: 10px;
+}
+
+.step-action button {
+    background: var(--accent-color);
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.step-action button:hover {
+    background: #ffed4e;
+    transform: translateY(-2px);
+}
+
+/* Move weakness alerts to sidebar */
+#weakness-alerts {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.weakness-alert {
+    background: rgba(255, 107, 107, 0.2);
+    border-left: 4px solid #ff6b6b;
+    color: var(--text-primary);
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.weakness-alert strong {
+    color: #ff6b6b;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.weakness-alert button {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-top: 8px;
+    transition: all 0.3s;
+}
+
+.weakness-alert button:hover {
+    background: #ff5252;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -814,7 +1017,10 @@
         </div>
 
         <div id="study-plan-section" class="study-plan" style="display: none;">
-            <h3>📚 Your Personalized Study Plan</h3>
+            <h3>
+                📚 Your Personalized Study Plan
+                <button class="close-study-plan" onclick="closeStudyPlan()" aria-label="Close study plan">×</button>
+            </h3>
             <div id="study-plan-content"></div>
         </div>
 
@@ -884,8 +1090,7 @@
                     </div>
                 </div>
 
-                <div id="weakness-alerts"></div>
-
+                
                 <main id="main-content" class="clue-card" tabindex="-1">
                     <div class="difficulty-indicator" id="difficulty-indicator">EASY</div>
                     <div class="category" id="clue-category">Loading...</div>
@@ -911,7 +1116,7 @@
                             <button class="btn btn-primary" id="submit-btn" disabled>Submit Answer</button>
                             <button class="btn btn-hint" id="hint-btn" disabled>💡 Hint</button>
                             <button class="btn btn-secondary" id="skip-btn" disabled>Skip Question</button>
-                            <button class="btn btn-buzzer" id="buzz-btn" style="display: none;" onclick="buzz()">🔴 BUZZ IN</button>
+                            
                         </div>
                     </div>
                 </main>
@@ -1335,6 +1540,9 @@
         let speedQuestionsLeft = 10;
         let finalJeopardyActive = false;
         let currentWager = 0;
+        // Tournament-specific tracking
+        let tournamentScore = 0;  // Track money earned in current tournament game
+        let speedRoundTimer = null;  // Timer for speed round
 
         // Initialize AI system
         const aiSystem = new AILearningSystem();
@@ -1404,8 +1612,7 @@
             document.getElementById('tournament-board').style.display = mode === 'tournament' ? 'grid' : 'none';
             document.getElementById('speed-round-info').style.display = mode === 'speed' ? 'block' : 'none';
             document.getElementById('final-jeopardy-section').style.display = mode === 'final' ? 'block' : 'none';
-            document.getElementById('buzzer-section').style.display = ['tournament', 'speed'].includes(mode) ? 'block' : 'none';
-            document.getElementById('buzz-btn').style.display = ['tournament', 'speed'].includes(mode) ? 'inline-block' : 'none';
+            document.getElementById('buzzer-section').style.display = 'none';  // Start with buzzer hidden, will be shown when needed
             
             if (mode === 'tournament') {
                 setupTournamentBoard();
@@ -1420,8 +1627,14 @@
 
         // Tournament mode
         async function setupTournamentBoard() {
+            tournamentScore = 0;  // Reset score at start of tournament
             const board = document.getElementById('tournament-board');
             board.innerHTML = '<div style="grid-column: 1/-1; text-align: center;">Loading tournament board...</div>';
+            
+            // Add score display
+            const scoreDisplay = document.createElement('div');
+            scoreDisplay.style.cssText = 'grid-column: 1/-1; text-align: center; font-size: 1.5em; margin-bottom: 20px;';
+            scoreDisplay.innerHTML = 'Tournament Score: $<span id="tournament-current-score" style="color: #ffd700; font-weight: bold;">0</span>';
             
             // Fetch questions for tournament
             const allQuestions = await fetchQuestions({ count: 100 });
@@ -1434,6 +1647,7 @@
             const values = [200, 400, 600, 800, 1000];
             
             board.innerHTML = '';
+            board.appendChild(scoreDisplay);
             tournamentBoard = [];
             
             // Add category headers
@@ -1444,41 +1658,46 @@
                 board.appendChild(categoryEl);
             });
             
-            // Add value cells
+            // Add clue cells
             values.forEach(value => {
                 categories.forEach(category => {
-                    const questions = allQuestions.filter(q => q.category === category && Math.abs(q.value - value) <= 100);
-                    if (questions.length > 0) {
-                        const valueEl = document.createElement('div');
-                        valueEl.className = 'board-value';
-                        valueEl.textContent = `$${value}`;
-                        valueEl.onclick = () => selectBoardQuestion(questions[0]);
-                        board.appendChild(valueEl);
-                        
-                        tournamentBoard.push({
-                            element: valueEl,
-                            question: questions[0],
+                    const categoryQuestions = allQuestions.filter(q => q.category === category);
+                    const question = categoryQuestions.length > 0 ? categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)] : null;
+                    
+                    const clueEl = document.createElement('div');
+                    clueEl.className = 'board-clue';
+                    clueEl.textContent = `$${value}`;
+                    
+                    if (question) {
+                        const boardItem = {
+                            question: question,
+                            value: value,
+                            element: clueEl,
                             completed: false
-                        });
+                        };
+                        
+                        clueEl.onclick = () => selectBoardQuestion(boardItem);
+                        tournamentBoard.push(boardItem);
                     } else {
-                        // Add empty cell if no question available
-                        const emptyEl = document.createElement('div');
-                        emptyEl.className = 'board-value completed';
-                        emptyEl.textContent = '-';
-                        board.appendChild(emptyEl);
+                        clueEl.classList.add('completed');
                     }
+                    
+                    board.appendChild(clueEl);
                 });
             });
         }
 
-        function selectBoardQuestion(question) {
-            if (buzzerWindow) return;
+        function selectBoardQuestion(boardItem) {
+            if (boardItem.completed || buzzerWindow) return;
             
-            currentClue = question;
-            currentQuestionData = { question: question, prediction: aiSystem.predictSuccess(question) };
+            currentClue = boardItem.question;
+            currentQuestionData = { question: boardItem.question, prediction: aiSystem.predictSuccess(boardItem.question) };
             
             clueCategory.textContent = currentClue.category;
             clueText.textContent = currentClue.clue;
+            
+            // Show buzzer section
+            document.getElementById('buzzer-section').style.display = 'block';
             
             // Start buzzer window
             buzzerWindow = true;
@@ -1492,208 +1711,71 @@
                 if (buzzerTime <= 0) {
                     clearInterval(buzzerTimer);
                     buzzerWindow = false;
+                    document.getElementById('buzzer-section').style.display = 'none';
                     skipQuestion();
                 }
             }, 100);
             
             // Hide board question
-            const boardItem = tournamentBoard.find(item => item.question === question);
-            if (boardItem) {
-                boardItem.element.classList.add('completed');
-                boardItem.element.onclick = null;
-                boardItem.completed = true;
-            }
+            boardItem.element.classList.add('completed');
+            boardItem.element.onclick = null;
+            boardItem.completed = true;
         }
 
         function buzz() {
-            if (!buzzerWindow) return;
+            if (!buzzerWindow && currentMode !== 'tournament' && currentMode !== 'speed') {
+                // For non-tournament/speed modes, just enable answer input
+                answerInput.disabled = false;
+                submitBtn.disabled = false;
+                answerInput.focus();
+                return;
+            }
             
-            clearInterval(buzzerTimer);
+            if (!buzzerWindow && currentMode !== 'speed') return;
+            
+            // Clear buzzer timer if running
+            if (buzzerTimer) {
+                clearInterval(buzzerTimer);
+                buzzerTimer = null;
+            }
             buzzerWindow = false;
             
             // Buzzer animation
             const buzzer = document.getElementById('buzzer-btn');
-            buzzer.classList.add('active');
-            setTimeout(() => buzzer.classList.remove('active'), 500);
+            if (buzzer) {
+                buzzer.classList.add('active');
+                setTimeout(() => buzzer.classList.remove('active'), 500);
+            }
             
             // Enable answer input
             answerInput.disabled = false;
             submitBtn.disabled = false;
+            skipBtn.disabled = false;
+            hintBtn.disabled = false;
             answerInput.focus();
             
+            // Hide buzzer section
+            document.getElementById('buzzer-section').style.display = 'none';
+            
             // Start answer timer
-            timeLeft = 30;
+            timeLeft = currentMode === 'speed' ? 10 : 30;
             startTimer();
         }
 
-        // Speed round
-        function startSpeedRound() {
-            speedRoundActive = true;
-            speedQuestionsLeft = 10;
-            let speedTime = 60;
-            
-            document.getElementById('speed-questions').textContent = speedQuestionsLeft;
-            document.getElementById('speed-timer').textContent = speedTime;
-            
-            const speedTimer = setInterval(() => {
-                speedTime--;
-                document.getElementById('speed-timer').textContent = speedTime;
+        // Add buzzer window management for speed rounds
+        function startBuzzerWindow() {
+            if (currentMode === 'speed') {
+                // For speed rounds, show buzzer immediately
+                document.getElementById('buzzer-section').style.display = 'block';
+                buzzerWindow = true;
                 
-                if (speedTime <= 0 || speedQuestionsLeft <= 0) {
-                    clearInterval(speedTimer);
-                    endSpeedRound();
-                }
-            }, 1000);
-            
-            loadNewClue();
-        }
-
-        function endSpeedRound() {
-            speedRoundActive = false;
-            
-            const resultDiv = document.createElement('div');
-            resultDiv.className = 'result correct';
-            resultDiv.innerHTML = `⚡ Speed Round Complete! You answered ${10 - speedQuestionsLeft} questions correctly!`;
-            
-            resultArea.innerHTML = '';
-            resultArea.appendChild(resultDiv);
-        }
-
-        // Final Jeopardy
-        function setupFinalJeopardy() {
-            finalJeopardyActive = true;
-            const finalCategories = [...new Set(jeopardyData.map(q => q.category))];
-            const randomCategory = finalCategories[Math.floor(Math.random() * finalCategories.length)];
-            
-            document.getElementById('final-category').textContent = randomCategory;
-            document.getElementById('wager-amount').max = aiSystem.userProfile.totalEarnings || 1000;
-        }
-
-        function submitWager() {
-            currentWager = parseInt(document.getElementById('wager-amount').value) || 0;
-            
-            // Hide wager section and show question
-            document.getElementById('final-jeopardy-section').style.display = 'none';
-            
-            const finalQuestions = jeopardyData.filter(q => 
-                q.category === document.getElementById('final-category').textContent
-            );
-            
-            if (finalQuestions.length > 0) {
-                currentClue = finalQuestions[Math.floor(Math.random() * finalQuestions.length)];
-                currentQuestionData = { question: currentClue, prediction: aiSystem.predictSuccess(currentClue) };
-                
-                clueCategory.textContent = "FINAL JEOPARDY";
-                clueText.textContent = currentClue.clue;
-                
-                answerInput.disabled = false;
-                submitBtn.disabled = false;
-                answerInput.focus();
-                
-                // Extended timer for Final Jeopardy
-                timeLeft = 60;
-                startTimer();
+                // Auto-buzz after 1 second for speed rounds
+                setTimeout(() => {
+                    if (buzzerWindow) {
+                        buzz();
+                    }
+                }, 1000);
             }
-        }
-
-        // Study plan
-        function showStudyPlan() {
-            const plan = aiSystem.generateStudyPlan();
-            const planSection = document.getElementById('study-plan-section');
-            const planContent = document.getElementById('study-plan-content');
-            
-            planContent.innerHTML = plan.map(step => `
-                <div class="plan-step">
-                    <div class="step-number">${step.step}</div>
-                    <div>
-                        <strong>${step.title}</strong><br>
-                        ${step.description}<br>
-                        <small>Duration: ${step.duration}</small>
-                    </div>
-                </div>
-            `).join('');
-            
-            planSection.style.display = 'block';
-        }
-
-        // Initialize app
-        async function initializeApp() {
-            // Load saved theme
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            document.querySelector('.theme-toggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
-            
-            // Load categories from API
-            const categoriesData = await fetchCategories();
-            const categoryFilter = document.getElementById('category-filter');
-            categoriesData.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.name;
-                option.textContent = `${cat.name} (${cat.count})`;
-                categoryFilter.appendChild(option);
-            });
-            
-            // Load initial questions
-            jeopardyData = await fetchQuestions({ count: 50 });
-            
-            // Set up keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.classList.contains('mode-card')) {
-                    e.target.click();
-                }
-                
-                if (e.key === ' ' && buzzerWindow) {
-                    e.preventDefault();
-                    buzz();
-                }
-                
-                if (e.key === 'Escape') {
-                    showAccessibilityControls();
-                }
-            });
-            
-            // Set up event listeners
-            submitBtn.addEventListener('click', () => submitAnswer());
-            skipBtn.addEventListener('click', skipQuestion);
-            hintBtn.addEventListener('click', showHint);
-
-            answerInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !submitBtn.disabled) {
-                    submitAnswer();
-                }
-            });
-
-            // Initialize with classic mode
-            selectMode('classic');
-            updateScores();
-            updateMasteryLevels();
-            showWeaknessAlerts();
-        }
-
-        // Keep all the existing functions from the previous version
-        // (normalize, getFilteredClues, loadNewClue, startTimer, stopTimer, etc.)
-        // ... [Previous functions remain the same] ...
-
-        function normalize(text) {
-            return text.toLowerCase()
-                .replace(/^(what|who|where|when|why|how)\s+(is|are|was|were)\s+/i, '')
-                .replace(/[^a-z0-9\s]/g, '')
-                .trim();
-        }
-
-        async function getFilteredClues() {
-            const selectedCategory = document.getElementById('category-filter').value;
-            const params = {
-                count: 50 // Get more questions for better variety
-            };
-            
-            if (selectedCategory !== 'all') {
-                params.category = selectedCategory;
-            }
-            
-            const questions = await fetchQuestions(params);
-            jeopardyData = questions; // Update local cache
-            return questions;
         }
 
         async function loadNewClue() {
@@ -1707,38 +1789,95 @@
             
             const mode = document.getElementById('study-mode')?.value || 'adaptive';
             
-            currentQuestionData = aiSystem.selectOptimalQuestion(filteredClues, mode);
+            // RANDOMIZATION FIX: Add random offset to avoid same questions
+            if (mode === 'adaptive' || mode === 'random') {
+                // Shuffle the questions array
+                const shuffled = [...filteredClues].sort(() => Math.random() - 0.5);
+                
+                // For adaptive mode, still use AI but with shuffled input
+                if (mode === 'adaptive') {
+                    currentQuestionData = aiSystem.selectOptimalQuestion(shuffled, mode);
+                } else {
+                    // For random mode, just pick from shuffled array
+                    currentQuestionData = {
+                        question: shuffled[0],
+                        prediction: aiSystem.predictSuccess(shuffled[0])
+                    };
+                }
+            } else {
+                currentQuestionData = aiSystem.selectOptimalQuestion(filteredClues, mode);
+            }
+            
             currentClue = currentQuestionData.question || currentQuestionData;
             
             clueCategory.textContent = currentClue.category;
             clueText.textContent = currentClue.clue;
             answerInput.value = '';
-            answerInput.disabled = false;
-            submitBtn.disabled = false;
-            skipBtn.disabled = false;
-            hintBtn.disabled = false;
-            answerInput.focus();
+            hintsUsed = 0;
+            resultArea.innerHTML = '';
+            
+            // For speed mode, disable inputs until buzz
+            if (currentMode === 'speed') {
+                answerInput.disabled = true;
+                submitBtn.disabled = true;
+                skipBtn.disabled = true;
+                hintBtn.disabled = true;
+            } else {
+                answerInput.disabled = false;
+                submitBtn.disabled = false;
+                skipBtn.disabled = false;
+                hintBtn.disabled = false;
+            }
             
             // Update difficulty indicator
-            document.getElementById('difficulty-indicator').textContent = currentClue.difficulty.toUpperCase();
-            document.getElementById('difficulty-indicator').className = `difficulty-indicator difficulty-${currentClue.difficulty}`;
+            const difficultyIndicator = document.getElementById('difficulty-indicator');
+            const difficulty = currentClue.difficulty || 'medium';
+            difficultyIndicator.textContent = difficulty.toUpperCase();
+            difficultyIndicator.className = `difficulty-indicator difficulty-${difficulty}`;
             
             // Show AI prediction
-            const prediction = currentQuestionData.prediction || aiSystem.predictSuccess(currentClue);
-            const confidence = Math.round(prediction * 100);
-            document.getElementById('ai-prediction').innerHTML = `🤖 AI predicts ${confidence}% success rate for this question`;
+            const predictionDiv = document.getElementById('ai-prediction');
+            if (currentQuestionData.prediction) {
+                const confidence = Math.round(currentQuestionData.prediction * 100);
+                predictionDiv.textContent = `🤖 AI Confidence: ${confidence}% - ${getAIAdvice(confidence)}`;
+            }
             
-            resultArea.innerHTML = '';
-            hintsUsed = 0;
-            startTime = Date.now();
-            
-            // Start timer for non-tournament modes
-            if (currentMode !== 'tournament') {
-                timeLeft = currentMode === 'speed' ? 10 : 30;
+            // Show buzzer for speed modes
+            if (currentMode === 'speed') {
+                startBuzzerWindow();
+            } else {
+                answerInput.focus();
                 startTimer();
             }
         }
 
+        function getAIAdvice(confidence) {
+            if (confidence >= 80) return "You've got this!";
+            if (confidence >= 60) return "Take your time";
+            if (confidence >= 40) return "Think carefully";
+            return "This is challenging";
+        }
+
+        // Get filtered clues based on category selection
+        async function getFilteredClues() {
+            const selectedCategory = document.getElementById('category-filter').value;
+            const params = {
+                count: 100 // Get more questions for better variety
+            };
+            
+            if (selectedCategory !== 'all') {
+                params.category = selectedCategory;
+            }
+            
+            // Add random offset to API call
+            params.offset = Math.floor(Math.random() * 1000);
+            
+            const questions = await fetchQuestions(params);
+            jeopardyData = questions; // Update local cache
+            return questions;
+        }
+
+        // Start timer for answering
         function startTimer() {
             document.getElementById('timer').style.display = 'block';
             document.getElementById('timer').textContent = timeLeft;
@@ -1768,6 +1907,7 @@
             document.getElementById('timer').style.display = 'none';
         }
 
+        // Show hint function
         function showHint() {
             hintsUsed++;
             const answer = currentClue.correct_response;
@@ -1797,6 +1937,7 @@
             }
         }
 
+        // Main answer submission function
         async function submitAnswer(isTimeout = false) {
             stopTimer();
             
@@ -1843,8 +1984,15 @@
             if (isCorrect) {
                 if (currentMode === 'tournament') {
                     earnings = currentClue.value || 200;
+                    tournamentScore += earnings;  // Bank the money for this tournament game
+                    // Update display immediately
+                    const scoreEl = document.getElementById('tournament-current-score');
+                    if (scoreEl) scoreEl.textContent = tournamentScore;
                 } else if (currentMode === 'final') {
                     earnings = finalJeopardyActive ? currentWager : 0;
+                    if (currentMode === 'tournament' && earnings > 0) {
+                        tournamentScore += earnings;
+                    }
                 } else if (currentMode === 'speed') {
                     earnings = 100;
                 } else {
@@ -1852,6 +2000,11 @@
                 }
             } else if (currentMode === 'final' && finalJeopardyActive) {
                 earnings = -currentWager;
+                if (currentMode === 'tournament' && earnings < 0) {
+                    tournamentScore += earnings;  // Subtract from tournament score
+                    const scoreEl = document.getElementById('tournament-current-score');
+                    if (scoreEl) scoreEl.textContent = Math.max(0, tournamentScore);
+                }
             }
             
             // Update AI system
@@ -1865,13 +2018,23 @@
             
             // Speed round specific logic
             if (speedRoundActive) {
-                speedQuestionsLeft--;
+                if (isCorrect) {
+                    // Only decrement if answer was correct
+                    speedQuestionsLeft--;
+                }
                 document.getElementById('speed-questions').textContent = speedQuestionsLeft;
                 
                 if (speedQuestionsLeft <= 0) {
                     endSpeedRound();
                     return;
                 }
+                
+                // Quick transition to next question in speed round
+                const delay = 1000;  // 1 second delay for speed round
+                setTimeout(() => {
+                    loadNewClue();
+                }, delay);
+                return;  // Skip the normal delay
             }
             
             // Show result with explanation and related topics
@@ -1880,9 +2043,9 @@
             
             if (isCorrect) {
                 if (currentMode === 'final') {
-                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} You won ${earnings}!`;
+                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} You won $${earnings}!`;
                 } else {
-                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} ${earnings > 0 ? `+${earnings}` : ''}`;
+                    resultDiv.innerHTML = `✅ ${feedback || 'Correct!'} ${earnings > 0 ? `+$${earnings}` : ''}`;
                 }
             } else if (isTimeout) {
                 resultDiv.innerHTML = `⏰ Time's up! The correct answer was: <strong>${currentClue.correct_response}</strong>`;
@@ -1894,11 +2057,11 @@
                     resultDiv.innerHTML = `❌ Incorrect. The correct answer was: <strong>${currentClue.correct_response}</strong>`;
                 }
                 if (currentMode === 'final' && earnings < 0) {
-                    resultDiv.innerHTML += ` You lose ${Math.abs(earnings)}.`;
+                    resultDiv.innerHTML += ` You lose $${Math.abs(earnings)}.`;
                 }
             }
             
-            // Add explanation
+            // Add explanation if available
             if (currentClue.explanation) {
                 const explanationDiv = document.createElement('div');
                 explanationDiv.className = 'explanation';
@@ -1906,7 +2069,7 @@
                 resultDiv.appendChild(explanationDiv);
             }
             
-            // Add related topics
+            // Add related topics if available
             if (currentClue.related_topics) {
                 const relatedDiv = document.createElement('div');
                 relatedDiv.className = 'related-topics';
@@ -1971,6 +2134,7 @@
             }, delay);
         }
 
+        // Skip question function
         function skipQuestion() {
             stopTimer();
             
@@ -2014,29 +2178,54 @@
             }, 2000);
         }
 
+        // End tournament function
         function endTournament() {
-            const gameEarnings = sessionHistory
-                .filter(h => h.mode === 'tournament')
-                .reduce((sum, h) => sum + h.earnings, 0);
+            const gameEarnings = tournamentScore;  // Use the tracked tournament score
             
             aiSystem.userProfile.tournamentWins++;
             aiSystem.userProfile.bestGame = Math.max(aiSystem.userProfile.bestGame, gameEarnings);
+            aiSystem.userProfile.totalEarnings += gameEarnings;  // Add tournament earnings to total
             aiSystem.saveUserProfile();
             
             const resultDiv = document.createElement('div');
             resultDiv.className = 'result correct';
-            resultDiv.innerHTML = `🏆 Tournament Complete! Final Score: ${gameEarnings}`;
+            resultDiv.innerHTML = `
+                <h3>🏆 Tournament Complete!</h3>
+                <p style="font-size: 1.5em; margin: 20px 0;">Final Score: <strong style="color: #ffd700;">$${gameEarnings}</strong></p>
+                <p>This has been added to your total earnings!</p>
+                ${gameEarnings > aiSystem.userProfile.bestGame - gameEarnings ? '<p style="color: #ffd700;">🎉 New Personal Best!</p>' : ''}
+            `;
             
             resultArea.innerHTML = '';
             resultArea.appendChild(resultDiv);
             
             updateScores();
             
+            // Show option to play Final Jeopardy with tournament winnings
+            setTimeout(() => {
+                const playFinalBtn = document.createElement('button');
+                playFinalBtn.className = 'btn';
+                playFinalBtn.style.cssText = 'margin-top: 20px; background: #ffd700; color: #000;';
+                playFinalBtn.textContent = 'Play Final Jeopardy with Winnings';
+                playFinalBtn.onclick = () => selectMode('final');
+                resultDiv.appendChild(playFinalBtn);
+            }, 2000);
+            
+            // Return to mode selection after delay
             setTimeout(() => {
                 selectMode('classic');
-            }, 5000);
+            }, 10000);
         }
 
+        // Normalize answer text
+        function normalize(text) {
+            return text.toLowerCase()
+                .replace(/^(what|who|where|when|why|how)\s+(is|are|was|were)\s+/i, '')
+                .replace(/[^a-z0-9\s]/g, '')
+                .trim();
+        }
+
+        // Search related topics
         function searchRelatedTopic(topic) {
             const relatedQuestions = jeopardyData.filter(q => 
                 q.related_topics && q.related_topics.some(t => 
@@ -2062,6 +2251,134 @@
                 timeLeft = 30;
                 startTimer();
             }
+        }
+
+        // Save progress function
+        async function saveProgress(questionId, userAnswer, isCorrect, timeTaken) {
+            try {
+                const response = await fetch('/api/progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question_id: questionId,
+                        user_answer: userAnswer,
+                        is_correct: isCorrect,
+                        time_taken: Math.round(timeTaken / 1000) // Convert to seconds
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to save progress');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error saving progress:', error);
+            }
+        }
+
+        // Add event listeners for the buttons
+        function setupEventListeners() {
+            // Submit button
+            submitBtn.addEventListener('click', () => submitAnswer());
+            
+            // Skip button
+            skipBtn.addEventListener('click', skipQuestion);
+            
+            // Hint button
+            hintBtn.addEventListener('click', showHint);
+
+            // Enter key to submit
+            answerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !submitBtn.disabled) {
+                    submitAnswer();
+                }
+            });
+        }
+
+
+
+        // Speed round functions
+        function startSpeedRound() {
+            speedRoundActive = true;
+            speedQuestionsLeft = 10;
+            let speedTime = 60;
+            
+            // Update display
+            document.getElementById('speed-questions').textContent = speedQuestionsLeft;
+            document.getElementById('speed-timer').textContent = speedTime;
+            
+            // Clear any existing timer
+            if (speedRoundTimer) {
+                clearInterval(speedRoundTimer);
+            }
+            
+            // Start the countdown
+            speedRoundTimer = setInterval(() => {
+                speedTime--;
+                document.getElementById('speed-timer').textContent = speedTime;
+                
+                if (speedTime <= 0 || speedQuestionsLeft <= 0) {
+                    clearInterval(speedRoundTimer);
+                    speedRoundTimer = null;
+                    endSpeedRound();
+                }
+            }, 1000);
+            
+            // Reset answer area
+            resultArea.innerHTML = '<div class="result" style="background: #ffd700; color: #000;">⚡ Speed Round Started! Answer quickly!</div>';
+            
+            // Load first question after brief delay
+            setTimeout(() => {
+                loadNewClue();
+            }, 1000);
+        }
+
+        function endSpeedRound() {
+            speedRoundActive = false;
+            
+            // Clear timer if still running
+            if (speedRoundTimer) {
+                clearInterval(speedRoundTimer);
+                speedRoundTimer = null;
+            }
+            
+            // Clear buzzer window
+            buzzerWindow = false;
+            document.getElementById('buzzer-section').style.display = 'none';
+            
+            // Calculate speed round score (questions answered correctly)
+            const questionsAnswered = 10 - speedQuestionsLeft;
+            const speedScore = questionsAnswered * 100;
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result correct';
+            resultDiv.innerHTML = `
+                <h3>⚡ Speed Round Complete!</h3>
+                <p>You answered ${questionsAnswered} questions correctly!</p>
+                <p style="font-size: 1.5em; margin-top: 10px;">Score: <strong>$${speedScore}</strong></p>
+                <p style="margin-top: 10px;">Remember: In speed rounds, you must answer correctly to advance!</p>
+            `;
+            
+            resultArea.innerHTML = '';
+            resultArea.appendChild(resultDiv);
+            
+            // Update total earnings
+            if (speedScore > 0) {
+                aiSystem.userProfile.totalEarnings += speedScore;
+                updateScores();
+            }
+            
+            // Reset UI
+            answerInput.disabled = false;
+            submitBtn.disabled = false;
+            skipBtn.disabled = false;
+            hintBtn.disabled = false;
+            
+            // Return to classic mode after delay
+            setTimeout(() => {
+                selectMode('classic');
+            }, 5000);
         }
 
         async function updateScores() {
@@ -2141,21 +2458,7 @@
             }).join('');
         }
 
-        function showWeaknessAlerts() {
-            const weaknesses = aiSystem.identifyWeaknesses();
-            const alertsDiv = document.getElementById('weakness-alerts');
-            
-            if (weaknesses.length > 0) {
-                alertsDiv.innerHTML = weaknesses.slice(0, 2).map(weakness => `
-                    <div class="weakness-alert">
-                        <strong>⚠️ Improvement Opportunity:</strong> ${weakness.suggestion}
-                    </div>
-                `).join('');
-            } else {
-                alertsDiv.innerHTML = '';
-            }
-        }
-
+        // Tab switching functions
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -2250,7 +2553,67 @@
             });
         }
 
-        // Initialize the app
+        // Add the missing fetchStats function
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch stats');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                return null;
+            }
+        }
+
+        // Initialize app function
+        async function initializeApp() {
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.querySelector('.theme-toggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            
+            // Load categories from API
+            const categoriesData = await fetchCategories();
+            const categoryFilter = document.getElementById('category-filter');
+            categoriesData.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.name;
+                option.textContent = `${cat.name} (${cat.count})`;
+                categoryFilter.appendChild(option);
+            });
+            
+            // Load initial questions
+            jeopardyData = await fetchQuestions({ count: 50 });
+            
+            // Set up keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.classList.contains('mode-card')) {
+                    e.target.click();
+                }
+                
+                if (e.key === ' ' && buzzerWindow) {
+                    e.preventDefault();
+                    buzz();
+                }
+                
+                if (e.key === 'Escape') {
+                    showAccessibilityControls();
+                }
+            });
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initialize with classic mode
+            selectMode('classic');
+            updateScores();
+            updateMasteryLevels();
+            showWeaknessAlerts();
+        }
+
+        // Initialize the app when page loads
         initializeApp();
     </script>
 {% endblock %}

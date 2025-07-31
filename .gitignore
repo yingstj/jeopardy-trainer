@@ -19,9 +19,8 @@ data/jeopardy_github_100k.json
 data/temp_batch_*.json
 data/combined_season*.tsv
 
-# Database (if you want to keep it local)
-# Uncomment the next line if you don't want to commit the database
-# data/jeopardy.db
+# Database (Railway will use PostgreSQL)
+data/jeopardy.db
 
 # IDE
 .vscode/

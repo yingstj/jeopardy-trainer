@@ -15,7 +15,18 @@
       "Bash(railway logs:*)",
       "Bash(pip3 install:*)",
       "Bash(chmod:*)",
-      "Bash(railway domain:*)"
+      "Bash(railway domain:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(ls:*)",
+      "Bash(railway status:*)",
+      "Bash(find:*)",
+      "Bash(jq:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:j-archive.com)",
+      "Bash(git reset:*)",
+      "Bash(grep:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

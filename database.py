@@ -379,8 +379,16 @@ class JeopardyDatabase:
             
             # Prioritize questions that haven't been asked much
             # Note: PostgreSQL uses RANDOM(), SQLite uses RANDOM()
-            query += ' ORDER BY times_asked ASC, RANDOM() LIMIT ?'
-            params.append(count)
+            query += ' ORDER BY RANDOM() LIMIT ?'
+# Add random offset for more variety
+            import random
+            max_offset = max(0, self.get_question_count() - count - 100)
+            if max_offset > 0:
+                query = query.replace('LIMIT ?', 'LIMIT ? OFFSET ?')
+                params.append(count)
+                params.append(random.randint(0, min(max_offset, 1000)))
+            else:
+                params.append(count)
             
             # Use helper method for cross-database compatibility
             results = self._execute_select(conn, query, tuple(params))
@@ -757,6 +765,14 @@ class JeopardyDatabase:
             
             conn.commit()
     
+
+    def get_question_count(self):
+        """Get total number of questions in database"""
+        with self.get_connection() as conn:
+            query = 'SELECT COUNT(*) as count FROM questions'
+            result = self._execute_select(conn, query)
+            return result[0]['count'] if result else 0
+
     def get_hardest_questions(self, limit: int = 10) -> List[Dict]:
         """Get questions with the lowest success rate."""
         with self.get_connection() as conn:
