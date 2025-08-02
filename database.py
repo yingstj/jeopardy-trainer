@@ -38,6 +38,11 @@ class JeopardyDatabase:
         if self.db_url.startswith('postgres://'):
             self.db_url = self.db_url.replace('postgres://', 'postgresql://', 1)
             logger.info("Converted postgres:// to postgresql://")
+        
+        # Fix malformed URLs missing double slash
+        if self.db_url.startswith('postgresql:/') and not self.db_url.startswith('postgresql://'):
+            self.db_url = self.db_url.replace('postgresql:/', 'postgresql://', 1)
+            logger.info("Fixed malformed URL: added missing slash")
             
         self.db_type = 'postgresql' if self.db_url.startswith(('postgresql://', 'postgres://')) else 'sqlite'
         

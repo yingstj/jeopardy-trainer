@@ -26,7 +26,10 @@
       "WebFetch(domain:j-archive.com)",
       "Bash(git reset:*)",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(railway whoami:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
