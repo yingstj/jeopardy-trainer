@@ -160,35 +160,35 @@ with st.sidebar:
 st.subheader(f"📚 Category: {clue['category']}")
 st.markdown(f"**Clue:** {clue['clue']}")
 
-# Timer display
-if st.session_state.use_timer:
-    # Calculate time remaining
-    elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
-    remaining = max(0, st.session_state.timer_seconds - int(elapsed_time))
-    
-    # Display timer with progress bar
-    if remaining > 0:
-        progress = remaining / st.session_state.timer_seconds
-        st.progress(progress, text=f"⏱️ Time remaining: {remaining} seconds")
-    else:
-        st.error("⏰ Time's up! Press Buzz to see the answer.")
-    
-    # Add auto-refresh using fragment
-    @st.fragment(run_every=1)
-    def update_timer():
-        # This fragment runs every second to check timer
-        elapsed = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
-        if elapsed < st.session_state.timer_seconds:
-            # Timer still running, trigger rerun to update display
-            st.rerun()
-    
-    # Only run auto-update if timer hasn't expired
-    if remaining > 0:
-        update_timer()
+# Timer display - create container first
+timer_container = st.container()
 
+# Form comes first (so timer refresh doesn't interfere)
 with st.form(key="clue_form", clear_on_submit=True):
     user_input = st.text_input("Your response:", key="user_response")
     submitted = st.form_submit_button("🔔 Buzz!")
+
+# Now display timer above the form using the container
+if st.session_state.use_timer:
+    with timer_container:
+        # Calculate time remaining
+        elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+        remaining = max(0, st.session_state.timer_seconds - int(elapsed_time))
+        
+        # Display timer with progress bar
+        if remaining > 0:
+            progress = remaining / st.session_state.timer_seconds
+            if remaining > 3:
+                st.progress(progress, text=f"⏱️ Time remaining: {remaining} seconds")
+            else:
+                # Last 3 seconds warning
+                st.warning(f"⏱️ Time remaining: {remaining} seconds - HURRY!")
+            
+            # Auto-refresh for countdown
+            time.sleep(1)
+            st.rerun()
+        else:
+            st.error("⏰ Time's up! Press Buzz to see the answer.")
 
 if submitted:
     elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
