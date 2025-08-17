@@ -736,6 +736,22 @@ if st.session_state.history:
                     # Last login
                     last_login = saved_data.get('last_login', 'Unknown')
                     st.caption(f"Last saved: {last_login}")
+                    
+                    # Clear history button with confirmation
+                    st.markdown("---")
+                    with st.form("clear_history_form"):
+                        st.warning("⚠️ Danger Zone")
+                        st.write("This will permanently delete all your historical data.")
+                        confirm = st.checkbox("I understand this action cannot be undone")
+                        if st.form_submit_button("🗑️ Clear All History", type="secondary", disabled=not confirm):
+                            st.session_state.history = []
+                            st.session_state.score = 0
+                            st.session_state.total = 0
+                            st.session_state.weak_categories = {}
+                            st.session_state.strong_categories = {}
+                            auth.save_user_session()
+                            st.success("All history cleared!")
+                            st.rerun()
                 else:
                     st.info("No historical data yet. Keep playing to build your history!")
             else:
@@ -805,33 +821,3 @@ if st.session_state.history:
         if st.button("🎆 New Random Question", use_container_width=True):
             st.session_state.current_clue = None
             st.rerun()
-    
-    # Session management
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("💾 Save Progress", use_container_width=True):
-            auth.save_user_session()
-            st.success("Progress saved!")
-    
-    with col2:
-        if st.button("🔄 Start New Session", use_container_width=True):
-            # Save current progress first
-            auth.save_user_session()
-            # Reset current session but keep history
-            st.session_state.score = 0
-            st.session_state.total = 0
-            st.session_state.current_clue = None
-            st.session_state.start_time = datetime.datetime.now()
-            st.success("New session started! Your history is saved.")
-            st.rerun()
-    
-    with col3:
-        if st.button("🗑️ Clear All History", use_container_width=True, type="secondary"):
-            if st.checkbox("Confirm clear all history"):
-                st.session_state.history = []
-                st.session_state.score = 0
-                st.session_state.total = 0
-                auth.save_user_session()
-                st.success("All history cleared!")
-                st.rerun()

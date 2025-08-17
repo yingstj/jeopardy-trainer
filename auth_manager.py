@@ -4,7 +4,7 @@ Authentication and user session management for Jeopardy Trainer
 import streamlit as st
 import json
 import os
-from datetime import datetime
+import datetime
 import hashlib
 import pickle
 from pathlib import Path
@@ -46,7 +46,7 @@ class AuthManager:
         session_data = {
             'email': st.session_state.user_email,
             'name': st.session_state.user_name,
-            'last_login': datetime.now().isoformat(),
+            'last_login': datetime.datetime.now().isoformat(),
             'history': st.session_state.get('history', []),
             'score': st.session_state.get('score', 0),
             'total': st.session_state.get('total', 0),
@@ -260,11 +260,24 @@ class AuthManager:
             st.markdown(f"**👤 {st.session_state.user_name}**")
             st.caption(f"📧 {st.session_state.user_email}")
             
+            # Save button prominently displayed
+            if st.button("💾 Save Progress", use_container_width=True, type="primary"):
+                self.save_user_session()
+                st.success("✅ Progress saved!")
+            
+            # Session management
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("💾 Save Progress", use_container_width=True):
+                if st.button("🔄 New Session", use_container_width=True):
+                    # Save current progress first
                     self.save_user_session()
-                    st.success("Progress saved!")
+                    # Reset current session but keep history
+                    st.session_state.score = 0
+                    st.session_state.total = 0
+                    st.session_state.current_clue = None
+                    st.session_state.start_time = datetime.datetime.now()
+                    st.success("New session started!")
+                    st.rerun()
             
             with col2:
                 if st.button("🚪 Logout", use_container_width=True):
