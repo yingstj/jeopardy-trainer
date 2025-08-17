@@ -124,23 +124,21 @@ def load_data():
         with st.spinner("Downloading Jeopardy dataset from GitHub (this may take a minute)..."):
             url = "https://github.com/yingstj/jeopardy-trainer/raw/main/data/all_jeopardy_clues.csv"
             
-            # Use streaming to handle large file
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-            
-            # Save to local for next time
-            os.makedirs("data", exist_ok=True)
-            local_path = "data/all_jeopardy_clues.csv"
-            
-            with open(local_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            
-            df = pd.read_csv(local_path)
+            # Download directly into pandas
+            df = pd.read_csv(url)
             df = df.dropna(subset=["clue", "correct_response"])
+            
+            # Check for data quality
+            bad_answers = df[df['correct_response'].str.contains(r'^\$\d+\s+\d+$', na=False, regex=True)]
+            if len(bad_answers) > 0:
+                st.warning(f"Found {len(bad_answers)} corrupted answers. Using sample data instead.")
+                return get_sample_data()
             
             if len(df) > 100:
                 st.success(f"Successfully loaded {len(df):,} Jeopardy clues!")
+                # Save locally for next time
+                os.makedirs("data", exist_ok=True)
+                df.to_csv("data/all_jeopardy_clues.csv", index=False)
                 return df
     except Exception as e:
         st.warning(f"Could not download from GitHub: {e}")
