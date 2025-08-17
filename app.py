@@ -49,12 +49,11 @@ def load_data():
                 
             df = df.dropna(subset=["clue", "correct_response"])
             
-            # Compute embeddings
-            with st.spinner("Computing clue embeddings..."):
-                batch_size = min(1000, len(df))
-                sample_df = df.sample(n=batch_size) if len(df) > batch_size else df
-                sample_df["clue_embedding"] = sample_df["clue"].apply(lambda x: model.encode(x))
-                return sample_df
+            # Compute embeddings for all clues (not just 1000)
+            with st.spinner(f"Computing embeddings for {len(df)} clues..."):
+                # Don't limit to 1000 - use all available clues
+                df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
+                return df
         except Exception as e:
             st.warning(f"Error loading local data: {e}")
     
@@ -69,12 +68,11 @@ def load_data():
         
         df = df.dropna(subset=["clue", "correct_response"])
         
-        # Compute embeddings
-        with st.spinner("Computing clue embeddings..."):
-            batch_size = min(1000, len(df))
-            sample_df = df.sample(n=batch_size) if len(df) > batch_size else df
-            sample_df["clue_embedding"] = sample_df["clue"].apply(lambda x: model.encode(x))
-            return sample_df
+        # Compute embeddings for all clues
+        with st.spinner(f"Computing embeddings for {len(df)} clues..."):
+            # Use all available clues
+            df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
+            return df
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -100,6 +98,13 @@ if "current_clue" not in st.session_state:
 # Progress tracking uses memory instead of file storage for Streamlit Cloud compatibility
 if "progress_data" not in st.session_state:
     st.session_state.progress_data = []
+
+# Adaptive training mode
+if "adaptive_mode" not in st.session_state:
+    st.session_state.adaptive_mode = False
+    
+if "weak_categories" not in st.session_state:
+    st.session_state.weak_categories = {}
 
 # Timer settings
 if "use_timer" not in st.session_state:
@@ -140,13 +145,41 @@ if filtered_df.empty:
     st.stop()
 
 if st.session_state.current_clue is None:
-    st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+    # Choose clue based on mode
+    if st.session_state.adaptive_mode and st.session_state.history:
+        # Adaptive mode: prioritize weak categories
+        # Calculate category performance
+        history_df = pd.DataFrame(st.session_state.history)
+        category_performance = history_df.groupby('category')['was_correct'].agg(['mean', 'count'])
+        
+        # Find weak categories (accuracy < 50% with at least 2 attempts)
+        weak_cats = category_performance[(category_performance['mean'] < 0.5) & (category_performance['count'] >= 2)]
+        st.session_state.weak_categories = dict(zip(weak_cats.index, weak_cats['mean'] * 100))
+        
+        if not weak_cats.empty:
+            # 70% chance to pick from weak categories
+            if random.random() < 0.7:
+                weak_category_names = weak_cats.index.tolist()
+                weak_clues = filtered_df[filtered_df['category'].isin(weak_category_names)]
+                if not weak_clues.empty:
+                    st.session_state.current_clue = random.choice(weak_clues.to_dict(orient="records"))
+                else:
+                    st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+            else:
+                st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+        else:
+            st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+    else:
+        # Normal mode: random selection
+        st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+    
     st.session_state.start_time = datetime.datetime.now()
 
 clue = st.session_state.current_clue
 
-# Timer settings in sidebar
+# Sidebar settings
 with st.sidebar:
+    # Timer settings
     st.header("⏱️ Timer Settings")
     st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
     if st.session_state.use_timer:
@@ -155,9 +188,26 @@ with st.sidebar:
         st.caption("Official Jeopardy: 5 seconds")
     else:
         st.info("Timer is OFF - Take your time!")
+    
+    # Adaptive Training Mode
+    st.header("🎯 Adaptive Training")
+    st.session_state.adaptive_mode = st.checkbox(
+        "Enable Adaptive Mode", 
+        value=st.session_state.adaptive_mode,
+        help="Focuses on categories and types of questions you frequently miss"
+    )
+    if st.session_state.adaptive_mode:
+        st.info("📊 Focusing on your weak areas")
+        if st.session_state.weak_categories:
+            st.caption("Weak categories:")
+            for cat, acc in list(st.session_state.weak_categories.items())[:5]:
+                st.caption(f"• {cat}: {acc:.0f}% accuracy")
 
 # Display clue
-st.subheader(f"📚 Category: {clue['category']}")
+if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
+    st.subheader(f"📚 Category: {clue['category']} 🎯 (Focus Area)")
+else:
+    st.subheader(f"📚 Category: {clue['category']}")
 st.markdown(f"**Clue:** {clue['clue']}")
 
 # Timer display - create container first
@@ -313,8 +363,18 @@ if st.session_state.history:
     if st.button("🔁 Practice Missed Questions"):
         missed = [h for h in st.session_state.history if not h["was_correct"]]
         if missed:
-            retry = random.choice(missed)
-            st.session_state.current_clue = retry
-            st.rerun()
+            # Select a random missed question
+            retry_question = random.choice(missed)
+            # Find the clue in the dataframe
+            matching_clues = df[
+                (df['clue'] == retry_question['clue']) & 
+                (df['category'] == retry_question['category'])
+            ]
+            if not matching_clues.empty:
+                st.session_state.current_clue = matching_clues.iloc[0].to_dict()
+                st.session_state.start_time = datetime.datetime.now()
+                st.rerun()
+            else:
+                st.warning("Could not find that question in the database")
         else:
-            st.info("Great job! No missed questions to practice!")
+            st.success("Great job! No missed questions to practice!")
