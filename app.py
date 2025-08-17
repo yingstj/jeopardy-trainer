@@ -187,9 +187,33 @@ with st.sidebar:
     st.header("⏱️ Timer Settings")
     st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
     if st.session_state.use_timer:
-        st.session_state.timer_seconds = st.slider("Time Limit (seconds):", 5, 60, st.session_state.timer_seconds)
-        st.info(f"You have {st.session_state.timer_seconds} seconds to answer")
-        st.caption("Official Jeopardy: 5 seconds")
+        # Use number input with common presets
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.session_state.timer_seconds = st.number_input(
+                "Time Limit (seconds):",
+                min_value=3,
+                max_value=60,
+                value=st.session_state.timer_seconds,
+                step=1,
+                help="Enter custom time or use preset"
+            )
+        with col2:
+            st.caption("Quick Set:")
+            if st.button("🏆 5s", help="Official Jeopardy"):
+                st.session_state.timer_seconds = 5
+                st.rerun()
+            if st.button("📚 10s", help="Practice mode"):
+                st.session_state.timer_seconds = 10
+                st.rerun()
+            if st.button("🎓 15s", help="Learning mode"):
+                st.session_state.timer_seconds = 15
+                st.rerun()
+        
+        if st.session_state.timer_seconds == 5:
+            st.success(f"🏆 Official Jeopardy timing: {st.session_state.timer_seconds} seconds")
+        else:
+            st.info(f"⏱️ You have {st.session_state.timer_seconds} seconds to answer")
     else:
         st.info("Timer is OFF - Take your time!")
     
@@ -227,19 +251,34 @@ st.markdown(f"**Clue:** {clue['clue']}")
 # Timer display - create container first
 timer_container = st.container()
 
-# Form comes first (so timer refresh doesn't interfere)
+# Calculate if time is up BEFORE creating form
+time_is_up = False
+if st.session_state.use_timer:
+    elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+    remaining = max(0, st.session_state.timer_seconds - int(elapsed_time))
+    time_is_up = remaining <= 0
+
+# Form with conditional input field
 with st.form(key="clue_form", clear_on_submit=True):
-    user_input = st.text_input("Your response:", key="user_response")
+    if time_is_up and st.session_state.use_timer:
+        # Time's up - disable input field
+        st.text_input(
+            "Your response:", 
+            value="TIME'S UP! Press Buzz to see the answer.",
+            disabled=True,
+            key="user_response_disabled"
+        )
+        user_input = ""  # Empty input when time's up
+    else:
+        # Normal input field
+        user_input = st.text_input("Your response:", key="user_response")
+    
     submitted = st.form_submit_button("🔔 Buzz!")
 
 # Now display timer above the form using the container
 if st.session_state.use_timer:
     with timer_container:
-        # Calculate time remaining
-        elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
-        remaining = max(0, st.session_state.timer_seconds - int(elapsed_time))
-        
-        # Display timer with progress bar
+        # Timer already calculated above
         if remaining > 0:
             progress = remaining / st.session_state.timer_seconds
             if remaining > 3:
@@ -252,7 +291,7 @@ if st.session_state.use_timer:
             time.sleep(1)
             st.rerun()
         else:
-            st.error("⏰ Time's up! Press Buzz to see the answer.")
+            st.error("⏰ Time's up! Press Buzz to reveal the answer.")
 
 if submitted:
     elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
@@ -261,8 +300,11 @@ if submitted:
     
     # Check if correct and within time limit (if timer is on)
     if st.session_state.use_timer:
-        correct = user_clean == answer_clean and elapsed_time <= st.session_state.timer_seconds
         timed_out = elapsed_time > st.session_state.timer_seconds
+        if timed_out:
+            correct = False  # Can't be correct if time ran out
+        else:
+            correct = user_clean == answer_clean
     else:
         correct = user_clean == answer_clean
         timed_out = False
@@ -271,7 +313,7 @@ if submitted:
         st.success("✅ Correct!")
         st.session_state.score += 1
     elif timed_out:
-        st.error(f"⏰ Time's up! The correct response was: **{clue['correct_response']}**")
+        st.error(f"⏰ Time expired! The correct response was: **{clue['correct_response']}**")
     else:
         st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
 
