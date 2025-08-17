@@ -217,7 +217,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 Jay's Jeopardy Trainer")
+st.title("🧠 Jayopardy! Trainer")
 
 # Check authentication - DISABLED FOR NOW
 # if not st.session_state.get('authenticated', False):

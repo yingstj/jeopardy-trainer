@@ -208,7 +208,7 @@ class AuthManager:
     
     def show_login_page(self):
         """Display the login page"""
-        st.title("🧠 Jay's Jeopardy Trainer")
+        st.title("🧠 Jayopardy! Trainer")
         st.markdown("### Welcome! Please sign in to continue.")
         
         # Tabs for different login methods
