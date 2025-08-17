@@ -220,8 +220,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 Jayopardy! Trainer")
-
 # Check authentication (if available)
 if AUTH_AVAILABLE and auth:
     if not st.session_state.get('authenticated', False):
@@ -232,6 +230,9 @@ if AUTH_AVAILABLE and auth:
 else:
     # No auth available - show warning but let app work
     st.sidebar.warning("Authentication not available - progress won't be saved between sessions")
+
+# Only show title after authentication check
+st.title("🧠 Jayopardy! Trainer")
 
 st.markdown("<p style='color: #060CE9; font-weight: bold; font-size: 1.1em;'>Test your knowledge with real Jeopardy! questions</p>", unsafe_allow_html=True)
 
