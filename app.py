@@ -233,41 +233,41 @@ with st.sidebar:
     
     # Timer settings in collapsible section
     with st.expander("⏱️ Timer Settings", expanded=True):
-    # Check if timer was just enabled
-    was_timer_off = not st.session_state.use_timer
-    st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
-    
-    # Reset timer if just enabled
-    if was_timer_off and st.session_state.use_timer:
-        st.session_state.start_time = datetime.datetime.now()
-    if st.session_state.use_timer:
-        # Use number input with common presets
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.session_state.timer_seconds = st.number_input(
-                "Time Limit (seconds):",
-                min_value=3,
-                max_value=60,
-                value=st.session_state.timer_seconds,
-                step=1,
-                help="Enter custom time or use preset"
-            )
-        with col2:
-            st.caption("Quick Set:")
-            if st.button("🏆 5s", help="Official Jeopardy"):
-                st.session_state.timer_seconds = 5
-                st.rerun()
-            if st.button("📚 10s", help="Practice mode"):
-                st.session_state.timer_seconds = 10
-                st.rerun()
-            if st.button("🎓 15s", help="Learning mode"):
-                st.session_state.timer_seconds = 15
-                st.rerun()
+        # Check if timer was just enabled
+        was_timer_off = not st.session_state.use_timer
+        st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
         
-        if st.session_state.timer_seconds == 5:
-            st.success(f"🏆 Official Jeopardy timing: {st.session_state.timer_seconds} seconds")
-        else:
-            st.info(f"⏱️ You have {st.session_state.timer_seconds} seconds to answer")
+        # Reset timer if just enabled
+        if was_timer_off and st.session_state.use_timer:
+            st.session_state.start_time = datetime.datetime.now()
+        if st.session_state.use_timer:
+            # Use number input with common presets
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                st.session_state.timer_seconds = st.number_input(
+                    "Time Limit (seconds):",
+                    min_value=3,
+                    max_value=60,
+                    value=st.session_state.timer_seconds,
+                    step=1,
+                    help="Enter custom time or use preset"
+                )
+            with col2:
+                st.caption("Quick Set:")
+                if st.button("🏆 5s", help="Official Jeopardy"):
+                    st.session_state.timer_seconds = 5
+                    st.rerun()
+                if st.button("📚 10s", help="Practice mode"):
+                    st.session_state.timer_seconds = 10
+                    st.rerun()
+                if st.button("🎓 15s", help="Learning mode"):
+                    st.session_state.timer_seconds = 15
+                    st.rerun()
+            
+            if st.session_state.timer_seconds == 5:
+                st.success(f"🏆 Official Jeopardy timing: {st.session_state.timer_seconds} seconds")
+            else:
+                st.info(f"⏱️ You have {st.session_state.timer_seconds} seconds to answer")
         else:
             st.info("Timer is OFF - Take your time!")
     
