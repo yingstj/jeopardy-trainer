@@ -12,6 +12,12 @@ import numpy as np
 # Import the R2 data loader
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
 
+# Import authentication manager
+# from auth_manager import AuthManager
+
+# Initialize auth manager
+# auth = AuthManager()
+
 # Load model once
 @st.cache_resource
 def load_model():
@@ -136,6 +142,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🧠 Jay's Jeopardy Trainer")
+
+# Check authentication - DISABLED FOR NOW
+# if not st.session_state.get('authenticated', False):
+#     auth.show_login_page()
+#     st.stop()
+# 
+# # Show user menu in sidebar
+# auth.show_user_menu()
+
 st.markdown("<p style='color: #060CE9; font-weight: bold; font-size: 1.1em;'>Test your knowledge with real Jeopardy! questions</p>", unsafe_allow_html=True)
 
 # Loading spinner while data is being fetched
@@ -490,6 +505,9 @@ if submitted:
         "correct": 1 if correct else 0
     })
 
+    # Auto-save progress - DISABLED
+    # auth.save_user_session()
+    
     st.session_state.current_clue = None
     st.rerun()
 
