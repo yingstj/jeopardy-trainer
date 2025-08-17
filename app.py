@@ -83,6 +83,13 @@ if "current_clue" not in st.session_state:
 if "progress_data" not in st.session_state:
     st.session_state.progress_data = []
 
+# Timer settings
+if "use_timer" not in st.session_state:
+    st.session_state.use_timer = False
+    
+if "timer_seconds" not in st.session_state:
+    st.session_state.timer_seconds = 30
+
 st.title("🧠 Jay's Jeopardy Trainer")
 
 # Loading spinner while data is being fetched
@@ -119,26 +126,56 @@ if st.session_state.current_clue is None:
     st.session_state.start_time = datetime.datetime.now()
 
 clue = st.session_state.current_clue
+
+# Timer settings in sidebar
+with st.sidebar:
+    st.header("⏱️ Timer Settings")
+    st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
+    if st.session_state.use_timer:
+        st.session_state.timer_seconds = st.slider("Time Limit (seconds):", 5, 60, st.session_state.timer_seconds)
+        st.info(f"You have {st.session_state.timer_seconds} seconds to answer")
+    else:
+        st.info("Timer is OFF - Take your time!")
+
+# Display clue
 st.subheader(f"📚 Category: {clue['category']}")
 st.markdown(f"**Clue:** {clue['clue']}")
 
-time_limit = st.slider("⏱️ Time Limit (seconds):", 10, 60, 30)
+# Timer display
+if st.session_state.use_timer:
+    elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
+    remaining = max(0, st.session_state.timer_seconds - elapsed_time)
+    if remaining > 10:
+        st.success(f"⏱️ Time remaining: {remaining} seconds")
+    elif remaining > 0:
+        st.warning(f"⏱️ Time remaining: {remaining} seconds")
+    else:
+        st.error("⏰ Time's up!")
 
-with st.form(key="clue_form"):
-    user_input = st.text_input("Your response:")
+with st.form(key="clue_form", clear_on_submit=True):
+    user_input = st.text_input("Your response:", key="user_response")
     submitted = st.form_submit_button("Submit")
 
 if submitted:
     elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
     user_clean = normalize(user_input)
     answer_clean = normalize(clue["correct_response"])
-    correct = user_clean == answer_clean and elapsed_time <= time_limit
+    
+    # Check if correct and within time limit (if timer is on)
+    if st.session_state.use_timer:
+        correct = user_clean == answer_clean and elapsed_time <= st.session_state.timer_seconds
+        timed_out = elapsed_time > st.session_state.timer_seconds
+    else:
+        correct = user_clean == answer_clean
+        timed_out = False
 
     if correct:
         st.success("✅ Correct!")
         st.session_state.score += 1
+    elif timed_out:
+        st.error(f"⏰ Time's up! The correct response was: **{clue['correct_response']}**")
     else:
-        st.error(f"❌ Incorrect or timed out. The correct response was: *{clue['correct_response']}*")
+        st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
 
         # Semantic similarity
         if "clue_embedding" in filtered_df.columns:
@@ -177,27 +214,73 @@ if submitted:
 
 if st.session_state.total:
     st.markdown("---")
-    st.metric("Your Score", f"{st.session_state.score} / {st.session_state.total}")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("✅ Correct", st.session_state.score)
+    with col2:
+        st.metric("❌ Incorrect", st.session_state.total - st.session_state.score)
+    with col3:
+        accuracy = (st.session_state.score / st.session_state.total * 100) if st.session_state.total > 0 else 0
+        st.metric("📊 Accuracy", f"{accuracy:.1f}%")
 
 if st.session_state.history:
-    st.subheader("📊 Session Recap")
-    st.dataframe(pd.DataFrame(st.session_state.history))
-
-    with st.expander("📈 Progress Tracker"):
-        if st.session_state.progress_data:
-            progress_df = pd.DataFrame(st.session_state.progress_data)
-            summary = progress_df.groupby("date").sum().reset_index()
-            summary["accuracy"] = (summary["correct"] / summary["total"]).round(2)
-            st.dataframe(summary)
-        else:
-            st.info("No progress data available yet.")
+    st.markdown("---")
+    st.subheader("📝 Recent Answers")
+    
+    # Show last 5 answers in a clean format
+    for i, h in enumerate(reversed(st.session_state.history[-5:]), 1):
+        with st.container():
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if h["was_correct"]:
+                    st.success(f"✅ **{h['category']}**")
+                else:
+                    st.error(f"❌ **{h['category']}**")
+                
+                st.write(f"*{h['clue'][:100]}...*" if len(h['clue']) > 100 else f"*{h['clue']}*")
+                st.write(f"Your answer: {h['user_response']}")
+                if not h["was_correct"]:
+                    st.write(f"Correct answer: **{h['correct_response']}**")
+            with col2:
+                if h["was_correct"]:
+                    st.write("✅ Correct")
+                else:
+                    st.write("❌ Incorrect")
+    
+    # Full history in expander
+    with st.expander("📊 View Full Session History"):
+        history_df = pd.DataFrame(st.session_state.history)
+        history_df["Result"] = history_df["was_correct"].map({True: "✅", False: "❌"})
+        display_df = history_df[["Result", "category", "clue", "user_response", "correct_response"]]
+        st.dataframe(display_df, use_container_width=True)
+    
+    # Progress summary
+    st.markdown("---")
+    st.subheader("📈 Session Summary")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Category performance
+        category_stats = pd.DataFrame(st.session_state.history).groupby("category")["was_correct"].agg(["sum", "count"])
+        category_stats["accuracy"] = (category_stats["sum"] / category_stats["count"] * 100).round(1)
+        category_stats = category_stats.sort_values("accuracy", ascending=False)
+        
+        st.write("**Best Categories:**")
+        for cat, row in category_stats.head(3).iterrows():
+            st.write(f"• {cat}: {row['accuracy']}% ({int(row['sum'])}/{int(row['count'])})")
+    
+    with col2:
+        st.write("**Session Stats:**")
+        st.write(f"• Total Questions: {st.session_state.total}")
+        st.write(f"• Correct: {st.session_state.score}")
+        st.write(f"• Accuracy: {accuracy:.1f}%")
 
     st.markdown("---")
-    if st.button("🔁 Adaptive Retry Mode"):
+    if st.button("🔁 Practice Missed Questions"):
         missed = [h for h in st.session_state.history if not h["was_correct"]]
         if missed:
             retry = random.choice(missed)
             st.session_state.current_clue = retry
             st.rerun()
         else:
-            st.info("No missed clues yet to retry!")
+            st.info("Great job! No missed questions to practice!")
