@@ -40,8 +40,26 @@ def load_data():
             'game_id': ['1', '1', '2']
         })
     
+    # Try to load local data first
+    local_file = "data/all_jeopardy_clues.csv"
+    if os.path.exists(local_file):
+        try:
+            with st.spinner("Loading dataset..."):
+                df = pd.read_csv(local_file)
+                
+            df = df.dropna(subset=["clue", "correct_response"])
+            
+            # Compute embeddings
+            with st.spinner("Computing clue embeddings..."):
+                batch_size = min(1000, len(df))
+                sample_df = df.sample(n=batch_size) if len(df) > batch_size else df
+                sample_df["clue_embedding"] = sample_df["clue"].apply(lambda x: model.encode(x))
+                return sample_df
+        except Exception as e:
+            st.warning(f"Error loading local data: {e}")
+    
+    # Fall back to R2 if local file doesn't exist
     try:
-        # Load from R2
         with st.spinner("Loading dataset from Cloudflare R2..."):
             df = load_jeopardy_data_from_r2()
         
@@ -51,9 +69,8 @@ def load_data():
         
         df = df.dropna(subset=["clue", "correct_response"])
         
-        # Compute embeddings (can be expensive, so we'll do it on demand)
+        # Compute embeddings
         with st.spinner("Computing clue embeddings..."):
-            # Process in batches to avoid memory issues
             batch_size = min(1000, len(df))
             sample_df = df.sample(n=batch_size) if len(df) > batch_size else df
             sample_df["clue_embedding"] = sample_df["clue"].apply(lambda x: model.encode(x))
