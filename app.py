@@ -156,8 +156,9 @@ if st.session_state.current_clue is None:
         history_df = pd.DataFrame(st.session_state.history)
         category_performance = history_df.groupby('category')['was_correct'].agg(['mean', 'count'])
         
-        # Find weak categories (accuracy < 50% with at least 2 attempts)
-        weak_cats = category_performance[(category_performance['mean'] < 0.5) & (category_performance['count'] >= 2)]
+        # Find weak categories (accuracy < 50% with at least 3 attempts)
+        # This ensures more reliable statistics
+        weak_cats = category_performance[(category_performance['mean'] < 0.5) & (category_performance['count'] >= 3)]
         st.session_state.weak_categories = dict(zip(weak_cats.index, weak_cats['mean'] * 100))
         
         if not weak_cats.empty:
@@ -185,7 +186,13 @@ clue = st.session_state.current_clue
 with st.sidebar:
     # Timer settings
     st.header("⏱️ Timer Settings")
+    # Check if timer was just enabled
+    was_timer_off = not st.session_state.use_timer
     st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
+    
+    # Reset timer if just enabled
+    if was_timer_off and st.session_state.use_timer:
+        st.session_state.start_time = datetime.datetime.now()
     if st.session_state.use_timer:
         # Use number input with common presets
         col1, col2 = st.columns([2, 1])
@@ -222,8 +229,21 @@ with st.sidebar:
     st.session_state.adaptive_mode = st.checkbox(
         "Enable Adaptive Mode", 
         value=st.session_state.adaptive_mode,
-        help="Focuses on categories and types of questions you frequently miss"
+        help="Focuses on categories where you have <50% accuracy after 3+ attempts"
     )
+    
+    # Show requirements
+    with st.expander("How Adaptive Mode Works"):
+        st.write("""
+        **Requirements:**
+        - Answer at least **3 questions** per category
+        - Categories with **<50% accuracy** become focus areas
+        - When active, **70% chance** to get questions from weak categories
+        
+        **Currently tracks:**
+        - Category-based performance only
+        - Future: Question difficulty, response time patterns
+        """)
     if st.session_state.adaptive_mode:
         if st.session_state.weak_categories:
             st.success(f"📊 Focusing on {len(st.session_state.weak_categories)} weak categories")
@@ -237,13 +257,26 @@ with st.sidebar:
                     else:
                         st.info(f"🟢 {cat}: {acc:.0f}%")
         else:
-            st.info("📊 No weak areas identified yet. Keep playing to build your profile!")
+            st.info("📊 No weak areas identified yet. Answer at least 3 questions per category to build your profile!")
+            if st.session_state.history:
+                # Show progress toward identification
+                history_df = pd.DataFrame(st.session_state.history)
+                cat_counts = history_df.groupby('category').size()
+                categories_near_threshold = cat_counts[cat_counts >= 2].index.tolist()
+                if categories_near_threshold:
+                    st.caption(f"Almost there: {len(categories_near_threshold)} categories with 2+ attempts")
 
 # Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
     accuracy = st.session_state.weak_categories[clue['category']]
+    # Get attempt count for this category
+    if st.session_state.history:
+        history_df = pd.DataFrame(st.session_state.history)
+        attempts = len(history_df[history_df['category'] == clue['category']])
+    else:
+        attempts = 0
     st.subheader(f"📚 Category: {clue['category']}")
-    st.warning(f"🎯 **Focus Area** - Your accuracy: {accuracy:.0f}%")
+    st.warning(f"🎯 **Focus Area** - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts")
 else:
     st.subheader(f"📚 Category: {clue['category']}")
 st.markdown(f"**Clue:** {clue['clue']}")
