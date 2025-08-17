@@ -687,9 +687,65 @@ if st.session_state.history:
         else:
             st.info("No questions match the selected filters")
     
+    # Session History
+    with st.expander("📅 View All Sessions History"):
+        try:
+            # Load all saved sessions
+            import json
+            from pathlib import Path
+            user_id = auth.get_user_id(st.session_state.user_email)
+            session_file = Path(f"user_data/{user_id}_session.json")
+            
+            if session_file.exists():
+                with open(session_file, 'r') as f:
+                    saved_data = json.load(f)
+                
+                st.write("**Lifetime Statistics:**")
+                all_history = saved_data.get('history', [])
+                if all_history:
+                    total_all_time = len(all_history)
+                    correct_all_time = sum(1 for h in all_history if h.get('was_correct'))
+                    accuracy_all_time = (correct_all_time / total_all_time * 100) if total_all_time > 0 else 0
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Questions", f"{total_all_time:,}")
+                    with col2:
+                        st.metric("Lifetime Correct", f"{correct_all_time:,}")
+                    with col3:
+                        st.metric("Overall Accuracy", f"{accuracy_all_time:.1f}%")
+                    
+                    # Category breakdown
+                    st.write("**Performance by Category (All-Time):**")
+                    import pandas as pd
+                    history_df = pd.DataFrame(all_history)
+                    category_stats = history_df.groupby('category').agg(
+                        attempts=('was_correct', 'count'),
+                        correct=('was_correct', 'sum')
+                    )
+                    category_stats['accuracy'] = (category_stats['correct'] / category_stats['attempts'] * 100).round(1)
+                    category_stats = category_stats.sort_values('attempts', ascending=False)
+                    
+                    # Show top categories
+                    st.dataframe(
+                        category_stats.head(20),
+                        use_container_width=True,
+                        height=300
+                    )
+                    
+                    # Last login
+                    last_login = saved_data.get('last_login', 'Unknown')
+                    st.caption(f"Last saved: {last_login}")
+                else:
+                    st.info("No historical data yet. Keep playing to build your history!")
+            else:
+                st.info("No saved sessions found. Your progress saves automatically as you play!")
+        except Exception as e:
+            st.error(f"Could not load session history: {e}")
+    
     # Progress summary
     st.markdown("---")
-    st.subheader("📈 Session Summary")
+    st.subheader("📈 Current Session Summary")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -749,3 +805,33 @@ if st.session_state.history:
         if st.button("🎆 New Random Question", use_container_width=True):
             st.session_state.current_clue = None
             st.rerun()
+    
+    # Session management
+    st.markdown("---")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("💾 Save Progress", use_container_width=True):
+            auth.save_user_session()
+            st.success("Progress saved!")
+    
+    with col2:
+        if st.button("🔄 Start New Session", use_container_width=True):
+            # Save current progress first
+            auth.save_user_session()
+            # Reset current session but keep history
+            st.session_state.score = 0
+            st.session_state.total = 0
+            st.session_state.current_clue = None
+            st.session_state.start_time = datetime.datetime.now()
+            st.success("New session started! Your history is saved.")
+            st.rerun()
+    
+    with col3:
+        if st.button("🗑️ Clear All History", use_container_width=True, type="secondary"):
+            if st.checkbox("Confirm clear all history"):
+                st.session_state.history = []
+                st.session_state.score = 0
+                st.session_state.total = 0
+                auth.save_user_session()
+                st.success("All history cleared!")
+                st.rerun()
