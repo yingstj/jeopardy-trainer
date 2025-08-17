@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+venv/
+user_data/
+.streamlit/secrets.toml
+*.md
+.DS_Store
+node_modules/
+.pytest_cache/
+*.log

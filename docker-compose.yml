@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  jeopardy-trainer:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - R2_ENDPOINT_URL=${R2_ENDPOINT_URL}
+      - R2_ACCESS_KEY=${R2_ACCESS_KEY}
+      - R2_SECRET_KEY=${R2_SECRET_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-jeopardy-dataset}
+      - R2_FILE_KEY=${R2_FILE_KEY:-all_jeopardy_clues.csv}
+    volumes:
+      - ./user_data:/app/user_data
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

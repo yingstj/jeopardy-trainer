@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: jeopardy-trainer
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: R2_ENDPOINT_URL
+        sync: false
+      - key: R2_ACCESS_KEY
+        sync: false
+      - key: R2_SECRET_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: jeopardy-dataset
+      - key: R2_FILE_KEY
+        value: all_jeopardy_clues.csv
