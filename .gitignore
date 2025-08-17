@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+venv/
+.env
+.DS_Store
+*.log
+debug_*.py
+test_*.py
+scraper_v2.py
+create_sample_data.py
+SCRAPER_ENHANCEMENTS.md
+data/all_jeopardy_clues_.csv
