@@ -189,8 +189,8 @@ clue = st.session_state.current_clue
 
 # Sidebar settings
 with st.sidebar:
-    # Timer settings
-    st.header("⏱️ Timer Settings")
+    # Timer settings in collapsible section
+    with st.expander("⏱️ Timer Settings", expanded=True):
     # Check if timer was just enabled
     was_timer_off = not st.session_state.use_timer
     st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
@@ -226,76 +226,75 @@ with st.sidebar:
             st.success(f"🏆 Official Jeopardy timing: {st.session_state.timer_seconds} seconds")
         else:
             st.info(f"⏱️ You have {st.session_state.timer_seconds} seconds to answer")
-    else:
-        st.info("Timer is OFF - Take your time!")
-    
-    # Adaptive Training Mode
-    st.header("🎯 Adaptive Training")
-    st.session_state.adaptive_mode = st.checkbox(
-        "Enable Adaptive Mode", 
-        value=st.session_state.adaptive_mode,
-        help="Focuses on categories where you have <50% accuracy after 3+ attempts"
-    )
-    
-    # Show requirements
-    with st.expander("How Adaptive Mode Works"):
-        st.write("""
-        **Requirements:**
-        - Answer at least **3 questions** per category
-        - Categories with **<50% accuracy** become focus areas
-        - When active, **70% chance** to get questions from focus areas
-        
-        **Currently tracks:**
-        - Category-based performance only
-        - Future: Question difficulty, response time patterns
-        """)
-    
-    # Always show performance insights
-    st.header("📊 Performance Insights")
-    
-    if st.session_state.history:
-        history_df = pd.DataFrame(st.session_state.history)
-        category_stats = history_df.groupby('category').agg(
-            attempts=('was_correct', 'count'),
-            accuracy=('was_correct', 'mean')
-        )
-        category_stats['accuracy'] *= 100
-        
-        # Categories with 3+ attempts
-        qualified = category_stats[category_stats['attempts'] >= 3]
-        
-        if not qualified.empty:
-            # Focus areas
-            focus = qualified[qualified['accuracy'] < 50].sort_values('accuracy')
-            if not focus.empty:
-                st.error(f"🎯 Focus Areas ({len(focus)}) - Need practice")
-                for cat in focus.head(5).index:
-                    acc = focus.loc[cat, 'accuracy']
-                    att = focus.loc[cat, 'attempts']
-                    st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
-            
-            # Strong areas
-            strong = qualified[qualified['accuracy'] >= 80].sort_values('accuracy', ascending=False)
-            if not strong.empty:
-                st.success(f"⭐ Strong Areas ({len(strong)}) - Great job!")
-                for cat in strong.head(5).index:
-                    acc = strong.loc[cat, 'accuracy']
-                    att = strong.loc[cat, 'attempts']
-                    st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
-            
-            # Progress indicator
-            total_qualified = len(qualified)
-            total_attempted = len(category_stats)
-            st.info(f"Progress: {total_qualified}/{total_attempted} categories qualified (3+ attempts)")
-            
-            if st.session_state.adaptive_mode and st.session_state.weak_categories:
-                st.warning(f"🎯 Adaptive Mode Active - Prioritizing {len(st.session_state.weak_categories)} focus areas")
         else:
-            st.info("Answer at least 3 questions per category to see insights")
-            if len(category_stats) > 0:
-                st.caption(f"Current: {len(category_stats)} categories attempted")
-    else:
-        st.info("📊 Start playing to build your performance profile!")
+            st.info("Timer is OFF - Take your time!")
+    
+    # Adaptive Training Mode in collapsible section
+    with st.expander("🎯 Adaptive Training", expanded=True):
+        st.session_state.adaptive_mode = st.checkbox(
+            "Enable Adaptive Mode", 
+            value=st.session_state.adaptive_mode,
+            help="Focuses on categories where you have <50% accuracy after 3+ attempts"
+        )
+    
+        # Show requirements
+        with st.expander("How It Works", expanded=False):
+            st.write("""
+            **Requirements:**
+            - Answer at least **3 questions** per category
+            - Categories with **<50% accuracy** become focus areas
+            - When active, **70% chance** to get questions from focus areas
+            
+            **Currently tracks:**
+            - Category-based performance only
+            - Future: Question difficulty, response time patterns
+            """)
+    
+    # Performance Insights section (always visible)
+    with st.expander("📊 Performance Insights", expanded=True):
+        if st.session_state.history:
+            history_df = pd.DataFrame(st.session_state.history)
+            category_stats = history_df.groupby('category').agg(
+                attempts=('was_correct', 'count'),
+                accuracy=('was_correct', 'mean')
+            )
+            category_stats['accuracy'] *= 100
+            
+            # Categories with 3+ attempts
+            qualified = category_stats[category_stats['attempts'] >= 3]
+            
+            if not qualified.empty:
+                # Focus areas
+                focus = qualified[qualified['accuracy'] < 50].sort_values('accuracy')
+                if not focus.empty:
+                    st.error(f"🎯 Focus Areas ({len(focus)}) - Need practice")
+                    for cat in focus.head(5).index:
+                        acc = focus.loc[cat, 'accuracy']
+                        att = focus.loc[cat, 'attempts']
+                        st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
+                
+                # Strong areas
+                strong = qualified[qualified['accuracy'] >= 80].sort_values('accuracy', ascending=False)
+                if not strong.empty:
+                    st.success(f"⭐ Strong Areas ({len(strong)}) - Great job!")
+                    for cat in strong.head(5).index:
+                        acc = strong.loc[cat, 'accuracy']
+                        att = strong.loc[cat, 'attempts']
+                        st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
+                
+                # Progress indicator
+                total_qualified = len(qualified)
+                total_attempted = len(category_stats)
+                st.info(f"Progress: {total_qualified}/{total_attempted} categories qualified (3+ attempts)")
+                
+                if st.session_state.adaptive_mode and st.session_state.weak_categories:
+                    st.warning(f"🎯 Adaptive Mode Active - Prioritizing {len(st.session_state.weak_categories)} focus areas")
+            else:
+                st.info("Answer at least 3 questions per category to see insights")
+                if len(category_stats) > 0:
+                    st.caption(f"Current: {len(category_stats)} categories attempted")
+        else:
+            st.info("📊 Start playing to build your performance profile!")
 
 # Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
@@ -430,6 +429,7 @@ if st.session_state.total:
 if st.session_state.history:
     st.markdown("---")
     st.subheader("📝 Recent Answers")
+    st.caption("Showing last 5 responses - see full history below for complete session")
     
     # Show last 5 answers in a clean format
     for i, h in enumerate(reversed(st.session_state.history[-5:]), 1):
@@ -451,12 +451,46 @@ if st.session_state.history:
                 else:
                     st.write("❌ Incorrect")
     
-    # Full history in expander
+    # Full history in expander with filtering
     with st.expander("📊 View Full Session History"):
         history_df = pd.DataFrame(st.session_state.history)
-        history_df["Result"] = history_df["was_correct"].map({True: "✅", False: "❌"})
-        display_df = history_df[["Result", "category", "clue", "user_response", "correct_response"]]
-        st.dataframe(display_df, use_container_width=True)
+        history_df["Result"] = history_df["was_correct"].map({True: "✅ Correct", False: "❌ Incorrect"})
+        
+        # Add filters
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            result_filter = st.selectbox(
+                "Filter by result:",
+                ["All", "✅ Correct", "❌ Incorrect"],
+                key="result_filter"
+            )
+        with col2:
+            categories_in_history = ["All"] + sorted(history_df["category"].unique())
+            category_filter = st.selectbox(
+                "Filter by category:",
+                categories_in_history,
+                key="category_filter"
+            )
+        with col3:
+            st.metric("Total Questions", len(history_df))
+        
+        # Apply filters
+        display_df = history_df.copy()
+        if result_filter != "All":
+            display_df = display_df[display_df["Result"] == result_filter]
+        if category_filter != "All":
+            display_df = display_df[display_df["category"] == category_filter]
+        
+        # Show filtered dataframe
+        if not display_df.empty:
+            st.dataframe(
+                display_df[["Result", "category", "clue", "user_response", "correct_response"]],
+                use_container_width=True,
+                height=400  # Fixed height to avoid excessive scrolling
+            )
+            st.caption(f"Showing {len(display_df)} of {len(history_df)} total questions")
+        else:
+            st.info("No questions match the selected filters")
     
     # Progress summary
     st.markdown("---")
@@ -464,14 +498,21 @@ if st.session_state.history:
     col1, col2 = st.columns(2)
     
     with col1:
-        # Category performance
+        # Category performance - only show categories with 3+ attempts
         category_stats = pd.DataFrame(st.session_state.history).groupby("category")["was_correct"].agg(["sum", "count"])
         category_stats["accuracy"] = (category_stats["sum"] / category_stats["count"] * 100).round(1)
-        category_stats = category_stats.sort_values("accuracy", ascending=False)
         
-        st.write("**Best Categories:**")
-        for cat, row in category_stats.head(3).iterrows():
-            st.write(f"• {cat}: {row['accuracy']}% ({int(row['sum'])}/{int(row['count'])})")
+        # Filter for categories with 3+ attempts and 80%+ accuracy
+        best_categories = category_stats[(category_stats["count"] >= 3) & (category_stats["accuracy"] >= 80)]
+        best_categories = best_categories.sort_values("accuracy", ascending=False)
+        
+        if not best_categories.empty:
+            st.write("**Best Categories:**")
+            for cat, row in best_categories.head(3).iterrows():
+                st.write(f"• {cat}: {row['accuracy']}% ({int(row['sum'])}/{int(row['count'])})")
+        else:
+            st.write("**Best Categories:**")
+            st.write("*Need 3+ attempts with 80%+ accuracy*")
     
     with col2:
         st.write("**Session Stats:**")
@@ -480,21 +521,36 @@ if st.session_state.history:
         st.write(f"• Accuracy: {accuracy:.1f}%")
 
     st.markdown("---")
-    if st.button("🔁 Practice Missed Questions"):
-        missed = [h for h in st.session_state.history if not h["was_correct"]]
-        if missed:
-            # Select a random missed question and use it directly
-            retry_question = random.choice(missed)
-            # Create a clue dict from the missed question
-            st.session_state.current_clue = {
-                'category': retry_question['category'],
-                'clue': retry_question['clue'],
-                'correct_response': retry_question['correct_response'],
-                'round': retry_question.get('round', 'Jeopardy'),
-                'game_id': retry_question.get('game_id', ''),
-                'clue_embedding': model.encode(retry_question['clue'])  # Generate embedding for similarity
-            }
-            st.session_state.start_time = datetime.datetime.now()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔁 Practice Missed Questions", use_container_width=True):
+            missed = [h for h in st.session_state.history if not h["was_correct"]]
+            if missed:
+                # Select a random missed question and use it directly
+                retry_question = random.choice(missed)
+                # Create a clue dict from the missed question
+                st.session_state.current_clue = {
+                    'category': retry_question['category'],
+                    'clue': retry_question['clue'],
+                    'correct_response': retry_question['correct_response'],
+                    'round': retry_question.get('round', 'Jeopardy'),
+                    'game_id': retry_question.get('game_id', '')
+                }
+                # Add embedding if model is available
+                if 'clue_embedding' in df.columns and not df.empty:
+                    # Try to find matching clue in dataframe for embedding
+                    matching = df[df['clue'] == retry_question['clue']]
+                    if not matching.empty:
+                        st.session_state.current_clue['clue_embedding'] = matching.iloc[0]['clue_embedding']
+                    else:
+                        st.session_state.current_clue['clue_embedding'] = model.encode(retry_question['clue'])
+                
+                st.session_state.start_time = datetime.datetime.now()
+                st.rerun()
+            else:
+                st.success("Great job! No missed questions to practice!")
+    
+    with col2:
+        if st.button("🎆 New Random Question", use_container_width=True):
+            st.session_state.current_clue = None
             st.rerun()
-        else:
-            st.success("Great job! No missed questions to practice!")
