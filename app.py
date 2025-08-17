@@ -124,7 +124,11 @@ if df.empty:
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
 
-st.success(f"✅ Loaded {len(df)} Jeopardy clues!")
+st.success(f"✅ Loaded {len(df):,} Jeopardy clues!")
+
+# Show adaptive mode status prominently
+if st.session_state.adaptive_mode and st.session_state.weak_categories:
+    st.info(f"🎯 **Adaptive Training Active** - Focusing on {len(st.session_state.weak_categories)} categories where you need practice")
 
 # Optional category filtering
 with st.expander("🏷️ Filter by Category (Optional)"):
@@ -197,15 +201,25 @@ with st.sidebar:
         help="Focuses on categories and types of questions you frequently miss"
     )
     if st.session_state.adaptive_mode:
-        st.info("📊 Focusing on your weak areas")
         if st.session_state.weak_categories:
-            st.caption("Weak categories:")
-            for cat, acc in list(st.session_state.weak_categories.items())[:5]:
-                st.caption(f"• {cat}: {acc:.0f}% accuracy")
+            st.success(f"📊 Focusing on {len(st.session_state.weak_categories)} weak categories")
+            with st.expander("View Focus Areas", expanded=True):
+                for cat, acc in sorted(st.session_state.weak_categories.items(), key=lambda x: x[1])[:10]:
+                    # Color code by performance
+                    if acc < 25:
+                        st.error(f"🔴 {cat}: {acc:.0f}%")
+                    elif acc < 40:
+                        st.warning(f"🟡 {cat}: {acc:.0f}%")
+                    else:
+                        st.info(f"🟢 {cat}: {acc:.0f}%")
+        else:
+            st.info("📊 No weak areas identified yet. Keep playing to build your profile!")
 
-# Display clue
+# Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
-    st.subheader(f"📚 Category: {clue['category']} 🎯 (Focus Area)")
+    accuracy = st.session_state.weak_categories[clue['category']]
+    st.subheader(f"📚 Category: {clue['category']}")
+    st.warning(f"🎯 **Focus Area** - Your accuracy: {accuracy:.0f}%")
 else:
     st.subheader(f"📚 Category: {clue['category']}")
 st.markdown(f"**Clue:** {clue['clue']}")
@@ -363,18 +377,18 @@ if st.session_state.history:
     if st.button("🔁 Practice Missed Questions"):
         missed = [h for h in st.session_state.history if not h["was_correct"]]
         if missed:
-            # Select a random missed question
+            # Select a random missed question and use it directly
             retry_question = random.choice(missed)
-            # Find the clue in the dataframe
-            matching_clues = df[
-                (df['clue'] == retry_question['clue']) & 
-                (df['category'] == retry_question['category'])
-            ]
-            if not matching_clues.empty:
-                st.session_state.current_clue = matching_clues.iloc[0].to_dict()
-                st.session_state.start_time = datetime.datetime.now()
-                st.rerun()
-            else:
-                st.warning("Could not find that question in the database")
+            # Create a clue dict from the missed question
+            st.session_state.current_clue = {
+                'category': retry_question['category'],
+                'clue': retry_question['clue'],
+                'correct_response': retry_question['correct_response'],
+                'round': retry_question.get('round', 'Jeopardy'),
+                'game_id': retry_question.get('game_id', ''),
+                'clue_embedding': model.encode(retry_question['clue'])  # Generate embedding for similarity
+            }
+            st.session_state.start_time = datetime.datetime.now()
+            st.rerun()
         else:
             st.success("Great job! No missed questions to practice!")
