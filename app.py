@@ -10,10 +10,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 # Import authentication manager
-from auth_manager import AuthManager
-
-# Initialize auth manager
-auth = AuthManager()
+try:
+    from auth_manager import AuthManager
+    auth = AuthManager()
+    AUTH_AVAILABLE = True
+except ImportError:
+    AUTH_AVAILABLE = False
+    auth = None
 
 # Load model once
 @st.cache_resource
@@ -219,13 +222,16 @@ st.markdown("""
 
 st.title("🧠 Jayopardy! Trainer")
 
-# Check authentication - DISABLED FOR NOW
-# if not st.session_state.get('authenticated', False):
-#     auth.show_login_page()
-#     st.stop()
-# 
-# # Show user menu in sidebar
-# auth.show_user_menu()
+# Check authentication (if available)
+if AUTH_AVAILABLE and auth:
+    if not st.session_state.get('authenticated', False):
+        auth.show_login_page()
+        st.stop()
+    # Show user menu in sidebar
+    auth.show_user_menu()
+else:
+    # No auth available - show warning but let app work
+    st.sidebar.warning("Authentication not available - progress won't be saved between sessions")
 
 st.markdown("<p style='color: #060CE9; font-weight: bold; font-size: 1.1em;'>Test your knowledge with real Jeopardy! questions</p>", unsafe_allow_html=True)
 
@@ -604,8 +610,9 @@ if submitted:
         "correct": 1 if correct else 0
     })
 
-    # Auto-save progress
-    auth.save_user_session()
+    # Auto-save progress (if auth available)
+    if AUTH_AVAILABLE and auth:
+        auth.save_user_session()
     
     st.session_state.current_clue = None
     st.rerun()
@@ -693,7 +700,10 @@ if st.session_state.history:
             # Load all saved sessions
             import json
             from pathlib import Path
-            user_id = auth.get_user_id(st.session_state.user_email)
+            if AUTH_AVAILABLE and auth:
+                user_id = auth.get_user_id(st.session_state.user_email)
+            else:
+                user_id = "default_user"
             session_file = Path(f"user_data/{user_id}_session.json")
             
             if session_file.exists():
@@ -749,7 +759,8 @@ if st.session_state.history:
                             st.session_state.total = 0
                             st.session_state.weak_categories = {}
                             st.session_state.strong_categories = {}
-                            auth.save_user_session()
+                            if AUTH_AVAILABLE and auth:
+                                auth.save_user_session()
                             st.success("All history cleared!")
                             st.rerun()
                 else:
