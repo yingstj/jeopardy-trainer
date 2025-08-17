@@ -156,10 +156,15 @@ if st.session_state.current_clue is None:
         history_df = pd.DataFrame(st.session_state.history)
         category_performance = history_df.groupby('category')['was_correct'].agg(['mean', 'count'])
         
-        # Find weak categories (accuracy < 50% with at least 3 attempts)
-        # This ensures more reliable statistics
-        weak_cats = category_performance[(category_performance['mean'] < 0.5) & (category_performance['count'] >= 3)]
+        # Find focus areas (accuracy < 50%) and strong areas (accuracy >= 80%)
+        # Require at least 3 attempts for reliable statistics
+        qualified_cats = category_performance[category_performance['count'] >= 3]
+        
+        weak_cats = qualified_cats[qualified_cats['mean'] < 0.5]
         st.session_state.weak_categories = dict(zip(weak_cats.index, weak_cats['mean'] * 100))
+        
+        strong_cats = qualified_cats[qualified_cats['mean'] >= 0.8]
+        st.session_state.strong_categories = dict(zip(strong_cats.index, strong_cats['mean'] * 100))
         
         if not weak_cats.empty:
             # 70% chance to pick from weak categories
@@ -238,33 +243,59 @@ with st.sidebar:
         **Requirements:**
         - Answer at least **3 questions** per category
         - Categories with **<50% accuracy** become focus areas
-        - When active, **70% chance** to get questions from weak categories
+        - When active, **70% chance** to get questions from focus areas
         
         **Currently tracks:**
         - Category-based performance only
         - Future: Question difficulty, response time patterns
         """)
-    if st.session_state.adaptive_mode:
-        if st.session_state.weak_categories:
-            st.success(f"📊 Focusing on {len(st.session_state.weak_categories)} weak categories")
-            with st.expander("View Focus Areas", expanded=True):
-                for cat, acc in sorted(st.session_state.weak_categories.items(), key=lambda x: x[1])[:10]:
-                    # Color code by performance
-                    if acc < 25:
-                        st.error(f"🔴 {cat}: {acc:.0f}%")
-                    elif acc < 40:
-                        st.warning(f"🟡 {cat}: {acc:.0f}%")
-                    else:
-                        st.info(f"🟢 {cat}: {acc:.0f}%")
+    
+    # Always show performance insights
+    st.header("📊 Performance Insights")
+    
+    if st.session_state.history:
+        history_df = pd.DataFrame(st.session_state.history)
+        category_stats = history_df.groupby('category').agg(
+            attempts=('was_correct', 'count'),
+            accuracy=('was_correct', 'mean')
+        )
+        category_stats['accuracy'] *= 100
+        
+        # Categories with 3+ attempts
+        qualified = category_stats[category_stats['attempts'] >= 3]
+        
+        if not qualified.empty:
+            # Focus areas
+            focus = qualified[qualified['accuracy'] < 50].sort_values('accuracy')
+            if not focus.empty:
+                st.error(f"🎯 Focus Areas ({len(focus)}) - Need practice")
+                for cat in focus.head(5).index:
+                    acc = focus.loc[cat, 'accuracy']
+                    att = focus.loc[cat, 'attempts']
+                    st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
+            
+            # Strong areas
+            strong = qualified[qualified['accuracy'] >= 80].sort_values('accuracy', ascending=False)
+            if not strong.empty:
+                st.success(f"⭐ Strong Areas ({len(strong)}) - Great job!")
+                for cat in strong.head(5).index:
+                    acc = strong.loc[cat, 'accuracy']
+                    att = strong.loc[cat, 'attempts']
+                    st.caption(f"• {cat}: {acc:.0f}% ({att} attempts)")
+            
+            # Progress indicator
+            total_qualified = len(qualified)
+            total_attempted = len(category_stats)
+            st.info(f"Progress: {total_qualified}/{total_attempted} categories qualified (3+ attempts)")
+            
+            if st.session_state.adaptive_mode and st.session_state.weak_categories:
+                st.warning(f"🎯 Adaptive Mode Active - Prioritizing {len(st.session_state.weak_categories)} focus areas")
         else:
-            st.info("📊 No weak areas identified yet. Answer at least 3 questions per category to build your profile!")
-            if st.session_state.history:
-                # Show progress toward identification
-                history_df = pd.DataFrame(st.session_state.history)
-                cat_counts = history_df.groupby('category').size()
-                categories_near_threshold = cat_counts[cat_counts >= 2].index.tolist()
-                if categories_near_threshold:
-                    st.caption(f"Almost there: {len(categories_near_threshold)} categories with 2+ attempts")
+            st.info("Answer at least 3 questions per category to see insights")
+            if len(category_stats) > 0:
+                st.caption(f"Current: {len(category_stats)} categories attempted")
+    else:
+        st.info("📊 Start playing to build your performance profile!")
 
 # Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
