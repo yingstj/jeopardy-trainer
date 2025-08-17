@@ -9,9 +9,6 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-# Import the R2 data loader
-from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
-
 # Import authentication manager
 # from auth_manager import AuthManager
 
@@ -32,56 +29,138 @@ def normalize(text):
     text = re.sub(r"[^a-z0-9 ]", "", text)
     return text.strip()
 
+# Get sample data for fallback
+def get_sample_data():
+    """Return sample Jeopardy data for testing/fallback"""
+    return pd.DataFrame({
+        'category': ['HISTORY'] * 10 + ['SCIENCE'] * 10 + ['MOVIES'] * 10 + ['GEOGRAPHY'] * 10 + ['LITERATURE'] * 10,
+        'clue': [
+            'This Founding Father invented the lightning rod',
+            'Year the Declaration of Independence was signed', 
+            'The Louisiana Purchase doubled the size of the U.S. in this year',
+            'This president was known as "The Great Communicator"',
+            'The Battle of Gettysburg took place in this state',
+            'This ship brought the Pilgrims to America in 1620',
+            'He was the first person to sign the Declaration of Independence',
+            'This city served as the first capital of the United States',
+            'The California Gold Rush began in this year',
+            'This purchase from Russia added 586,412 square miles to the U.S.',
+            'This element has the atomic number 1',
+            'The speed of light in a vacuum is approximately this many meters per second',
+            'This scientist developed the theory of evolution by natural selection',
+            'Water boils at this temperature in Celsius',
+            'This planet is known as the Red Planet',
+            'The human body has this many chromosomes',
+            'This is the largest organ in the human body',
+            'Photosynthesis converts carbon dioxide and water into glucose and this gas',
+            'This force keeps planets in orbit around the sun',
+            'DNA stands for this',
+            'This movie won Best Picture at the 2020 Academy Awards',
+            'This director helmed Jaws, E.T., and Jurassic Park',
+            'This actor played Jack in Titanic',
+            '"May the Force be with you" is from this film series',
+            'This 1939 film features Dorothy and her dog Toto',
+            'This actor played the Joker in The Dark Knight',
+            'This film won 11 Oscars including Best Picture in 2004',
+            'This Pixar film features a clownfish searching for his son',
+            'This actor portrayed Iron Man in the Marvel Cinematic Universe',
+            'This film features the line "I\'ll be back"',
+            'This is the longest river in the world',
+            'This mountain range contains Mount Everest',
+            'This is the smallest country in the world',
+            'This desert is the largest hot desert in the world',
+            'This is the deepest point in Earth\'s oceans',
+            'This country has the most natural lakes',
+            'This is the capital of Australia',
+            'This strait separates Europe from Asia in Turkey',
+            'This is the largest island in the world',
+            'This U.S. state is the largest by area',
+            'This author wrote "Romeo and Juliet"',
+            'This novel begins "Call me Ishmael"',
+            'This author created the detective Sherlock Holmes',
+            'This epic poem by Homer tells of the fall of Troy',
+            'This dystopian novel by George Orwell was published in 1949',
+            'This American author wrote "The Great Gatsby"',
+            'This is the best-selling book series of all time',
+            'This playwright wrote "A Streetcar Named Desire"',
+            'This novel features the character Atticus Finch',
+            'This Russian author wrote "War and Peace"'
+        ],
+        'correct_response': [
+            'Benjamin Franklin', '1776', '1803', 'Ronald Reagan', 'Pennsylvania',
+            'Mayflower', 'John Hancock', 'New York City', '1849', 'Alaska',
+            'Hydrogen', '299,792,458', 'Charles Darwin', '100', 'Mars',
+            '46', 'Skin', 'Oxygen', 'Gravity', 'Deoxyribonucleic acid',
+            'Parasite', 'Steven Spielberg', 'Leonardo DiCaprio', 'Star Wars', 'The Wizard of Oz',
+            'Heath Ledger', 'The Lord of the Rings: The Return of the King', 'Finding Nemo', 'Robert Downey Jr.', 'The Terminator',
+            'Nile River', 'Himalayas', 'Vatican City', 'Sahara', 'Mariana Trench',
+            'Canada', 'Canberra', 'Bosphorus', 'Greenland', 'Alaska',
+            'William Shakespeare', 'Moby-Dick', 'Arthur Conan Doyle', 'The Iliad', '1984',
+            'F. Scott Fitzgerald', 'Harry Potter', 'Tennessee Williams', 'To Kill a Mockingbird', 'Leo Tolstoy'
+        ],
+        'round': ['Jeopardy'] * 25 + ['Double Jeopardy'] * 25,
+        'game_id': [str(i//5) for i in range(50)]
+    })
+
 # Load and filter data
 @st.cache_data
 def load_data():
-    # Check if we're in a GitHub Actions environment (for CI testing)
-    if os.environ.get('GITHUB_ACTIONS') == 'true':
-        # Return a small sample dataset for testing
-        return pd.DataFrame({
-            'category': ['HISTORY', 'SCIENCE', 'MOVIES'],
-            'clue': ['First president of the US', 'Element with symbol H', 'This film won Best Picture in 2020'],
-            'correct_response': ['George Washington', 'Hydrogen', 'Parasite'],
-            'round': ['Jeopardy', 'Jeopardy', 'Double Jeopardy'],
-            'game_id': ['1', '1', '2']
-        })
+    import requests
     
-    # Try to load local data first
+    # Try local file first
     local_file = "data/all_jeopardy_clues.csv"
-    if os.path.exists(local_file):
+    if os.path.exists(local_file) and os.path.getsize(local_file) > 1000:  # Check file is not empty
         try:
             with st.spinner("Loading dataset..."):
                 df = pd.read_csv(local_file)
-                
+            df = df.dropna(subset=["clue", "correct_response"])
+            if len(df) > 100:  # Make sure we have real data
+                return df
+        except Exception as e:
+            st.warning(f"Local file issue: {e}")
+    
+    # Try downloading from GitHub
+    try:
+        with st.spinner("Downloading Jeopardy dataset from GitHub (this may take a minute)..."):
+            url = "https://github.com/yingstj/jeopardy-trainer/raw/main/data/all_jeopardy_clues.csv"
+            
+            # Use streaming to handle large file
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            
+            # Save to local for next time
+            os.makedirs("data", exist_ok=True)
+            local_path = "data/all_jeopardy_clues.csv"
+            
+            with open(local_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            df = pd.read_csv(local_path)
             df = df.dropna(subset=["clue", "correct_response"])
             
-            # Skip embeddings for now - too slow for deployment
-            # Embeddings would take 30+ minutes for 577k clues!
-            # with st.spinner(f"Computing embeddings for {len(df)} clues..."):
-            #     df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
-            return df
-        except Exception as e:
-            st.warning(f"Error loading local data: {e}")
+            if len(df) > 100:
+                st.success(f"Successfully loaded {len(df):,} Jeopardy clues!")
+                return df
+    except Exception as e:
+        st.warning(f"Could not download from GitHub: {e}")
     
-    # Fall back to R2 if local file doesn't exist
+    # Fall back to R2 if available
     try:
-        with st.spinner("Loading dataset from Cloudflare R2..."):
+        from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
+        with st.spinner("Trying Cloudflare R2..."):
             df = load_jeopardy_data_from_r2()
         
-        if df.empty:
-            st.error("Failed to load dataset from R2. Please check your connection and credentials.")
-            return pd.DataFrame()
-        
-        df = df.dropna(subset=["clue", "correct_response"])
-        
-        # Skip embeddings for deployment - too slow!
-        # with st.spinner(f"Computing embeddings for {len(df)} clues..."):
-        #     df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
-        return df
-            
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+        if not df.empty:
+            df = df.dropna(subset=["clue", "correct_response"])
+            if len(df) > 100:
+                return df
+    except:
+        pass  # R2 not configured
+    
+    # Final fallback - use sample data
+    st.warning("Using sample data (50 questions). Full dataset couldn't be loaded.")
+    return get_sample_data()
 
 # Initialize global variables and session state
 model = load_model()
