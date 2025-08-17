@@ -88,7 +88,7 @@ if "use_timer" not in st.session_state:
     st.session_state.use_timer = False
     
 if "timer_seconds" not in st.session_state:
-    st.session_state.timer_seconds = 30
+    st.session_state.timer_seconds = 5
 
 st.title("🧠 Jay's Jeopardy Trainer")
 
@@ -134,6 +134,7 @@ with st.sidebar:
     if st.session_state.use_timer:
         st.session_state.timer_seconds = st.slider("Time Limit (seconds):", 5, 60, st.session_state.timer_seconds)
         st.info(f"You have {st.session_state.timer_seconds} seconds to answer")
+        st.caption("Official Jeopardy: 5 seconds")
     else:
         st.info("Timer is OFF - Take your time!")
 
