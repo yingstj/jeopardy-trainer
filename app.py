@@ -10,10 +10,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 # Import authentication manager
-# from auth_manager import AuthManager
+from auth_manager import AuthManager
 
 # Initialize auth manager
-# auth = AuthManager()
+auth = AuthManager()
 
 # Load model once
 @st.cache_resource
@@ -530,15 +530,38 @@ if submitted:
     user_clean = normalize(user_input)
     answer_clean = normalize(clue["correct_response"])
     
+    # Check if correct with fuzzy matching
+    def fuzzy_match(user_ans, correct_ans, threshold=0.85):
+        """Check if answers match with some flexibility"""
+        # Exact match after normalization
+        if user_ans == correct_ans:
+            return True
+        
+        # Handle common variations
+        # Remove articles
+        user_no_article = re.sub(r'^(the|a|an)\s+', '', user_ans)
+        correct_no_article = re.sub(r'^(the|a|an)\s+', '', correct_ans)
+        if user_no_article == correct_no_article:
+            return True
+        
+        # Check if user answer is contained in correct answer or vice versa
+        if len(user_ans) > 3 and (user_ans in correct_ans or correct_ans in user_ans):
+            return True
+        
+        # Calculate similarity score using difflib
+        import difflib
+        similarity = difflib.SequenceMatcher(None, user_ans, correct_ans).ratio()
+        return similarity >= threshold
+    
     # Check if correct and within time limit (if timer is on)
     if st.session_state.use_timer:
         timed_out = elapsed_time > st.session_state.timer_seconds
         if timed_out:
             correct = False  # Can't be correct if time ran out
         else:
-            correct = user_clean == answer_clean
+            correct = fuzzy_match(user_clean, answer_clean)
     else:
-        correct = user_clean == answer_clean
+        correct = fuzzy_match(user_clean, answer_clean)
         timed_out = False
 
     if correct:
@@ -581,8 +604,8 @@ if submitted:
         "correct": 1 if correct else 0
     })
 
-    # Auto-save progress - DISABLED
-    # auth.save_user_session()
+    # Auto-save progress
+    auth.save_user_session()
     
     st.session_state.current_clue = None
     st.rerun()
