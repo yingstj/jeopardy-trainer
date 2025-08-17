@@ -4,6 +4,7 @@ import random
 import re
 import os
 import datetime
+import time
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -144,18 +145,33 @@ st.markdown(f"**Clue:** {clue['clue']}")
 
 # Timer display
 if st.session_state.use_timer:
-    elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
-    remaining = max(0, st.session_state.timer_seconds - elapsed_time)
-    if remaining > 10:
-        st.success(f"⏱️ Time remaining: {remaining} seconds")
-    elif remaining > 0:
-        st.warning(f"⏱️ Time remaining: {remaining} seconds")
+    # Calculate time remaining
+    elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+    remaining = max(0, st.session_state.timer_seconds - int(elapsed_time))
+    
+    # Display timer with progress bar
+    if remaining > 0:
+        progress = remaining / st.session_state.timer_seconds
+        st.progress(progress, text=f"⏱️ Time remaining: {remaining} seconds")
     else:
-        st.error("⏰ Time's up!")
+        st.error("⏰ Time's up! Press Buzz to see the answer.")
+    
+    # Add auto-refresh using fragment
+    @st.fragment(run_every=1)
+    def update_timer():
+        # This fragment runs every second to check timer
+        elapsed = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+        if elapsed < st.session_state.timer_seconds:
+            # Timer still running, trigger rerun to update display
+            st.rerun()
+    
+    # Only run auto-update if timer hasn't expired
+    if remaining > 0:
+        update_timer()
 
 with st.form(key="clue_form", clear_on_submit=True):
     user_input = st.text_input("Your response:", key="user_response")
-    submitted = st.form_submit_button("Submit")
+    submitted = st.form_submit_button("🔔 Buzz!")
 
 if submitted:
     elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
