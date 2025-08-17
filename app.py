@@ -113,7 +113,30 @@ if "use_timer" not in st.session_state:
 if "timer_seconds" not in st.session_state:
     st.session_state.timer_seconds = 5
 
+# Add custom CSS for Jeopardy blue theme
+st.markdown("""
+<style>
+    /* Jeopardy blue colors */
+    :root {
+        --jeopardy-blue: #060CE9;
+        --jeopardy-dark-blue: #0520A5;
+        --jeopardy-gold: #FFD700;
+    }
+    
+    /* Headers in Jeopardy blue */
+    h1, h2, h3 {
+        color: #060CE9 !important;
+    }
+    
+    /* Progress bar Jeopardy blue */
+    .stProgress > div > div > div > div {
+        background-color: #060CE9;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🧠 Jay's Jeopardy Trainer")
+st.markdown("<p style='color: #060CE9; font-weight: bold; font-size: 1.1em;'>Test your knowledge with real Jeopardy! questions</p>", unsafe_allow_html=True)
 
 # Loading spinner while data is being fetched
 with st.spinner("Loading Jeopardy dataset..."):
@@ -124,26 +147,21 @@ if df.empty:
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
 
-st.success(f"✅ Loaded {len(df):,} Jeopardy clues!")
+# Status bar with Jeopardy styling
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    st.success(f"✅ Loaded {len(df):,} Jeopardy clues!")
+with col2:
+    if st.session_state.adaptive_mode:
+        st.info(f"🎯 Adaptive: ON")
+with col3:
+    if st.session_state.use_timer:
+        st.info(f"⏱️ Timer: {st.session_state.timer_seconds}s")
 
-# Show adaptive mode status prominently
-if st.session_state.adaptive_mode and st.session_state.weak_categories:
-    st.info(f"🎯 **Adaptive Training Active** - Focusing on {len(st.session_state.weak_categories)} categories where you need practice")
+# Initialize filtered_df as df by default
+filtered_df = df
 
-# Optional category filtering
-with st.expander("🏷️ Filter by Category (Optional)"):
-    categories = sorted(df["category"].unique())
-    all_categories = st.checkbox("Use all categories", value=True)
-    
-    if not all_categories:
-        selected_categories = st.multiselect("Select categories:", categories)
-        if selected_categories:
-            filtered_df = df[df["category"].isin(selected_categories)]
-        else:
-            filtered_df = df
-    else:
-        filtered_df = df
-
+# Check if filtered_df is empty
 if filtered_df.empty:
     st.warning("No clues found for the selected categories. Please select different categories.")
     st.stop()
@@ -187,8 +205,32 @@ if st.session_state.current_clue is None:
 
 clue = st.session_state.current_clue
 
-# Sidebar settings
+# Sidebar settings with category filter
 with st.sidebar:
+    st.markdown("<h2 style='color: #060CE9;'>🎮 Game Settings</h2>", unsafe_allow_html=True)
+    
+    # Category Filter (moved from main area)
+    with st.expander("🏷️ Category Filter", expanded=False):
+        categories = sorted(df["category"].unique())
+        use_all = st.checkbox("Use all categories", value=True, key="use_all_categories")
+        
+        if not use_all:
+            selected_categories = st.multiselect(
+                "Select categories:",
+                categories,
+                key="category_selector",
+                help="Choose specific categories to practice"
+            )
+            if selected_categories:
+                filtered_df = df[df["category"].isin(selected_categories)]
+                st.success(f"✅ {len(selected_categories)} categories selected")
+            else:
+                filtered_df = df
+                st.warning("No categories selected - using all")
+        else:
+            filtered_df = df
+            st.info(f"Using all {len(categories)} categories")
+    
     # Timer settings in collapsible section
     with st.expander("⏱️ Timer Settings", expanded=True):
     # Check if timer was just enabled
@@ -296,6 +338,9 @@ with st.sidebar:
         else:
             st.info("📊 Start playing to build your performance profile!")
 
+# Display clue with Jeopardy blue styling
+st.markdown("<hr style='border: 2px solid #060CE9; margin: 20px 0;'>", unsafe_allow_html=True)
+
 # Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
     accuracy = st.session_state.weak_categories[clue['category']]
@@ -305,11 +350,44 @@ if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_
         attempts = len(history_df[history_df['category'] == clue['category']])
     else:
         attempts = 0
-    st.subheader(f"📚 Category: {clue['category']}")
+    st.markdown(f"<h3 style='color: #060CE9; font-family: Arial, sans-serif;'>📚 Category: {clue['category'].upper()}</h3>", unsafe_allow_html=True)
     st.warning(f"🎯 **Focus Area** - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts")
+    
+    # Clue in Jeopardy-style box
+    st.markdown(f"""
+    <div style='background: linear-gradient(135deg, #060CE9 0%, #0520A5 100%); 
+                color: white; 
+                padding: 25px; 
+                border-radius: 10px; 
+                border: 3px solid #FFD700;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+        <p style='font-size: 1.3em; 
+                  margin: 0; 
+                  text-align: center;
+                  font-family: "Helvetica Neue", Arial, sans-serif;
+                  line-height: 1.5;'>{clue['clue']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 else:
-    st.subheader(f"📚 Category: {clue['category']}")
-st.markdown(f"**Clue:** {clue['clue']}")
+    st.markdown(f"<h3 style='color: #060CE9; font-family: Arial, sans-serif;'>📚 Category: {clue['category'].upper()}</h3>", unsafe_allow_html=True)
+
+# Clue in Jeopardy-style box
+st.markdown(f"""
+<div style='background: linear-gradient(135deg, #060CE9 0%, #0520A5 100%); 
+            color: white; 
+            padding: 25px; 
+            border-radius: 10px; 
+            border: 3px solid #FFD700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+    <p style='font-size: 1.3em; 
+              margin: 0; 
+              text-align: center;
+              font-family: "Helvetica Neue", Arial, sans-serif;
+              line-height: 1.5;'>{clue['clue']}</p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Timer display - create container first
 timer_container = st.container()
@@ -416,7 +494,7 @@ if submitted:
     st.rerun()
 
 if st.session_state.total:
-    st.markdown("---")
+    st.markdown("<hr style='border: 1px solid #060CE9; margin-top: 20px;'>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("✅ Correct", st.session_state.score)
