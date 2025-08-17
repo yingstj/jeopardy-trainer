@@ -55,11 +55,11 @@ def load_data():
                 
             df = df.dropna(subset=["clue", "correct_response"])
             
-            # Compute embeddings for all clues (not just 1000)
-            with st.spinner(f"Computing embeddings for {len(df)} clues..."):
-                # Don't limit to 1000 - use all available clues
-                df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
-                return df
+            # Skip embeddings for now - too slow for deployment
+            # Embeddings would take 30+ minutes for 577k clues!
+            # with st.spinner(f"Computing embeddings for {len(df)} clues..."):
+            #     df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
+            return df
         except Exception as e:
             st.warning(f"Error loading local data: {e}")
     
@@ -74,11 +74,10 @@ def load_data():
         
         df = df.dropna(subset=["clue", "correct_response"])
         
-        # Compute embeddings for all clues
-        with st.spinner(f"Computing embeddings for {len(df)} clues..."):
-            # Use all available clues
-            df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
-            return df
+        # Skip embeddings for deployment - too slow!
+        # with st.spinner(f"Computing embeddings for {len(df)} clues..."):
+        #     df["clue_embedding"] = df["clue"].apply(lambda x: model.encode(x))
+        return df
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -473,18 +472,18 @@ if submitted:
     else:
         st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
 
-        # Semantic similarity
-        if "clue_embedding" in filtered_df.columns:
-            user_vector = model.encode(clue["clue"])
-            clue_vectors = np.vstack(filtered_df["clue_embedding"].values)
-            similarities = cosine_similarity([user_vector], clue_vectors)[0]
-            top_indices = similarities.argsort()[-4:][::-1]
-            similar_clues = filtered_df.iloc[top_indices]
-
-            with st.expander("🔍 Review similar clues"):
-                for _, row in similar_clues.iterrows():
-                    st.markdown(f"- **{row['category']}**: {row['clue']}")
-                    st.markdown(f"  → *{row['correct_response']}*")
+        # Semantic similarity - disabled for deployment (embeddings too slow)
+        # if "clue_embedding" in filtered_df.columns:
+        #     user_vector = model.encode(clue["clue"])
+        #     clue_vectors = np.vstack(filtered_df["clue_embedding"].values)
+        #     similarities = cosine_similarity([user_vector], clue_vectors)[0]
+        #     top_indices = similarities.argsort()[-4:][::-1]
+        #     similar_clues = filtered_df.iloc[top_indices]
+        #
+        #     with st.expander("🔍 Review similar clues"):
+        #         for _, row in similar_clues.iterrows():
+        #             st.markdown(f"- **{row['category']}**: {row['clue']}")
+        #             st.markdown(f"  → *{row['correct_response']}*")
 
     st.session_state.total += 1
     st.session_state.history.append({
