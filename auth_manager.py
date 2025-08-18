@@ -144,26 +144,16 @@ class AuthManager:
             return
         
         # Google OAuth configuration
-        # You'll need to set up a Google Cloud project and get these credentials
         try:
-            CLIENT_ID = st.secrets.get("GOOGLE_CLIENT_ID", "")
-            CLIENT_SECRET = st.secrets.get("GOOGLE_CLIENT_SECRET", "")
-            REDIRECT_URI = st.secrets.get("REDIRECT_URI", "http://localhost:8501")
-        except:
-            # No secrets file found, use defaults
-            CLIENT_ID = ""
-            CLIENT_SECRET = ""
-            REDIRECT_URI = "http://localhost:8501"
+            CLIENT_ID = st.secrets["GOOGLE_CLIENT_ID"]
+            CLIENT_SECRET = st.secrets["GOOGLE_CLIENT_SECRET"]
+            REDIRECT_URI = st.secrets.get("REDIRECT_URI", "https://jayopardy.streamlit.app/")
+        except Exception as e:
+            st.info("Google Sign-In is not configured yet. Use email login for now.")
+            return
         
-        if not CLIENT_ID:
-            st.info("Google OAuth not configured. To enable:")
-            st.code("""
-1. Create .streamlit/secrets.toml
-2. Add your Google OAuth credentials:
-   GOOGLE_CLIENT_ID = "your-id"
-   GOOGLE_CLIENT_SECRET = "your-secret"
-            """)
-            st.info("For now, use email login in the other tab.")
+        if not CLIENT_ID or not CLIENT_SECRET:
+            st.info("Google Sign-In is being set up. Use email login for now.")
             return
         
         # Create OAuth component
@@ -183,7 +173,7 @@ class AuthManager:
             redirect_uri=REDIRECT_URI,
             scope="openid email profile",
             key="google_login",
-            extras_params={"prompt": "consent", "access_type": "offline"},
+            extras_params={"prompt": "select_account", "access_type": "offline"},
             use_container_width=True,
         )
         
