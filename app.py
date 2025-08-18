@@ -36,19 +36,28 @@ st.markdown("""
     color: #d0d0d0 !important;
 }
 
-/* Metric labels */
+/* Metric labels - make them lighter */
 [data-testid="metric-container"] label {
-    color: #e0e0e0 !important;
+    color: white !important;
+    opacity: 0.9;
 }
 
-/* Metric values */
+/* Metric values - ensure they're bright white */
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
     color: white !important;
+    font-weight: bold !important;
 }
 
 /* Metric delta */
 [data-testid="metric-container"] [data-testid="stMetricDelta"] {
     color: #ffc107 !important;
+}
+
+/* Metric container background for contrast */
+[data-testid="metric-container"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
 }
 
 /* All icons and SVGs */
@@ -263,22 +272,24 @@ div[data-testid="stError"] > div {
     color: white !important;
 }
 
-/* Sidebar collapse button - make it visible */
+/* Sidebar collapse button - highly visible */
 [data-testid="collapsedControl"] {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(102, 126, 234, 0.3) !important;
+    border: 2px solid rgba(102, 126, 234, 0.6) !important;
     color: white !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 [data-testid="collapsedControl"]:hover {
-    background: rgba(255, 255, 255, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    background: rgba(102, 126, 234, 0.5) !important;
+    border: 2px solid rgba(102, 126, 234, 0.8) !important;
 }
 
-/* Sidebar expand/collapse icon */
+/* Sidebar expand/collapse icon - make it bright */
 [data-testid="collapsedControl"] svg {
     stroke: white !important;
     fill: white !important;
+    stroke-width: 2px !important;
 }
 
 /* Expander styling */
@@ -610,7 +621,7 @@ st.markdown("""
 <div class="header-container">
     <div class="logo-wrapper">
         <div class="logo-small">J!</div>
-        <h2 style='color: white; margin: 0; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Jayopardy!</h2>
+        <h2 style='color: white; margin: 0; font-weight: bold;'>Jayopardy!</h2>
     </div>
     <div style='display: flex; gap: 20px; align-items: center;'>
         <div class="score-display">Score: {}/{} ({}%)</div>
@@ -942,7 +953,7 @@ with st.sidebar:
         # Quick select buttons with better layout
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("All", use_container_width=True, key="all_themes", help="Select all available themes"):
+            if st.button("Select All", use_container_width=True, key="all_themes", help="Select all available themes"):
                 st.session_state.selected_themes = available_themes
                 st.session_state.settings_changed = True
                 st.rerun()
@@ -955,7 +966,7 @@ with st.sidebar:
                 st.session_state.settings_changed = True
                 st.rerun()
         with col3:
-            if st.button("None", use_container_width=True, key="clear_themes", help="Clear all selections"):
+            if st.button("Clear All", use_container_width=True, key="clear_themes", help="Deselect all themes"):
                 st.session_state.selected_themes = []
                 st.session_state.settings_changed = True
                 st.rerun()
