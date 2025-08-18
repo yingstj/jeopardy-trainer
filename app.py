@@ -674,14 +674,11 @@ st.markdown("<hr style='border: 2px solid #060CE9; margin: 20px 0;'>", unsafe_al
 # Get theme for current clue
 clue_theme = theme_mapping.get(clue['category'], 'GENERAL KNOWLEDGE')
 
-# Display theme and category
-col1, col2 = st.columns([1, 2])
-with col1:
-    st.markdown(f"<h4 style='color: #060CE9;'>📂 {clue_theme}</h4>", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"<h4 style='color: #060CE9;'>📚 {clue['category'].upper()}</h4>", unsafe_allow_html=True)
+# Display theme and category cleanly
+st.markdown(f"<h4 style='color: #666; margin-bottom: 5px;'>Theme: {clue_theme}</h4>", unsafe_allow_html=True)
+st.markdown(f"<h4 style='color: #060CE9; margin-top: 0;'>Category: {clue['category'].upper()}</h4>", unsafe_allow_html=True)
 
-# Display clue with adaptive mode indicator
+# Display adaptive mode indicator if applicable
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
     accuracy = st.session_state.weak_categories[clue['category']]
     # Get attempt count for this category
@@ -691,27 +688,8 @@ if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_
     else:
         attempts = 0
     st.warning(f"🎯 **Focus Area** - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts")
-    
-    # Clue in Jeopardy-style box
-    st.markdown(f"""
-    <div style='background: linear-gradient(135deg, #060CE9 0%, #0520A5 100%); 
-                color: white; 
-                padding: 25px; 
-                border-radius: 10px; 
-                border: 3px solid #FFD700;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-        <p style='font-size: 1.3em; 
-                  margin: 0; 
-                  text-align: center;
-                  font-family: "Helvetica Neue", Arial, sans-serif;
-                  line-height: 1.5;'>{clue['clue']}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-else:
-    st.markdown(f"<h3 style='color: #060CE9; font-family: Arial, sans-serif;'>📚 Category: {clue['category'].upper()}</h3>", unsafe_allow_html=True)
 
-# Clue in Jeopardy-style box
+# Display clue in Jeopardy-style box (only once)
 st.markdown(f"""
 <div style='background: linear-gradient(135deg, #060CE9 0%, #0520A5 100%); 
             color: white; 

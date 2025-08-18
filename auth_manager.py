@@ -39,6 +39,10 @@ class AuthManager:
         if not st.session_state.authenticated:
             return
         
+        # Don't save for guest users
+        if st.session_state.get('is_guest', False):
+            return
+        
         user_id = self.get_user_id(st.session_state.user_email)
         session_file = self.users_dir / f"{user_id}_session.json"
         
@@ -217,15 +221,44 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
     def show_login_page(self):
         """Display the login page"""
         st.title("🧠 Jayopardy! Trainer")
-        st.markdown("### Welcome! Please sign in to continue.")
+        st.markdown("### Welcome! Choose how to play:")
         
-        # Tabs for different login methods
-        tab1, tab2 = st.tabs(["📧 Email Login", "🔐 Google Sign-In"])
+        # Three tabs for different entry methods
+        tab1, tab2, tab3 = st.tabs(["🎮 Play as Guest", "📧 Email Login", "🔐 Google Sign-In"])
         
         with tab1:
-            self.simple_email_login()
+            st.markdown("### 🎮 Quick Play")
+            st.info("Jump right in without creating an account!")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("""
+                **✅ What you get:**
+                - Full access to all questions
+                - Timer and adaptive mode
+                - Session statistics
+                - All game features
+                """)
+            with col2:
+                st.markdown("""
+                **⚠️ Limitations:**
+                - Progress not saved
+                - No lifetime stats
+                - Resets when you leave
+                """)
+            
+            if st.button("🎮 Play as Guest", type="primary", use_container_width=True, key="guest_play"):
+                # Set up guest session
+                st.session_state.authenticated = True
+                st.session_state.is_guest = True
+                st.session_state.user_email = "guest@jayopardy.app"
+                st.session_state.user_name = "Guest Player"
+                st.success("Starting game... Have fun!")
+                st.rerun()
         
         with tab2:
+            self.simple_email_login()
+        
+        with tab3:
             st.markdown("### 🔐 Secure Google Sign-In")
             st.info("Sign in with your Google account for the best experience")
             self.google_oauth_login()
@@ -265,13 +298,26 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
         """Show user menu in sidebar"""
         with st.sidebar:
             st.markdown("---")
-            st.markdown(f"**👤 {st.session_state.user_name}**")
-            st.caption(f"📧 {st.session_state.user_email}")
             
-            # Save button prominently displayed
-            if st.button("💾 Save Progress", use_container_width=True, type="primary"):
-                self.save_user_session()
-                st.success("✅ Progress saved!")
+            # Check if guest user
+            if st.session_state.get('is_guest', False):
+                st.markdown(f"**🎮 {st.session_state.user_name}**")
+                st.caption("Playing without account")
+                st.warning("⚠️ Progress not saved")
+                
+                if st.button("📝 Create Account", use_container_width=True, type="primary"):
+                    # Clear guest session and show login
+                    st.session_state.authenticated = False
+                    st.session_state.is_guest = False
+                    st.rerun()
+            else:
+                st.markdown(f"**👤 {st.session_state.user_name}**")
+                st.caption(f"📧 {st.session_state.user_email}")
+                
+                # Save button prominently displayed
+                if st.button("💾 Save Progress", use_container_width=True, type="primary"):
+                    self.save_user_session()
+                    st.success("✅ Progress saved!")
             
             # Session management
             col1, col2 = st.columns(2)
