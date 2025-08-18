@@ -26,6 +26,45 @@ st.markdown("""
     color: white !important;
 }
 
+/* Caption text */
+.stCaption {
+    color: #ccc !important;
+}
+
+/* Help text */
+[data-testid="stHelpBlock"] {
+    color: #aaa !important;
+}
+
+/* Fix info, warning, and success boxes text */
+.stAlert > div {
+    color: white !important;
+}
+
+/* Info boxes specifically */
+div[data-testid="stInfo"] > div {
+    background: rgba(102, 126, 234, 0.2) !important;
+    color: white !important;
+}
+
+/* Warning boxes */
+div[data-testid="stWarning"] > div {
+    background: rgba(255, 193, 7, 0.2) !important;
+    color: white !important;
+}
+
+/* Success boxes */
+div[data-testid="stSuccess"] > div {
+    background: rgba(76, 175, 80, 0.2) !important;
+    color: white !important;
+}
+
+/* Error boxes */
+div[data-testid="stError"] > div {
+    background: rgba(244, 67, 54, 0.2) !important;
+    color: white !important;
+}
+
 /* Header styling */
 .header-container {
     background: rgba(255, 255, 255, 0.05);
@@ -239,6 +278,24 @@ st.markdown("""
 
 /* Checkbox styling */
 .stCheckbox > label {
+    color: white !important;
+}
+
+/* Checkbox text specifically */
+.stCheckbox > label > div[data-testid="stMarkdownContainer"] > p {
+    color: white !important;
+}
+
+/* Expander content text */
+.streamlit-expanderContent {
+    color: white !important;
+}
+
+.streamlit-expanderContent p {
+    color: white !important;
+}
+
+.streamlit-expanderContent .stMarkdown {
     color: white !important;
 }
 
