@@ -144,25 +144,31 @@ class AuthManager:
         
         # Google OAuth configuration - check if secrets exist
         try:
-            # Try to access secrets
+            # Debug: Check what secrets are available
             if hasattr(st, 'secrets'):
-                CLIENT_ID = st.secrets.get("GOOGLE_CLIENT_ID", "")
-                CLIENT_SECRET = st.secrets.get("GOOGLE_CLIENT_SECRET", "")
-                REDIRECT_URI = st.secrets.get("REDIRECT_URI", "https://jayopardy.streamlit.app")
+                # Try different ways to access secrets
+                try:
+                    CLIENT_ID = st.secrets["GOOGLE_CLIENT_ID"]
+                    CLIENT_SECRET = st.secrets["GOOGLE_CLIENT_SECRET"]
+                    REDIRECT_URI = st.secrets.get("REDIRECT_URI", "https://jayopardy.streamlit.app")
+                except KeyError as ke:
+                    st.error(f"Missing secret: {ke}")
+                    st.info("Available secrets keys: " + str(list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else "None"))
+                    st.info("Please add the following to Streamlit Cloud Secrets:")
+                    st.code("""GOOGLE_CLIENT_ID = "your-client-id"
+GOOGLE_CLIENT_SECRET = "your-secret"
+REDIRECT_URI = "https://jayopardy.streamlit.app" """)
+                    return
                 
-                if CLIENT_ID and CLIENT_SECRET:
-                    # Secrets are configured, proceed with OAuth
-                    pass
-                else:
-                    st.warning("Google OAuth credentials not found in Streamlit secrets.")
-                    st.info("Please ensure secrets are properly configured in Streamlit Cloud settings.")
+                if not CLIENT_ID or not CLIENT_SECRET:
+                    st.warning("OAuth credentials are empty. Please check Streamlit Cloud settings.")
                     return
             else:
-                st.error("Streamlit secrets not available. This usually means the app is not deployed on Streamlit Cloud.")
+                st.info("For local testing, use email login. Google Sign-In requires Streamlit Cloud deployment.")
                 return
         except Exception as e:
             st.error(f"Error accessing secrets: {str(e)}")
-            st.info("Please check that secrets are properly configured in Streamlit Cloud.")
+            st.info("Use email login for now.")
             return
         
         # Create OAuth component
