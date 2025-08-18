@@ -146,8 +146,8 @@ st.markdown("""
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    color: white !important;
     border: none;
     border-radius: 10px;
     padding: 10px 25px;
@@ -159,6 +159,14 @@ st.markdown("""
 .stButton > button:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2, #667eea) !important;
+}
+
+/* Form submit button specific styling */
+.stFormSubmitButton > button {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    color: white !important;
+    font-weight: 600 !important;
 }
 
 /* Input field */
