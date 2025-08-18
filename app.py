@@ -9,6 +9,252 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
+# Set page config
+st.set_page_config(page_title="Jayopardy! Trainer", page_icon="🧠", layout="wide")
+
+# Custom CSS for modern game board design
+st.markdown("""
+<style>
+/* Main app background */
+.stApp {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+}
+
+/* Text color fixes */
+.stMarkdown, .stText, label {
+    color: white !important;
+}
+
+/* Header styling */
+.header-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-small {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Score display */
+.score-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #4ade80;
+    display: inline-block;
+}
+
+/* Question box styling */
+.question-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    margin: 20px 0;
+}
+
+/* Category and theme display */
+.category-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.theme-label {
+    font-size: 14px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.category-label {
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Clue box */
+.clue-box {
+    background: rgba(102, 126, 234, 0.1);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.clue-text {
+    font-size: 22px;
+    line-height: 1.6;
+    color: white;
+}
+
+/* Stats cards */
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    margin: 10px 0;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Input field */
+.stTextInput > div > div > input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+    padding: 15px;
+    font-size: 16px;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar styling */
+.css-1d391kg, [data-testid="stSidebar"] {
+    background: rgba(0, 0, 0, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-testid="stSidebar"] .stMarkdown {
+    color: white !important;
+}
+
+/* Expander styling */
+.streamlit-expanderHeader {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    color: white !important;
+}
+
+/* Select box styling */
+.stSelectbox > div > div {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+/* Success/Error/Info boxes */
+.stAlert {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+/* Timer display */
+.timer-display {
+    font-size: 32px;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Focus area warning */
+.focus-area-warning {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Checkbox styling */
+.stCheckbox > label {
+    color: white !important;
+}
+
+/* Number input styling */
+.stNumberInput > div > div > input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+}
+
+/* Multiselect styling */
+.stMultiSelect > div > div {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.stMultiSelect > div > div > div {
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Import authentication manager
 try:
     from auth_manager import AuthManager
@@ -174,6 +420,10 @@ if "score" not in st.session_state:
     st.session_state.score = 0
     st.session_state.total = 0
 
+if "current_streak" not in st.session_state:
+    st.session_state.current_streak = 0
+    st.session_state.best_streak = 0
+
 if "start_time" not in st.session_state:
     st.session_state.start_time = datetime.datetime.now()
 
@@ -231,17 +481,54 @@ else:
     # No auth available - show warning but let app work
     st.sidebar.warning("Authentication not available - progress won't be saved between sessions")
 
-# Only show title after authentication check
-col1, col2, col3 = st.columns([2, 1, 1])
+# Create modern header
+st.markdown("""
+<div class="header-container">
+    <div class="logo-wrapper">
+        <div class="logo-small">J!</div>
+        <h2 style='color: white; margin: 0; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Jayopardy!</h2>
+    </div>
+    <div style='display: flex; gap: 20px; align-items: center;'>
+        <div class="score-display">Score: {}/{} ({}%)</div>
+    </div>
+</div>
+""".format(
+    st.session_state.score,
+    st.session_state.total,
+    int((st.session_state.score / st.session_state.total * 100)) if st.session_state.total > 0 else 0
+), unsafe_allow_html=True)
+
+# Stats bar with modern cards
+col1, col2, col3, col4 = st.columns(4)
+
 with col1:
-    st.title("🧠 Jayopardy! Trainer")
+    st.markdown("""
+    <div class="stat-card">
+        <div class="stat-label">Session Score</div>
+        <div class="stat-value">{}/{}</div>
+    </div>
+    """.format(st.session_state.score, st.session_state.total), unsafe_allow_html=True)
+
 with col2:
-    if st.session_state.total > 0:
-        accuracy = (st.session_state.score / st.session_state.total * 100)
-        st.metric("Session", f"{st.session_state.score}/{st.session_state.total}", f"{accuracy:.0f}%")
+    accuracy = (st.session_state.score / st.session_state.total * 100) if st.session_state.total > 0 else 0
+    st.markdown("""
+    <div class="stat-card">
+        <div class="stat-label">Accuracy</div>
+        <div class="stat-value">{:.0f}%</div>
+    </div>
+    """.format(accuracy), unsafe_allow_html=True)
+
 with col3:
+    streak = st.session_state.get('current_streak', 0)
+    st.markdown("""
+    <div class="stat-card">
+        <div class="stat-label">Current Streak</div>
+        <div class="stat-value">{}</div>
+    </div>
+    """.format(streak), unsafe_allow_html=True)
+
+with col4:
     if AUTH_AVAILABLE and auth and st.session_state.get('authenticated', False):
-        # Try to get lifetime stats
         try:
             from pathlib import Path
             import json
@@ -253,11 +540,33 @@ with col3:
                     all_history = saved_data.get('history', [])
                     if all_history:
                         total_all = len(all_history)
-                        correct_all = sum(1 for h in all_history if h.get('was_correct'))
-                        acc_all = (correct_all / total_all * 100) if total_all > 0 else 0
-                        st.metric("Lifetime", f"{correct_all}/{total_all}", f"{acc_all:.0f}%")
+                        st.markdown("""
+                        <div class="stat-card">
+                            <div class="stat-label">Lifetime Questions</div>
+                            <div class="stat-value">{}</div>
+                        </div>
+                        """.format(total_all), unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+                        <div class="stat-card">
+                            <div class="stat-label">Lifetime Questions</div>
+                            <div class="stat-value">0</div>
+                        </div>
+                        """, unsafe_allow_html=True)
         except:
-            pass
+            st.markdown("""
+            <div class="stat-card">
+                <div class="stat-label">Lifetime Questions</div>
+                <div class="stat-value">N/A</div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="stat-card">
+            <div class="stat-label">Session Time</div>
+            <div class="stat-value">--:--</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Loading spinner while data is being fetched
 with st.spinner("Loading Jeopardy dataset..."):
@@ -668,15 +977,21 @@ with st.sidebar:
         else:
             st.info("📊 Start playing to build your performance profile!")
 
-# Display clue with Jeopardy blue styling
-st.markdown("<hr style='border: 2px solid #060CE9; margin: 20px 0;'>", unsafe_allow_html=True)
-
 # Get theme for current clue
 clue_theme = theme_mapping.get(clue['category'], 'GENERAL KNOWLEDGE')
 
-# Display theme and category cleanly
-st.markdown(f"<h4 style='color: #666; margin-bottom: 5px;'>Theme: {clue_theme}</h4>", unsafe_allow_html=True)
-st.markdown(f"<h4 style='color: #060CE9; margin-top: 0;'>Category: {clue['category'].upper()}</h4>", unsafe_allow_html=True)
+# Display question in modern modal-like box
+st.markdown(f"""
+<div class="question-box">
+    <div class="category-header">
+        <div class="theme-label">{clue_theme}</div>
+        <div class="category-label">{clue['category'].upper()}</div>
+    </div>
+    <div class="clue-box">
+        <div class="clue-text">{clue['clue']}</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Display adaptive mode indicator if applicable
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
@@ -687,24 +1002,11 @@ if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_
         attempts = len(history_df[history_df['category'] == clue['category']])
     else:
         attempts = 0
-    st.warning(f"🎯 **Focus Area** - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts")
-
-# Display clue in Jeopardy-style box (only once)
-st.markdown(f"""
-<div style='background: linear-gradient(135deg, #060CE9 0%, #0520A5 100%); 
-            color: white; 
-            padding: 25px; 
-            border-radius: 10px; 
-            border: 3px solid #FFD700;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-    <p style='font-size: 1.3em; 
-              margin: 0; 
-              text-align: center;
-              font-family: "Helvetica Neue", Arial, sans-serif;
-              line-height: 1.5;'>{clue['clue']}</p>
-</div>
-""", unsafe_allow_html=True)
-st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="focus-area-warning">
+        🎯 <strong>Focus Area</strong> - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts
+    </div>
+    """, unsafe_allow_html=True)
 
 # Timer display - create container first
 timer_container = st.container()
@@ -793,10 +1095,15 @@ if submitted:
     if correct:
         st.success("✅ Correct!")
         st.session_state.score += 1
+        st.session_state.current_streak += 1
+        if st.session_state.current_streak > st.session_state.best_streak:
+            st.session_state.best_streak = st.session_state.current_streak
     elif timed_out:
         st.error(f"⏰ Time expired! The correct response was: **{clue['correct_response']}**")
+        st.session_state.current_streak = 0
     else:
         st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
+        st.session_state.current_streak = 0
 
         # Semantic similarity - disabled for deployment (embeddings too slow)
         # if "clue_embedding" in filtered_df.columns:
