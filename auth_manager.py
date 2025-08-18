@@ -5,6 +5,7 @@ import streamlit as st
 import json
 import os
 import datetime
+import time
 import hashlib
 import pickle
 from pathlib import Path
@@ -220,62 +221,286 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
     
     def show_login_page(self):
         """Display the login page"""
-        st.title("🧠 Jayopardy! Trainer")
-        st.markdown("### Welcome! Choose how to play:")
+        # Custom CSS for beautiful login page
+        st.markdown("""
+        <style>
+        /* Main container styling */
+        .stApp {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
         
-        # Three tabs for different entry methods
-        tab1, tab2, tab3 = st.tabs(["🎮 Play as Guest", "📧 Email Login", "🔐 Google Sign-In"])
+        /* Login container */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.5s ease-out;
+        }
         
-        with tab1:
-            st.markdown("### 🎮 Quick Play")
-            st.info("Jump right in without creating an account!")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("""
-                **✅ What you get:**
-                - Full access to all questions
-                - Timer and adaptive mode
-                - Session statistics
-                - All game features
-                """)
-            with col2:
-                st.markdown("""
-                **⚠️ Limitations:**
-                - Progress not saved
-                - No lifetime stats
-                - Resets when you leave
-                """)
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Logo styling */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            font-weight: bold;
+        }
+        
+        /* Button styling */
+        .stButton > button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Tab styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 0.5rem;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background-color: white;
+            color: #667eea;
+        }
+        
+        /* Input styling */
+        .stTextInput > div > div > input {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .stTextInput > div > div > input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Social button styling */
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .social-btn:hover {
+            border-color: #667eea;
+            background: #f8f8ff;
+            cursor: pointer;
+        }
+        
+        /* Guest play card */
+        .guest-card {
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .benefit-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Logo and title
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div class="logo-container">
+                <div class="logo">J!</div>
+                <h1 style='color: #333; font-size: 32px; margin: 0;'>Jayopardy!</h1>
+                <p style='color: #666; font-size: 16px; margin-top: 0.5rem;'>Test your knowledge, track your progress</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Create three columns for centered content
+        col1, col2, col3 = st.columns([1, 3, 1])
+        
+        with col2:
+            # Tabs for login options
+            tab1, tab2, tab3, tab4 = st.tabs(["🎮 Guest Play", "📧 Email Login", "🔍 Google", "💻 GitHub"])
             
-            if st.button("🎮 Play as Guest", type="primary", use_container_width=True, key="guest_play"):
-                # Set up guest session
-                st.session_state.authenticated = True
-                st.session_state.is_guest = True
-                st.session_state.user_email = "guest@jayopardy.app"
-                st.session_state.user_name = "Guest Player"
-                st.success("Starting game... Have fun!")
-                st.rerun()
+            with tab1:
+                st.markdown("""
+                <div class="guest-card">
+                    <h3 style='margin-top: 0;'>🎮 Quick Play - No Account Needed!</h3>
+                    <p>Jump right into the game without signing up. Perfect for trying out Jayopardy!</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.success("""
+                    **✅ Includes:**
+                    - All 577,000+ questions
+                    - Timer & adaptive mode
+                    - Session statistics
+                    - All game features
+                    """)
+                with col_b:
+                    st.warning("""
+                    **⚠️ Note:**
+                    - Progress not saved
+                    - No lifetime stats
+                    - Resets on exit
+                    """)
+                
+                if st.button("🎮 Play as Guest", type="primary", use_container_width=True, key="guest_play"):
+                    st.session_state.authenticated = True
+                    st.session_state.is_guest = True
+                    st.session_state.user_email = "guest@jayopardy.app"
+                    st.session_state.user_name = "Guest Player"
+                    st.balloons()
+                    st.success("🎉 Starting game... Have fun!")
+                    time.sleep(1)
+                    st.rerun()
+            
+            with tab2:
+                with st.form("email_login_form", clear_on_submit=False):
+                    st.markdown("### 📧 Sign in with Email")
+                    email = st.text_input("Email Address", placeholder="your@email.com", key="email_input")
+                    password = st.text_input("Password", type="password", placeholder="Enter your password", key="password_input")
+                    
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        remember = st.checkbox("Remember me")
+                    with col_b:
+                        st.markdown("<a href='#' style='float: right; color: #667eea;'>Forgot password?</a>", unsafe_allow_html=True)
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    col_1, col_2 = st.columns(2)
+                    with col_1:
+                        submit = st.form_submit_button("🔐 Sign In", use_container_width=True, type="primary")
+                    with col_2:
+                        register = st.form_submit_button("✨ Sign Up", use_container_width=True)
+                
+                if submit and email:
+                    st.session_state.authenticated = True
+                    st.session_state.user_email = email
+                    st.session_state.user_name = email.split('@')[0]
+                    st.session_state.is_guest = False
+                    
+                    if self.load_user_session():
+                        st.success(f"👋 Welcome back, {st.session_state.user_name}!")
+                    else:
+                        st.success(f"🎉 Welcome, {st.session_state.user_name}!")
+                    time.sleep(1)
+                    st.rerun()
+                
+                elif register and email:
+                    st.session_state.authenticated = True
+                    st.session_state.user_email = email
+                    st.session_state.user_name = email.split('@')[0]
+                    st.session_state.is_guest = False
+                    st.balloons()
+                    st.success(f"🎊 Account created! Welcome, {st.session_state.user_name}!")
+                    time.sleep(1)
+                    st.rerun()
+            
+            with tab3:
+                st.markdown("### 🔍 Continue with Google")
+                st.info("Quick and secure sign-in with your Google account")
+                self.google_oauth_login()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.caption("✅ We only access your basic profile info (name & email)")
+                st.caption("🔒 Your data is secure and never shared")
+            
+            with tab4:
+                st.markdown("### 💻 Continue with GitHub")
+                st.info("Sign in with your GitHub account")
+                st.button("💻 Sign in with GitHub", use_container_width=True, disabled=True)
+                st.caption("GitHub login coming soon!")
         
-        with tab2:
-            self.simple_email_login()
+        # Benefits section
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("### 🌟 Why Create an Account?")
         
-        with tab3:
-            st.markdown("### 🔐 Secure Google Sign-In")
-            st.info("Sign in with your Google account for the best experience")
-            self.google_oauth_login()
-        
-        # Benefits of signing in
-        st.markdown("---")
-        st.markdown("### Why sign in?")
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.markdown("**💾 Save Progress**")
-            st.caption("Your scores and history are saved automatically")
+            st.markdown("""
+            <div class="benefit-card">
+                <h3>💾 Save Progress</h3>
+                <p style='color: #666;'>Your scores and history are saved automatically</p>
+            </div>
+            """, unsafe_allow_html=True)
         with col2:
-            st.markdown("**📊 Track Performance**")
-            st.caption("See your improvement over time")
+            st.markdown("""
+            <div class="benefit-card">
+                <h3>📊 Track Stats</h3>
+                <p style='color: #666;'>See your improvement over time with detailed analytics</p>
+            </div>
+            """, unsafe_allow_html=True)
         with col3:
-            st.markdown("**🎯 Personalized Training**")
-            st.caption("Adaptive mode learns your weak areas")
+            st.markdown("""
+            <div class="benefit-card">
+                <h3>🎯 Smart Training</h3>
+                <p style='color: #666;'>Adaptive mode learns and focuses on your weak areas</p>
+            </div>
+            """, unsafe_allow_html=True)
     
     def logout(self):
         """Logout the current user"""
