@@ -572,20 +572,32 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
                     self.save_user_session()
                     st.success("✅ Progress saved!")
             
-            # Session management
-            col1, col2 = st.columns(2)
-            with col1:
+            # Session management - only show logout for logged-in users
+            if st.session_state.get('is_guest', False):
+                # Guest user only gets new session button
                 if st.button("🔄 New Session", use_container_width=True):
-                    # Save current progress first
-                    self.save_user_session()
-                    # Reset current session but keep history
+                    # Reset current session
                     st.session_state.score = 0
                     st.session_state.total = 0
                     st.session_state.current_clue = None
                     st.session_state.start_time = datetime.datetime.now()
                     st.success("New session started!")
                     st.rerun()
-            
-            with col2:
-                if st.button("🚪 Logout", use_container_width=True):
-                    self.logout()
+            else:
+                # Logged-in user gets both buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🔄 New Session", use_container_width=True):
+                        # Save current progress first
+                        self.save_user_session()
+                        # Reset current session but keep history
+                        st.session_state.score = 0
+                        st.session_state.total = 0
+                        st.session_state.current_clue = None
+                        st.session_state.start_time = datetime.datetime.now()
+                        st.success("New session started!")
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🚪 Logout", use_container_width=True):
+                        self.logout()
