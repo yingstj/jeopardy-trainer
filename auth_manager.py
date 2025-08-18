@@ -322,12 +322,25 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
             color: #667eea !important;
         }
         
-        /* Tab panel background */
+        /* Tab panel background - dark for contrast */
         .stTabs [data-baseweb="tab-panel"] {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 10px;
             padding: 1.5rem;
             margin-top: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Form inputs on login page */
+        .stTabs [data-baseweb="tab-panel"] .stTextInput > div > div > input {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
+            color: white !important;
+        }
+        
+        .stTabs [data-baseweb="tab-panel"] .stTextInput > div > div > input:focus {
+            border-color: #667eea !important;
+            background: rgba(255, 255, 255, 0.15) !important;
         }
         
         /* Input styling */
@@ -405,7 +418,7 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
             # Add container background for better readability
             st.markdown('<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px;">', unsafe_allow_html=True)
             # Tabs for login options
-            tab1, tab2, tab3, tab4 = st.tabs(["🎮 Guest Play", "📧 Email Login", "🔍 Google", "💻 GitHub"])
+            tab1, tab2 = st.tabs(["🎮 Guest Play", "📧 Email Login"])
             
             with tab1:
                 st.markdown("""
@@ -485,20 +498,6 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
                     time.sleep(1)
                     st.rerun()
             
-            with tab3:
-                st.markdown("### 🔍 Continue with Google")
-                st.info("Quick and secure sign-in with your Google account")
-                self.google_oauth_login()
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.caption("✅ We only access your basic profile info (name & email)")
-                st.caption("🔒 Your data is secure and never shared")
-            
-            with tab4:
-                st.markdown("### 💻 Continue with GitHub")
-                st.info("Sign in with your GitHub account")
-                st.button("💻 Sign in with GitHub", use_container_width=True, disabled=True)
-                st.caption("GitHub login coming soon!")
             
             # Close container div
             st.markdown('</div>', unsafe_allow_html=True)

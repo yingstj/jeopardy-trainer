@@ -222,8 +222,8 @@ div[data-testid="stError"] > div {
     -webkit-text-fill-color: transparent;
 }
 
-/* Buttons */
-.stButton > button {
+/* Primary buttons */
+.stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #667eea, #764ba2) !important;
     color: white !important;
     border: none;
@@ -234,10 +234,21 @@ div[data-testid="stError"] > div {
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 }
 
-.stButton > button:hover {
+/* Secondary buttons - different style */
+.stButton > button[kind="secondary"], .stButton > button:not([kind]) {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: white !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 10px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.stButton > button[kind="secondary"]:hover, .stButton > button:not([kind]):hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 2px solid rgba(255, 255, 255, 0.5) !important;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-    background: linear-gradient(135deg, #764ba2, #667eea) !important;
 }
 
 /* Form submit button specific styling */
@@ -310,11 +321,30 @@ div[data-testid="stError"] > div {
     fill: white !important;
 }
 
-/* Select box styling */
-.stSelectbox > div > div {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+/* Select box and multiselect styling */
+.stSelectbox > div > div, .stMultiSelect > div > div {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
     border-radius: 10px;
+    color: white !important;
+}
+
+/* Dropdown text */
+.stSelectbox label, .stMultiSelect label {
+    color: white !important;
+}
+
+/* Dropdown options */
+[data-baseweb="select"] {
+    color: white !important;
+}
+
+[data-baseweb="popover"] {
+    background: #2b2b2b !important;
+}
+
+[data-baseweb="popover"] li {
+    color: white !important;
 }
 
 /* Success/Error/Info boxes */
@@ -1451,7 +1481,7 @@ if st.session_state.history:
     
     # Progress summary
     st.markdown("---")
-    st.subheader("📈 Current Session Summary")
+    st.markdown("<h3 style='color: white;'>📈 Current Session Summary</h3>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
     with col1:
