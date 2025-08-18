@@ -894,7 +894,7 @@ with st.sidebar:
         st.session_state.settings_changed = False
     
     # Round Filter
-    with st.expander("🎲 Round Filter", expanded=True):
+    with st.expander("🎲 Round Filter", expanded=False):
         # Initialize round filter
         if 'selected_rounds' not in st.session_state:
             st.session_state.selected_rounds = ['Jeopardy', 'Double Jeopardy', 'Final Jeopardy']
@@ -923,7 +923,7 @@ with st.sidebar:
             filtered_df = df
     
     # Theme Filter (with round-aware filtering)
-    with st.expander("🎯 Theme Filter", expanded=True):
+    with st.expander("🎯 Theme Filter", expanded=False):
         # Get themes from round-filtered data
         available_themes = sorted(filtered_df['theme'].unique())
         
@@ -998,10 +998,10 @@ with st.sidebar:
                             help="Questions matching your filters")
     
     # Timer settings in collapsible section
-    with st.expander("⏱️ Timer Settings", expanded=True):
+    with st.expander("⏱️ Timer Settings", expanded=False):
         # Check if timer was just enabled
         was_timer_off = not st.session_state.use_timer
-        new_timer_state = st.checkbox("Use Timer", value=st.session_state.use_timer)
+        new_timer_state = st.toggle("Timer", value=st.session_state.use_timer, help="Enable countdown timer for questions")
         
         if new_timer_state != st.session_state.use_timer:
             st.session_state.use_timer = new_timer_state
@@ -1026,13 +1026,13 @@ with st.sidebar:
                 )
             with col2:
                 st.caption("Quick Set:")
-                if st.button("🏆 5s", help="Official Jeopardy"):
+                if st.button("5s", help="Official Jeopardy timing", type="secondary", use_container_width=True):
                     st.session_state.timer_seconds = 5
                     st.rerun()
-                if st.button("📚 10s", help="Practice mode"):
+                if st.button("10s", help="Practice mode timing", type="secondary", use_container_width=True):
                     st.session_state.timer_seconds = 10
                     st.rerun()
-                if st.button("🎓 15s", help="Learning mode"):
+                if st.button("15s", help="Learning mode timing", type="secondary", use_container_width=True):
                     st.session_state.timer_seconds = 15
                     st.rerun()
             
@@ -1044,10 +1044,10 @@ with st.sidebar:
             st.info("Timer is OFF - Take your time!")
     
     # Adaptive Training Mode in collapsible section
-    with st.expander("🎯 Adaptive Training", expanded=True):
+    with st.expander("🎯 Adaptive Training", expanded=False):
         old_adaptive = st.session_state.adaptive_mode
-        st.session_state.adaptive_mode = st.checkbox(
-            "Enable Adaptive Mode", 
+        st.session_state.adaptive_mode = st.toggle(
+            "Adaptive Mode", 
             value=st.session_state.adaptive_mode,
             help="Focuses on categories where you have <50% accuracy after 3+ attempts"
         )
@@ -1072,8 +1072,8 @@ with st.sidebar:
             - Future: Question difficulty, response time patterns
             """)
     
-    # Performance Insights section (always visible)
-    with st.expander("📊 Performance Insights", expanded=True):
+    # Performance Insights section
+    with st.expander("📊 Performance Insights", expanded=False):
         if st.session_state.history:
             history_df = pd.DataFrame(st.session_state.history)
             category_stats = history_df.groupby('category').agg(
@@ -1469,7 +1469,7 @@ if st.session_state.history:
     st.markdown("---")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔁 Practice Missed Questions", use_container_width=True):
+        if st.button("Practice Missed", use_container_width=True, type="secondary", help="Review questions you got wrong"):
             missed = [h for h in st.session_state.history if not h["was_correct"]]
             if missed:
                 # Select a random missed question and use it directly
@@ -1497,6 +1497,6 @@ if st.session_state.history:
                 st.success("Great job! No missed questions to practice!")
     
     with col2:
-        if st.button("🎆 New Random Question", use_container_width=True):
+        if st.button("New Question", use_container_width=True, type="primary", help="Get a new random question"):
             st.session_state.current_clue = None
             st.rerun()
