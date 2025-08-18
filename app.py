@@ -818,7 +818,17 @@ clue = st.session_state.current_clue
 
 # Sidebar settings with theme filter
 with st.sidebar:
-    st.markdown("<h2 style='color: #060CE9;'>🎮 Game Settings</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: white;'>🎮 Game Settings</h2>", unsafe_allow_html=True)
+    
+    # Display question pool info at top (will be updated after filtering)
+    pool_col1, pool_col2 = st.columns(2)
+    pool_placeholder1 = pool_col1.empty()
+    pool_placeholder2 = pool_col2.empty()
+    
+    pool_placeholder1.metric("Database", f"{len(df):,}", help="Total questions available")
+    pool_placeholder2.metric("Filtered", f"{len(df):,}", help="Questions matching filters")
+    
+    st.markdown("---")
     
     # Settings change notification
     if 'settings_changed' not in st.session_state:
@@ -914,22 +924,26 @@ with st.sidebar:
             filtered_df = filtered_df[filtered_df["theme"].isin(selected_themes)]
             theme_counts = filtered_df.groupby('theme').size().sort_values(ascending=False)
             
-            # Show selection summary
-            st.success(f"✅ {len(selected_rounds)} rounds × {len(selected_themes)} themes")
-            st.info(f"📊 {len(filtered_df):,} total questions available")
+            # Show selection summary as caption
+            st.caption(f"✅ Selected: {len(selected_rounds)} rounds × {len(selected_themes)} themes = {len(filtered_df):,} questions")
             
             # Show top themes in selection
             if len(theme_counts) > 0:
-                with st.expander("Theme distribution", expanded=False):
+                with st.expander("📊 View theme distribution", expanded=False):
                     for theme, count in theme_counts.head(10).items():
                         st.caption(f"• {theme}: {count:,} questions")
         else:
             filtered_df = df[df['round'].isin(selected_rounds)] if selected_rounds else df
-            st.warning("No themes selected - using all")
+            st.warning("⚠️ No themes selected - using all available questions")
         
         # Show what will happen
         if st.session_state.settings_changed:
-            st.info("🔄 New settings will apply to your next question")
+            st.caption("🔄 New settings will apply to your next question")
+    
+    # Update the filtered count display
+    pool_placeholder2.metric("Filtered", f"{len(filtered_df):,}", 
+                            delta=f"-{len(df) - len(filtered_df):,}" if len(filtered_df) < len(df) else None,
+                            help="Questions matching your filters")
     
     # Timer settings in collapsible section
     with st.expander("⏱️ Timer Settings", expanded=True):
