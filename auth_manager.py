@@ -139,21 +139,30 @@ class AuthManager:
     def google_oauth_login(self):
         """Google OAuth login"""
         if not OAUTH_AVAILABLE:
-            st.info("To enable Google sign-in, install: pip install streamlit-oauth")
-            st.info("For now, use email login in the other tab.")
+            st.error("OAuth component not installed. Contact app administrator.")
             return
         
-        # Google OAuth configuration
+        # Google OAuth configuration - check if secrets exist
         try:
-            CLIENT_ID = st.secrets["GOOGLE_CLIENT_ID"]
-            CLIENT_SECRET = st.secrets["GOOGLE_CLIENT_SECRET"]
-            REDIRECT_URI = st.secrets.get("REDIRECT_URI", "https://jayopardy.streamlit.app/")
+            # Try to access secrets
+            if hasattr(st, 'secrets'):
+                CLIENT_ID = st.secrets.get("GOOGLE_CLIENT_ID", "")
+                CLIENT_SECRET = st.secrets.get("GOOGLE_CLIENT_SECRET", "")
+                REDIRECT_URI = st.secrets.get("REDIRECT_URI", "https://jayopardy.streamlit.app")
+                
+                if CLIENT_ID and CLIENT_SECRET:
+                    # Secrets are configured, proceed with OAuth
+                    pass
+                else:
+                    st.warning("Google OAuth credentials not found in Streamlit secrets.")
+                    st.info("Please ensure secrets are properly configured in Streamlit Cloud settings.")
+                    return
+            else:
+                st.error("Streamlit secrets not available. This usually means the app is not deployed on Streamlit Cloud.")
+                return
         except Exception as e:
-            st.info("Google Sign-In is not configured yet. Use email login for now.")
-            return
-        
-        if not CLIENT_ID or not CLIENT_SECRET:
-            st.info("Google Sign-In is being set up. Use email login for now.")
+            st.error(f"Error accessing secrets: {str(e)}")
+            st.info("Please check that secrets are properly configured in Streamlit Cloud.")
             return
         
         # Create OAuth component
@@ -167,10 +176,13 @@ class AuthManager:
         )
         
         # Check if we have a token
+        # Use the component redirect URI for Streamlit Cloud
+        component_redirect_uri = "https://share.streamlit.io/component/streamlit_oauth.authorize_button/index.html"
+        
         result = oauth2.authorize_button(
             name="Continue with Google",
             icon="https://www.google.com/favicon.ico",
-            redirect_uri=REDIRECT_URI,
+            redirect_uri=component_redirect_uri,
             scope="openid email profile",
             key="google_login",
             extras_params={"prompt": "select_account", "access_type": "offline"},
