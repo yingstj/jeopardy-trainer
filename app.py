@@ -232,9 +232,32 @@ else:
     st.sidebar.warning("Authentication not available - progress won't be saved between sessions")
 
 # Only show title after authentication check
-st.title("🧠 Jayopardy! Trainer")
-
-st.markdown("<p style='color: #060CE9; font-weight: bold; font-size: 1.1em;'>Test your knowledge with real Jeopardy! questions</p>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    st.title("🧠 Jayopardy! Trainer")
+with col2:
+    if st.session_state.total > 0:
+        accuracy = (st.session_state.score / st.session_state.total * 100)
+        st.metric("Session", f"{st.session_state.score}/{st.session_state.total}", f"{accuracy:.0f}%")
+with col3:
+    if AUTH_AVAILABLE and auth and st.session_state.get('authenticated', False):
+        # Try to get lifetime stats
+        try:
+            from pathlib import Path
+            import json
+            user_id = auth.get_user_id(st.session_state.user_email)
+            session_file = Path(f"user_data/{user_id}_session.json")
+            if session_file.exists():
+                with open(session_file, 'r') as f:
+                    saved_data = json.load(f)
+                    all_history = saved_data.get('history', [])
+                    if all_history:
+                        total_all = len(all_history)
+                        correct_all = sum(1 for h in all_history if h.get('was_correct'))
+                        acc_all = (correct_all / total_all * 100) if total_all > 0 else 0
+                        st.metric("Lifetime", f"{correct_all}/{total_all}", f"{acc_all:.0f}%")
+        except:
+            pass
 
 # Loading spinner while data is being fetched
 with st.spinner("Loading Jeopardy dataset..."):
@@ -244,6 +267,122 @@ if df.empty:
     st.error("❌ Failed to load Jeopardy dataset.")
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
+
+# Load theme mapping
+@st.cache_data
+def load_theme_mapping():
+    """Load category to theme mapping"""
+    try:
+        import os
+        if os.path.exists('data/category_themes.csv'):
+            theme_df = pd.read_csv('data/category_themes.csv')
+            return dict(zip(theme_df['category'], theme_df['theme']))
+        else:
+            # Create basic theme mapping if file doesn't exist
+            return create_theme_mapping(df)
+    except:
+        return create_theme_mapping(df)
+
+def create_theme_mapping(df):
+    """Create theme mapping based on Jeopardy's top 30 most common categories"""
+    import re
+    theme_map = {}
+    
+    for cat in df['category'].unique():
+        if not cat:
+            continue
+        cat_upper = str(cat).upper()
+        
+        # Map to Jeopardy's Top 30 Most Common Categories
+        # Check specific patterns in order of priority
+        
+        # American History (includes U.S. History, Presidents)
+        if any(word in cat_upper for word in ['U.S.', 'UNITED STATES', 'AMERICA', 'PRESIDENT', 
+                                                'CIVIL WAR', 'REVOLUTION', 'FOUNDING']):
+            theme_map[cat] = 'AMERICAN HISTORY'
+        # World History
+        elif any(word in cat_upper for word in ['WORLD HISTORY', 'EMPIRE', 'DYNASTY', 'ANCIENT',
+                                                  'MEDIEVAL', 'RENAISSANCE', 'WORLD WAR']):
+            theme_map[cat] = 'WORLD HISTORY'
+        # Science
+        elif any(word in cat_upper for word in ['SCIENCE', 'BIOLOGY', 'CHEMISTRY', 'PHYSICS',
+                                                  'ANATOMY', 'ELEMENT', 'ATOM', 'NATURE']):
+            theme_map[cat] = 'SCIENCE'
+        # Literature (includes Books & Authors)
+        elif any(word in cat_upper for word in ['LITERATURE', 'BOOK', 'AUTHOR', 'POET', 'NOVEL',
+                                                  'SHAKESPEARE', 'WRITER', 'FICTION']):
+            theme_map[cat] = 'LITERATURE'
+        # World Geography (includes World Capitals, Islands)
+        elif any(word in cat_upper for word in ['WORLD GEOGRAPHY', 'CONTINENT', 'CAPITAL',
+                                                  'ISLAND', 'HEMISPHERE', 'NATION']):
+            theme_map[cat] = 'WORLD GEOGRAPHY'
+        # U.S. Geography (includes U.S. Cities)
+        elif any(word in cat_upper for word in ['U.S. GEOGRAPHY', 'U.S. CIT', 'AMERICAN CIT',
+                                                  'STATE', 'TERRITORY']):
+            theme_map[cat] = 'U.S. GEOGRAPHY'
+        # Sports
+        elif any(word in cat_upper for word in ['SPORT', 'FOOTBALL', 'BASEBALL', 'BASKETBALL',
+                                                  'HOCKEY', 'TENNIS', 'GOLF', 'OLYMPIC']):
+            theme_map[cat] = 'SPORTS'
+        # Business & Industry
+        elif any(word in cat_upper for word in ['BUSINESS', 'INDUSTRY', 'COMPANY', 'CORPORATION',
+                                                  'ECONOMY', 'MARKET', 'ENTREPRENEUR']):
+            theme_map[cat] = 'BUSINESS & INDUSTRY'
+        # Religion (includes The Bible)
+        elif any(word in cat_upper for word in ['RELIGION', 'BIBLE', 'CHURCH', 'GOSPEL',
+                                                  'TESTAMENT', 'FAITH', 'SAINT']):
+            theme_map[cat] = 'RELIGION'
+        # Mythology
+        elif any(word in cat_upper for word in ['MYTH', 'LEGEND', 'GOD', 'GODDESS',
+                                                  'OLYMPUS', 'NORSE', 'DEITY']):
+            theme_map[cat] = 'MYTHOLOGY'
+        # Television
+        elif any(word in cat_upper for word in ['TV', 'TELEVISION', 'SHOW', 'SERIES',
+                                                  'SITCOM', 'DRAMA', 'NETWORK']):
+            theme_map[cat] = 'TELEVISION'
+        # Opera & Art
+        elif any(word in cat_upper for word in ['OPERA', 'ART', 'ARTIST', 'PAINT',
+                                                  'SCULPTURE', 'MUSEUM', 'GALLERY']):
+            theme_map[cat] = 'ART & OPERA'
+        # Food
+        elif any(word in cat_upper for word in ['FOOD', 'CUISINE', 'COOK', 'CHEF',
+                                                  'RECIPE', 'DISH', 'RESTAURANT']):
+            theme_map[cat] = 'FOOD'
+        # Transportation
+        elif any(word in cat_upper for word in ['TRANSPORT', 'VEHICLE', 'CAR', 'TRAIN',
+                                                  'PLANE', 'SHIP', 'AVIATION']):
+            theme_map[cat] = 'TRANSPORTATION'
+        # Animals
+        elif any(word in cat_upper for word in ['ANIMAL', 'MAMMAL', 'BIRD', 'FISH',
+                                                  'REPTILE', 'SPECIES', 'WILDLIFE']):
+            theme_map[cat] = 'ANIMALS'
+        # Languages & Word Origins
+        elif any(word in cat_upper for word in ['LANGUAGE', 'WORD ORIGIN', 'ETYMOLOGY',
+                                                  'VOCABULARY', 'DIALECT', 'TRANSLATE']):
+            theme_map[cat] = 'LANGUAGES & WORD ORIGINS'
+        # Bodies of Water
+        elif any(word in cat_upper for word in ['OCEAN', 'SEA', 'LAKE', 'RIVER',
+                                                  'WATER', 'BAY', 'GULF']):
+            theme_map[cat] = 'BODIES OF WATER'
+        # Colleges & Universities
+        elif any(word in cat_upper for word in ['COLLEGE', 'UNIVERSITY', 'CAMPUS',
+                                                  'ACADEMIC', 'IVY LEAGUE']):
+            theme_map[cat] = 'COLLEGES & UNIVERSITIES'
+        # History (general)
+        elif 'HISTORY' in cat_upper:
+            theme_map[cat] = 'HISTORY'
+        # Geography (general)
+        elif 'GEOGRAPHY' in cat_upper:
+            theme_map[cat] = 'GEOGRAPHY'
+        # Potpourri (catch-all)
+        else:
+            theme_map[cat] = 'POTPOURRI'
+    
+    return theme_map
+
+# Add theme column to dataframe
+theme_mapping = load_theme_mapping()
+df['theme'] = df['category'].map(theme_mapping).fillna('GENERAL KNOWLEDGE')
 
 # Status bar with Jeopardy styling
 col1, col2, col3 = st.columns([2, 1, 1])
@@ -303,41 +442,126 @@ if st.session_state.current_clue is None:
 
 clue = st.session_state.current_clue
 
-# Sidebar settings with category filter
+# Sidebar settings with theme filter
 with st.sidebar:
     st.markdown("<h2 style='color: #060CE9;'>🎮 Game Settings</h2>", unsafe_allow_html=True)
     
-    # Category Filter (moved from main area)
-    with st.expander("🏷️ Category Filter", expanded=False):
-        categories = sorted(df["category"].unique())
-        use_all = st.checkbox("Use all categories", value=True, key="use_all_categories")
+    # Settings change notification
+    if 'settings_changed' not in st.session_state:
+        st.session_state.settings_changed = False
+    
+    # Round Filter
+    with st.expander("🎲 Round Filter", expanded=True):
+        # Initialize round filter
+        if 'selected_rounds' not in st.session_state:
+            st.session_state.selected_rounds = ['Jeopardy', 'Double Jeopardy', 'Final Jeopardy']
         
-        if not use_all:
-            selected_categories = st.multiselect(
-                "Select categories:",
-                categories,
-                key="category_selector",
-                help="Choose specific categories to practice"
-            )
-            if selected_categories:
-                filtered_df = df[df["category"].isin(selected_categories)]
-                st.success(f"✅ {len(selected_categories)} categories selected")
-            else:
-                filtered_df = df
-                st.warning("No categories selected - using all")
+        # Add round column if it doesn't exist
+        if 'round' not in df.columns:
+            df['round'] = 'Jeopardy'  # Default if not present
+        
+        available_rounds = df['round'].unique().tolist()
+        selected_rounds = st.multiselect(
+            "Select rounds:",
+            available_rounds,
+            default=st.session_state.selected_rounds if st.session_state.selected_rounds else available_rounds,
+            key="round_selector",
+            help="Filter by Jeopardy round"
+        )
+        
+        if selected_rounds != st.session_state.selected_rounds:
+            st.session_state.selected_rounds = selected_rounds
+            st.session_state.settings_changed = True
+        
+        # Apply round filter
+        if selected_rounds:
+            filtered_df = df[df['round'].isin(selected_rounds)]
         else:
             filtered_df = df
-            st.info(f"Using all {len(categories)} categories")
+    
+    # Theme Filter (with round-aware filtering)
+    with st.expander("🎯 Theme Filter", expanded=True):
+        # Get themes from round-filtered data
+        available_themes = sorted(filtered_df['theme'].unique())
+        
+        # Default to all themes
+        if 'selected_themes' not in st.session_state:
+            st.session_state.selected_themes = available_themes
+        
+        # Top 30 themes for quick selection
+        top_30_themes = ['SCIENCE', 'HISTORY', 'LITERATURE', 'AMERICAN HISTORY', 'POTPOURRI',
+                         'SPORTS', 'BUSINESS & INDUSTRY', 'WORLD GEOGRAPHY', 'RELIGION',
+                         'LANGUAGES & WORD ORIGINS', 'WORLD HISTORY', 'TRANSPORTATION',
+                         'ANIMALS', 'ART & OPERA', 'GEOGRAPHY', 'U.S. GEOGRAPHY',
+                         'BODIES OF WATER', 'FOOD', 'MYTHOLOGY', 'TELEVISION',
+                         'COLLEGES & UNIVERSITIES']
+        
+        # Quick select buttons
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("📚 All", use_container_width=True, key="all_themes"):
+                st.session_state.selected_themes = available_themes
+                st.session_state.settings_changed = True
+                st.rerun()
+        with col2:
+            if st.button("🏆 Top 30", use_container_width=True, key="top30_themes"):
+                st.session_state.selected_themes = [t for t in top_30_themes if t in available_themes]
+                st.session_state.settings_changed = True
+                st.rerun()
+        with col3:
+            if st.button("🎯 Clear", use_container_width=True, key="clear_themes"):
+                st.session_state.selected_themes = []
+                st.session_state.settings_changed = True
+                st.rerun()
+        
+        selected_themes = st.multiselect(
+            "Select themes:",
+            available_themes,
+            default=st.session_state.selected_themes if st.session_state.selected_themes else available_themes,
+            key="theme_selector",
+            help="Choose themes for your questions"
+        )
+        
+        if selected_themes != st.session_state.selected_themes:
+            st.session_state.selected_themes = selected_themes
+            st.session_state.settings_changed = True
+        
+        if selected_themes:
+            filtered_df = filtered_df[filtered_df["theme"].isin(selected_themes)]
+            theme_counts = filtered_df.groupby('theme').size().sort_values(ascending=False)
+            
+            # Show selection summary
+            st.success(f"✅ {len(selected_rounds)} rounds × {len(selected_themes)} themes")
+            st.info(f"📊 {len(filtered_df):,} total questions available")
+            
+            # Show top themes in selection
+            if len(theme_counts) > 0:
+                with st.expander("Theme distribution", expanded=False):
+                    for theme, count in theme_counts.head(10).items():
+                        st.caption(f"• {theme}: {count:,} questions")
+        else:
+            filtered_df = df[df['round'].isin(selected_rounds)] if selected_rounds else df
+            st.warning("No themes selected - using all")
+        
+        # Show what will happen
+        if st.session_state.settings_changed:
+            st.info("🔄 New settings will apply to your next question")
     
     # Timer settings in collapsible section
     with st.expander("⏱️ Timer Settings", expanded=True):
         # Check if timer was just enabled
         was_timer_off = not st.session_state.use_timer
-        st.session_state.use_timer = st.checkbox("Use Timer", value=st.session_state.use_timer)
+        new_timer_state = st.checkbox("Use Timer", value=st.session_state.use_timer)
         
-        # Reset timer if just enabled
-        if was_timer_off and st.session_state.use_timer:
-            st.session_state.start_time = datetime.datetime.now()
+        if new_timer_state != st.session_state.use_timer:
+            st.session_state.use_timer = new_timer_state
+            st.session_state.settings_changed = True
+            if new_timer_state:
+                st.success("⏱️ Timer enabled for next question")
+                st.session_state.start_time = datetime.datetime.now()
+            else:
+                st.info("Timer disabled for next question")
+        
         if st.session_state.use_timer:
             # Use number input with common presets
             col1, col2 = st.columns([2, 1])
@@ -371,11 +595,19 @@ with st.sidebar:
     
     # Adaptive Training Mode in collapsible section
     with st.expander("🎯 Adaptive Training", expanded=True):
+        old_adaptive = st.session_state.adaptive_mode
         st.session_state.adaptive_mode = st.checkbox(
             "Enable Adaptive Mode", 
             value=st.session_state.adaptive_mode,
             help="Focuses on categories where you have <50% accuracy after 3+ attempts"
         )
+        
+        if old_adaptive != st.session_state.adaptive_mode:
+            st.session_state.settings_changed = True
+            if st.session_state.adaptive_mode:
+                st.success("🎯 Adaptive mode enabled - will focus on weak areas")
+            else:
+                st.info("Adaptive mode disabled - random question selection")
     
         # Show requirements
         with st.expander("How It Works", expanded=False):
@@ -439,6 +671,16 @@ with st.sidebar:
 # Display clue with Jeopardy blue styling
 st.markdown("<hr style='border: 2px solid #060CE9; margin: 20px 0;'>", unsafe_allow_html=True)
 
+# Get theme for current clue
+clue_theme = theme_mapping.get(clue['category'], 'GENERAL KNOWLEDGE')
+
+# Display theme and category
+col1, col2 = st.columns([1, 2])
+with col1:
+    st.markdown(f"<h4 style='color: #060CE9;'>📂 {clue_theme}</h4>", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"<h4 style='color: #060CE9;'>📚 {clue['category'].upper()}</h4>", unsafe_allow_html=True)
+
 # Display clue with adaptive mode indicator
 if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_categories:
     accuracy = st.session_state.weak_categories[clue['category']]
@@ -448,7 +690,6 @@ if st.session_state.adaptive_mode and clue['category'] in st.session_state.weak_
         attempts = len(history_df[history_df['category'] == clue['category']])
     else:
         attempts = 0
-    st.markdown(f"<h3 style='color: #060CE9; font-family: Arial, sans-serif;'>📚 Category: {clue['category'].upper()}</h3>", unsafe_allow_html=True)
     st.warning(f"🎯 **Focus Area** - Your stats: {accuracy:.0f}% accuracy over {attempts} attempts")
     
     # Clue in Jeopardy-style box
