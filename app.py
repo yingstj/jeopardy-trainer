@@ -28,12 +28,40 @@ st.markdown("""
 
 /* Caption text */
 .stCaption {
-    color: #ccc !important;
+    color: #e0e0e0 !important;
 }
 
 /* Help text */
 [data-testid="stHelpBlock"] {
-    color: #aaa !important;
+    color: #d0d0d0 !important;
+}
+
+/* Metric labels */
+[data-testid="metric-container"] label {
+    color: #e0e0e0 !important;
+}
+
+/* Metric values */
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: white !important;
+}
+
+/* Metric delta */
+[data-testid="metric-container"] [data-testid="stMetricDelta"] {
+    color: #ffc107 !important;
+}
+
+/* All icons and SVGs */
+svg {
+    stroke: white !important;
+    opacity: 0.9;
+}
+
+/* Sidebar specific buttons - make text smaller to prevent wrapping */
+[data-testid="stSidebar"] .stButton > button {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    white-space: nowrap !important;
 }
 
 /* Fix info, warning, and success boxes text */
@@ -67,7 +95,7 @@ div[data-testid="stError"] > div {
 
 /* Header styling */
 .header-container {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     padding: 15px 30px;
     display: flex;
@@ -75,7 +103,8 @@ div[data-testid="stError"] > div {
     align-items: center;
     border-radius: 15px;
     margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .logo-wrapper {
@@ -159,17 +188,18 @@ div[data-testid="stError"] > div {
 
 /* Stats cards */
 .stat-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     padding: 20px;
     border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     text-align: center;
     margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .stat-label {
     font-size: 12px;
-    color: #999;
+    color: #e0e0e0;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 8px;
@@ -233,11 +263,40 @@ div[data-testid="stError"] > div {
     color: white !important;
 }
 
+/* Sidebar collapse button - make it visible */
+[data-testid="collapsedControl"] {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+}
+
+[data-testid="collapsedControl"]:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Sidebar expand/collapse icon */
+[data-testid="collapsedControl"] svg {
+    stroke: white !important;
+    fill: white !important;
+}
+
 /* Expander styling */
 .streamlit-expanderHeader {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     border-radius: 10px;
     color: white !important;
+}
+
+.streamlit-expanderHeader:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Expander arrow icon */
+.streamlit-expanderHeader svg {
+    stroke: white !important;
+    fill: white !important;
 }
 
 /* Select box styling */
@@ -880,10 +939,10 @@ with st.sidebar:
                          'BODIES OF WATER', 'FOOD', 'MYTHOLOGY', 'TELEVISION',
                          'COLLEGES & UNIVERSITIES']
         
-        # Quick select buttons
-        col1, col2, col3, col4 = st.columns(4)
+        # Quick select buttons with better layout
+        col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("📚 All", use_container_width=True, key="all_themes"):
+            if st.button("All", use_container_width=True, key="all_themes", help="Select all available themes"):
                 st.session_state.selected_themes = available_themes
                 st.session_state.settings_changed = True
                 st.rerun()
@@ -891,19 +950,12 @@ with st.sidebar:
             # Select top 5 most common themes from available data
             theme_counts_for_selection = filtered_df['theme'].value_counts()
             top_5_themes = theme_counts_for_selection.head(5).index.tolist()
-            if st.button("🏆 Top 5", use_container_width=True, key="top5_themes"):
+            if st.button("Top 5", use_container_width=True, key="top5_themes", help="Select 5 most common themes"):
                 st.session_state.selected_themes = top_5_themes
                 st.session_state.settings_changed = True
                 st.rerun()
         with col3:
-            # Classic top themes based on Jeopardy history
-            classic_themes = ['SCIENCE', 'HISTORY', 'LITERATURE', 'SPORTS', 'GEOGRAPHY']
-            if st.button("📖 Classic", use_container_width=True, key="classic_themes"):
-                st.session_state.selected_themes = [t for t in classic_themes if t in available_themes]
-                st.session_state.settings_changed = True
-                st.rerun()
-        with col4:
-            if st.button("🎯 Clear", use_container_width=True, key="clear_themes"):
+            if st.button("None", use_container_width=True, key="clear_themes", help="Clear all selections"):
                 st.session_state.selected_themes = []
                 st.session_state.settings_changed = True
                 st.rerun()
