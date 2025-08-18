@@ -814,18 +814,28 @@ with st.sidebar:
                          'COLLEGES & UNIVERSITIES']
         
         # Quick select buttons
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             if st.button("📚 All", use_container_width=True, key="all_themes"):
                 st.session_state.selected_themes = available_themes
                 st.session_state.settings_changed = True
                 st.rerun()
         with col2:
-            if st.button("🏆 Top 30", use_container_width=True, key="top30_themes"):
-                st.session_state.selected_themes = [t for t in top_30_themes if t in available_themes]
+            # Select top 5 most common themes from available data
+            theme_counts_for_selection = filtered_df['theme'].value_counts()
+            top_5_themes = theme_counts_for_selection.head(5).index.tolist()
+            if st.button("🏆 Top 5", use_container_width=True, key="top5_themes"):
+                st.session_state.selected_themes = top_5_themes
                 st.session_state.settings_changed = True
                 st.rerun()
         with col3:
+            # Classic top themes based on Jeopardy history
+            classic_themes = ['SCIENCE', 'HISTORY', 'LITERATURE', 'SPORTS', 'GEOGRAPHY']
+            if st.button("📖 Classic", use_container_width=True, key="classic_themes"):
+                st.session_state.selected_themes = [t for t in classic_themes if t in available_themes]
+                st.session_state.settings_changed = True
+                st.rerun()
+        with col4:
             if st.button("🎯 Clear", use_container_width=True, key="clear_themes"):
                 st.session_state.selected_themes = []
                 st.session_state.settings_changed = True
