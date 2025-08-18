@@ -225,8 +225,23 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
         st.markdown("""
         <style>
         /* Main container styling */
-        .stApp {
+        .stApp > .main {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* Fix text visibility */
+        .stMarkdown p, .stText {
+            color: #333;
+        }
+        
+        /* Alert boxes text fix */
+        .stAlert {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+        
+        .stAlert > div {
+            color: #333 !important;
         }
         
         /* Login container */
@@ -291,20 +306,28 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
         /* Tab styling */
         .stTabs [data-baseweb="tab-list"] {
             gap: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 10px;
             padding: 0.5rem;
         }
         
         .stTabs [data-baseweb="tab"] {
             border-radius: 8px;
-            color: #555;
+            color: #555 !important;
             font-weight: 500;
         }
         
         .stTabs [aria-selected="true"] {
             background-color: white;
-            color: #667eea;
+            color: #667eea !important;
+        }
+        
+        /* Tab panel background */
+        .stTabs [data-baseweb="tab-panel"] {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1rem;
         }
         
         /* Input styling */
@@ -379,6 +402,8 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
         col1, col2, col3 = st.columns([1, 3, 1])
         
         with col2:
+            # Add container background for better readability
+            st.markdown('<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px;">', unsafe_allow_html=True)
             # Tabs for login options
             tab1, tab2, tab3, tab4 = st.tabs(["🎮 Guest Play", "📧 Email Login", "🔍 Google", "💻 GitHub"])
             
@@ -474,30 +499,33 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
                 st.info("Sign in with your GitHub account")
                 st.button("💻 Sign in with GitHub", use_container_width=True, disabled=True)
                 st.caption("GitHub login coming soon!")
+            
+            # Close container div
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Benefits section
         st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("### 🌟 Why Create an Account?")
+        st.markdown("<h3 style='color: white; text-align: center;'>🌟 Why Create an Account?</h3>", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown("""
             <div class="benefit-card">
-                <h3>💾 Save Progress</h3>
+                <h3 style='color: #333;'>💾 Save Progress</h3>
                 <p style='color: #666;'>Your scores and history are saved automatically</p>
             </div>
             """, unsafe_allow_html=True)
         with col2:
             st.markdown("""
             <div class="benefit-card">
-                <h3>📊 Track Stats</h3>
+                <h3 style='color: #333;'>📊 Track Stats</h3>
                 <p style='color: #666;'>See your improvement over time with detailed analytics</p>
             </div>
             """, unsafe_allow_html=True)
         with col3:
             st.markdown("""
             <div class="benefit-card">
-                <h3>🎯 Smart Training</h3>
+                <h3 style='color: #333;'>🎯 Smart Training</h3>
                 <p style='color: #666;'>Adaptive mode learns and focuses on your weak areas</p>
             </div>
             """, unsafe_allow_html=True)
