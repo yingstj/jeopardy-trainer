@@ -425,6 +425,12 @@ def load_data():
         return pd.DataFrame()
 
 # Initialize session state
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -472,7 +478,88 @@ if "time_limit" not in st.session_state:
 if "speed_round" not in st.session_state:
     st.session_state.speed_round = False
 
-# Loading data
+# Login Screen
+if not st.session_state.authenticated:
+    # Custom CSS for login page
+    st.markdown("""
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            padding: 2rem;
+            margin-top: 5rem;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-title {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .login-subtitle {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Login container
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div class="login-header">
+            <div class="login-title">🎯 Jaypardy!</div>
+            <div class="login-subtitle">Test your trivia knowledge with real Jeopardy questions</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            st.markdown("### Welcome!")
+            username = st.text_input("Enter your name to start playing:", placeholder="Alex Trebek")
+            st.markdown("*Your name will be used to track your progress and achievements*")
+            
+            submitted = st.form_submit_button("🎮 Start Playing", use_container_width=True, type="primary")
+            
+            if submitted:
+                if username.strip():
+                    st.session_state.authenticated = True
+                    st.session_state.username = username.strip()
+                    st.success(f"Welcome, {username}! Loading game...")
+                    st.rerun()
+                else:
+                    st.error("Please enter your name to continue")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Fun facts while waiting
+        st.markdown("---")
+        st.markdown("### 📚 Did you know?")
+        facts = [
+            "Jeopardy! has been on air since 1984",
+            "Over 400,000 questions have been asked on Jeopardy!",
+            "The highest single-day winnings record is $131,127",
+            "Ken Jennings won 74 consecutive games",
+            "The show has won 39 Emmy Awards"
+        ]
+        import random
+        st.info(random.choice(facts))
+    
+    st.stop()
+
+# Loading data (only after authentication)
 df = load_data()
 
 if df.empty:
@@ -488,6 +575,8 @@ theme_groups = analyzer.group_categories_by_theme(all_categories)
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
     st.markdown("## 🎯 Jaypardy!")
+    if st.session_state.username:
+        st.markdown(f"👤 **Player:** {st.session_state.username}")
     st.markdown("---")
     
     # Score display in sidebar
@@ -622,6 +711,13 @@ with st.sidebar:
                 else:
                     st.session_state[key] = False
         st.rerun()
+    
+    st.markdown("---")
+    
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.authenticated = False
+        st.session_state.username = ""
+        st.rerun()
 
 # MAIN GAME AREA
 # Compact header with stats
@@ -642,7 +738,7 @@ st.markdown(f"""
             <div class="header-stat-label">Streak</div>
         </div>
         <div class="header-stat">
-            <div class="header-stat-value">{(st.session_state.score/st.session_state.total*100):.0f}%" if st.session_state.total > 0 else "-%"}</div>
+            <div class="header-stat-value">{f"{(st.session_state.score/st.session_state.total*100):.0f}%" if st.session_state.total > 0 else "-"}</div>
             <div class="header-stat-label">Accuracy</div>
         </div>
     </div>
