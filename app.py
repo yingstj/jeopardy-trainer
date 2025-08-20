@@ -477,6 +477,133 @@ if "study_mode" not in st.session_state:
 if "weak_themes" not in st.session_state:
     st.session_state.weak_themes = {}
 
+if "ai_mode" not in st.session_state:
+    st.session_state.ai_mode = False
+    st.session_state.ai_difficulty = "Medium"
+    st.session_state.ai_personality = "Balanced"
+    st.session_state.ai_score = 0
+    st.session_state.ai_streak = 0
+    st.session_state.current_turn = "player"
+    st.session_state.buzzer_winner = None
+    st.session_state.ai_thinking = False
+    st.session_state.match_history = []
+
+# AI Personalities with different strengths
+AI_PERSONALITIES = {
+    "Ken Jennings": {
+        "description": "All-around expert, especially strong in History and Literature",
+        "strengths": ["HISTORY", "LITERATURE", "GEOGRAPHY", "WORDPLAY"],
+        "weaknesses": ["POP CULTURE", "SPORTS"],
+        "base_accuracy": 0.85,
+        "speed": "fast"
+    },
+    "Watson": {
+        "description": "Computer-like precision, excels at facts and data",
+        "strengths": ["SCIENCE", "TECHNOLOGY", "BUSINESS", "MEDICINE"],
+        "weaknesses": ["WORDPLAY", "POP CULTURE"],
+        "base_accuracy": 0.90,
+        "speed": "very fast"
+    },
+    "Brad Rutter": {
+        "description": "Strategic player, strong in Entertainment and Pop Culture",
+        "strengths": ["ENTERTAINMENT", "POP CULTURE", "SPORTS", "MUSIC"],
+        "weaknesses": ["SCIENCE", "TECHNOLOGY"],
+        "base_accuracy": 0.82,
+        "speed": "medium"
+    },
+    "James Holzhauer": {
+        "description": "Aggressive player, sports and gambling expert",
+        "strengths": ["SPORTS", "GEOGRAPHY", "BUSINESS", "POLITICS"],
+        "weaknesses": ["ART", "LITERATURE"],
+        "base_accuracy": 0.88,
+        "speed": "very fast"
+    },
+    "Balanced": {
+        "description": "Average player with no particular strengths",
+        "strengths": [],
+        "weaknesses": [],
+        "base_accuracy": 0.75,
+        "speed": "medium"
+    }
+}
+
+# AI Difficulty Settings
+AI_DIFFICULTY = {
+    "Easy": {
+        "accuracy_modifier": -0.20,
+        "buzzer_speed": 2.5,
+        "daily_double_aggression": 0.3
+    },
+    "Medium": {
+        "accuracy_modifier": 0,
+        "buzzer_speed": 1.5,
+        "daily_double_aggression": 0.5
+    },
+    "Hard": {
+        "accuracy_modifier": 0.10,
+        "buzzer_speed": 0.8,
+        "daily_double_aggression": 0.8
+    },
+    "Impossible": {
+        "accuracy_modifier": 0.15,
+        "buzzer_speed": 0.5,
+        "daily_double_aggression": 0.95
+    }
+}
+
+def simulate_ai_response(clue, category, difficulty, personality):
+    """Simulate AI response based on difficulty and personality"""
+    import time
+    
+    personality_data = AI_PERSONALITIES[personality]
+    difficulty_data = AI_DIFFICULTY[difficulty]
+    
+    # Calculate accuracy based on personality and difficulty
+    base_accuracy = personality_data["base_accuracy"]
+    
+    # Adjust for category strengths/weaknesses
+    theme = analyzer.categorize_single(category)
+    if theme in personality_data["strengths"]:
+        base_accuracy += 0.15
+    elif theme in personality_data["weaknesses"]:
+        base_accuracy -= 0.20
+    
+    # Apply difficulty modifier
+    final_accuracy = min(0.99, max(0.20, base_accuracy + difficulty_data["accuracy_modifier"]))
+    
+    # Determine if AI gets it right
+    is_correct = random.random() < final_accuracy
+    
+    # Simulate thinking time based on personality speed
+    speed_map = {
+        "very fast": (0.5, 1.5),
+        "fast": (1.0, 2.0),
+        "medium": (1.5, 3.0),
+        "slow": (2.0, 4.0)
+    }
+    min_time, max_time = speed_map[personality_data["speed"]]
+    thinking_time = random.uniform(min_time, max_time)
+    
+    return is_correct, thinking_time
+
+def simulate_buzzer_race(difficulty):
+    """Simulate who wins the buzzer"""
+    difficulty_data = AI_DIFFICULTY[difficulty]
+    
+    # Player reaction time (random between 0.8 and 2.5 seconds)
+    player_time = random.uniform(0.8, 2.5)
+    
+    # AI reaction time based on difficulty
+    ai_time = random.uniform(
+        difficulty_data["buzzer_speed"] * 0.8,
+        difficulty_data["buzzer_speed"] * 1.2
+    )
+    
+    if player_time < ai_time:
+        return "player", player_time
+    else:
+        return "ai", ai_time
+
 if "selected_categories" not in st.session_state:
     st.session_state.selected_categories = None
 
@@ -725,6 +852,41 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # AI Opponent Settings
+    st.markdown("### 🤖 AI Opponent")
+    st.session_state.ai_mode = st.checkbox(
+        "Play against AI",
+        value=st.session_state.ai_mode,
+        help="Enable AI opponent for competitive play"
+    )
+    
+    if st.session_state.ai_mode:
+        # AI Personality selector
+        st.session_state.ai_personality = st.selectbox(
+            "Choose Opponent:",
+            list(AI_PERSONALITIES.keys()),
+            index=list(AI_PERSONALITIES.keys()).index(st.session_state.ai_personality)
+        )
+        
+        personality = AI_PERSONALITIES[st.session_state.ai_personality]
+        st.caption(f"*{personality['description']}*")
+        
+        # Difficulty selector
+        st.session_state.ai_difficulty = st.selectbox(
+            "Difficulty:",
+            ["Easy", "Medium", "Hard", "Impossible"],
+            index=["Easy", "Medium", "Hard", "Impossible"].index(st.session_state.ai_difficulty)
+        )
+        
+        # Show AI stats
+        col_ai1, col_ai2 = st.columns(2)
+        with col_ai1:
+            st.metric("AI Score", st.session_state.ai_score)
+        with col_ai2:
+            st.metric("AI Streak", st.session_state.ai_streak)
+    
+    st.markdown("---")
+    
     # Game settings
     st.markdown("### ⚙️ Settings")
     
@@ -856,30 +1018,73 @@ with st.sidebar:
         st.rerun()
 
 # MAIN GAME AREA
-# Compact header with stats
-st.markdown(f"""
-<div class="main-header">
-    <h1>🎯 Jaypardy!</h1>
-    <div class="header-stats">
-        <div class="header-stat">
-            <div class="header-stat-value">{st.session_state.score}</div>
-            <div class="header-stat-label">Score</div>
+# Show different header for AI mode vs regular mode
+if st.session_state.ai_mode:
+    # AI Mode - Show both player and AI scores
+    st.markdown("""<div class="main-header"><h1>🎯 Jaypardy!</h1></div>""", unsafe_allow_html=True)
+    
+    col_player, col_vs, col_ai = st.columns([2, 1, 2])
+    
+    with col_player:
+        player_color = "#667eea" if st.session_state.score >= st.session_state.ai_score else "#6c757d"
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, {player_color} 0%, #764ba2 100%); 
+                    border-radius: 10px; color: white;">
+            <div style="font-size: 0.9rem; opacity: 0.9;">👤 {st.session_state.username}</div>
+            <div style="font-size: 2.5rem; font-weight: bold;">${st.session_state.score}</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Streak: {st.session_state.streak}</div>
         </div>
-        <div class="header-stat">
-            <div class="header-stat-value">{st.session_state.total}</div>
-            <div class="header-stat-label">Questions</div>
+        """, unsafe_allow_html=True)
+    
+    with col_vs:
+        st.markdown("""
+        <div style="text-align: center; padding: 2rem 0;">
+            <div style="font-size: 1.5rem; font-weight: bold; color: #6c757d;">VS</div>
         </div>
-        <div class="header-stat">
-            <div class="header-stat-value">{st.session_state.streak}</div>
-            <div class="header-stat-label">Streak</div>
+        """, unsafe_allow_html=True)
+    
+    with col_ai:
+        ai_color = "#dc3545" if st.session_state.ai_score > st.session_state.score else "#6c757d"
+        st.markdown(f"""
+        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, {ai_color} 0%, #495057 100%); 
+                    border-radius: 10px; color: white;">
+            <div style="font-size: 0.9rem; opacity: 0.9;">🤖 {st.session_state.ai_personality}</div>
+            <div style="font-size: 2.5rem; font-weight: bold;">${st.session_state.ai_score}</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Streak: {st.session_state.ai_streak}</div>
         </div>
-        <div class="header-stat">
-            <div class="header-stat-value">{f"{(st.session_state.score/st.session_state.total*100):.0f}%" if st.session_state.total > 0 else "-"}</div>
-            <div class="header-stat-label">Accuracy</div>
+        """, unsafe_allow_html=True)
+    
+    # Show who's winning
+    if st.session_state.buzzer_winner:
+        if st.session_state.buzzer_winner == "player":
+            st.success(f"🎯 You buzzed in first! Your turn to answer.")
+        else:
+            st.info(f"🤖 {st.session_state.ai_personality} buzzed in first!")
+else:
+    # Regular mode header
+    st.markdown(f"""
+    <div class="main-header">
+        <h1>🎯 Jaypardy!</h1>
+        <div class="header-stats">
+            <div class="header-stat">
+                <div class="header-stat-value">{st.session_state.score}</div>
+                <div class="header-stat-label">Score</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value">{st.session_state.total}</div>
+                <div class="header-stat-label">Questions</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value">{st.session_state.streak}</div>
+                <div class="header-stat-label">Streak</div>
+            </div>
+            <div class="header-stat">
+                <div class="header-stat-value">{f"{(st.session_state.score/st.session_state.total*100):.0f}%" if st.session_state.total > 0 else "-"}</div>
+                <div class="header-stat-label">Accuracy</div>
+            </div>
         </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # Check if categories are selected
 if not st.session_state.selected_categories:
@@ -952,7 +1157,67 @@ if st.session_state.study_mode:
         if new_note != existing_note:
             st.session_state.notes[note_key] = new_note
 
-# Answer form
+# AI Mode - Handle buzzer and AI responses
+if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.session_state.study_mode:
+    # Buzzer phase
+    st.markdown("### 🔔 Ready to buzz in!")
+    col_buzz1, col_buzz2 = st.columns(2)
+    with col_buzz1:
+        if st.button("🎯 BUZZ IN!", use_container_width=True, key="buzzer", type="primary"):
+            # Simulate buzzer race
+            winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
+            st.session_state.buzzer_winner = winner
+            st.session_state.current_turn = winner
+            
+            if winner == "player":
+                st.balloons()
+            st.rerun()
+    
+    with col_buzz2:
+        st.info(f"⏱️ Be quick! {st.session_state.ai_personality} is ready...")
+    
+    # Don't show answer form during buzzer phase
+    st.stop()
+
+elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not st.session_state.study_mode:
+    # AI is answering
+    st.info(f"🤖 {st.session_state.ai_personality} buzzed in first!")
+    
+    # Simulate AI response
+    with st.spinner(f"{st.session_state.ai_personality} is thinking..."):
+        is_correct, thinking_time = simulate_ai_response(
+            clue["clue"],
+            clue["category"],
+            st.session_state.ai_difficulty,
+            st.session_state.ai_personality
+        )
+        
+        # Add artificial delay for realism
+        import time
+        time.sleep(min(thinking_time, 2))
+    
+    if is_correct:
+        st.error(f"🤖 {st.session_state.ai_personality} got it right! The answer was: **{clue['correct_response']}**")
+        
+        # Award points to AI
+        points = 2 if is_daily_double else 1
+        st.session_state.ai_score += points
+        st.session_state.ai_streak += 1
+    else:
+        st.success(f"❌ {st.session_state.ai_personality} got it wrong! Your turn for a steal!")
+        st.info(f"The correct answer was: **{clue['correct_response']}**")
+        st.session_state.ai_streak = 0
+    
+    # Reset for next question
+    if st.button("Next Question ➡️", use_container_width=True, type="primary"):
+        st.session_state.current_clue = None
+        st.session_state.buzzer_winner = None
+        st.session_state.current_turn = None
+        st.rerun()
+    
+    st.stop()
+
+# Regular answer form (player answering or non-AI mode)
 with st.form(key="clue_form", clear_on_submit=True):
     col_input, col_submit, col_bookmark = st.columns([3, 1, 1])
     with col_input:
@@ -963,8 +1228,13 @@ with st.form(key="clue_form", clear_on_submit=True):
             disabled=st.session_state.study_mode
         )
     with col_submit:
+        submit_text = "🎯 Submit"
+        if st.session_state.study_mode:
+            submit_text = "⏭️ Next"
+        elif st.session_state.ai_mode and st.session_state.buzzer_winner == "player":
+            submit_text = "🎯 Answer!"
         submitted = st.form_submit_button(
-            "🎯 Submit" if not st.session_state.study_mode else "⏭️ Next", 
+            submit_text, 
             use_container_width=True
         )
     with col_bookmark:
@@ -998,7 +1268,12 @@ if submitted:
         elif is_daily_double:
             points_multiplier = 2
             
-        correct = user_clean == answer_clean and elapsed_time <= st.session_state.time_limit
+        # Check correctness - only enforce timer if it's enabled (not 999999)
+        answer_matches = user_clean == answer_clean
+        if st.session_state.time_limit == 999999:  # Timer is off
+            correct = answer_matches
+        else:  # Timer is on
+            correct = answer_matches and elapsed_time <= st.session_state.time_limit
 
         if correct:
             st.balloons()
@@ -1016,7 +1291,11 @@ if submitted:
                 st.session_state.achievements.append("10_streak")
                 st.success("🏆 Achievement: 10 Question Streak!")
         else:
-            st.error(f"❌ **Incorrect** {'(Time expired!)' if elapsed_time > st.session_state.time_limit else ''}")
+            # Only show time expired if timer was actually enabled and time ran out
+            time_msg = ""
+            if st.session_state.time_limit != 999999 and elapsed_time > st.session_state.time_limit:
+                time_msg = "(Time expired!)"
+            st.error(f"❌ **Incorrect** {time_msg}")
             st.info(f"The correct response was: **{clue['correct_response']}**")
             st.session_state.streak = 0
             points_earned = 0
@@ -1045,6 +1324,11 @@ if submitted:
         })
 
         st.session_state.current_clue = None
+        
+        # Reset AI mode states
+        if st.session_state.ai_mode:
+            st.session_state.buzzer_winner = None
+            st.session_state.current_turn = None
         
         # Add a next button for better flow
         if st.button("Next Question →", type="primary", use_container_width=True):
