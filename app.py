@@ -787,21 +787,42 @@ with st.sidebar:
         st.session_state.current_clue = None
         st.rerun()
     
-    if st.button("🔁 Adaptive Retry", use_container_width=True, help="Practice missed questions"):
+    if st.button("🔁 Adaptive Mode", use_container_width=True, help="Focus on weak themes & missed questions"):
         if st.session_state.history:
+            # Calculate performance by category
+            history_df = pd.DataFrame(st.session_state.history)
+            category_stats = history_df.groupby("category").agg({
+                "was_correct": ["sum", "count"]
+            })
+            category_stats.columns = ["correct", "total"]
+            category_stats["accuracy"] = category_stats["correct"] / category_stats["total"]
+            
+            # Find weak categories (accuracy < 50% or all wrong)
+            weak_categories = category_stats[category_stats["accuracy"] < 0.5].index.tolist()
+            
+            # Get missed questions from weak categories first, then any missed
             missed = [h for h in st.session_state.history if not h["was_correct"]]
-            if missed:
-                retry = random.choice(missed)
+            weak_missed = [h for h in missed if h["category"] in weak_categories]
+            
+            # Prioritize weak category misses, then regular misses
+            retry_pool = weak_missed if weak_missed else missed
+            
+            if retry_pool:
+                # Weight selection towards more recent misses
+                weights = [0.5 + 0.5 * (i / len(retry_pool)) for i in range(len(retry_pool))]
+                retry = random.choices(retry_pool, weights=weights, k=1)[0]
+                
                 st.session_state.current_clue = {
                     "category": retry["category"],
                     "clue": retry["clue"],
                     "correct_response": retry["correct_response"]
                 }
+                st.info(f"📚 Focusing on weak theme: {retry['category']}")
                 st.rerun()
             else:
-                st.info("No missed questions to retry!")
+                st.success("🎉 Great job! No missed questions to retry!")
         else:
-            st.info("Play some questions first!")
+            st.info("Play some questions first to enable adaptive mode!")
     
     if st.button("🔄 Reset Game", use_container_width=True):
         for key in ["score", "total", "streak", "history", "daily_double_used"]:
@@ -999,7 +1020,19 @@ if submitted:
             st.info(f"The correct response was: **{clue['correct_response']}**")
             st.session_state.streak = 0
             points_earned = 0
+            
+            # Track weak themes
+            theme = analyzer.categorize_single(clue["category"])
+            if theme not in st.session_state.weak_themes:
+                st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
+            st.session_state.weak_themes[theme]["incorrect"] += 1
 
+        # Update weak theme totals regardless of correct/incorrect
+        theme = analyzer.categorize_single(clue["category"])
+        if theme not in st.session_state.weak_themes:
+            st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
+        st.session_state.weak_themes[theme]["total"] += 1
+        
         st.session_state.total += 1
         st.session_state.history.append({
             "category": clue["category"],
@@ -1018,7 +1051,7 @@ if submitted:
             st.rerun()
 
 # Expandable sections at the bottom
-col_exp1, col_exp2 = st.columns(2)
+col_exp1, col_exp2, col_exp3 = st.columns(3)
 
 with col_exp1:
     # Session history
@@ -1068,3 +1101,37 @@ with col_exp2:
     else:
         with st.expander("🔖 Bookmarks (0)", expanded=False):
             st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
+
+with col_exp3:
+    # Weak themes analysis
+    if st.session_state.weak_themes:
+        with st.expander("📈 Theme Performance", expanded=False):
+            st.markdown("#### Your Performance by Theme")
+            
+            # Calculate accuracy per theme
+            theme_data = []
+            for theme, stats in st.session_state.weak_themes.items():
+                if stats["total"] > 0:
+                    accuracy = ((stats["total"] - stats["incorrect"]) / stats["total"]) * 100
+                    theme_data.append({
+                        "Theme": theme,
+                        "Accuracy": f"{accuracy:.0f}%",
+                        "Questions": stats["total"],
+                        "Missed": stats["incorrect"]
+                    })
+            
+            if theme_data:
+                # Sort by accuracy (lowest first - these are weak areas)
+                theme_data.sort(key=lambda x: float(x["Accuracy"].rstrip("%")))
+                
+                # Show weak themes
+                weak_themes = [t for t in theme_data if float(t["Accuracy"].rstrip("%")) < 50]
+                if weak_themes:
+                    st.warning(f"🎯 Focus areas: {', '.join([t['Theme'] for t in weak_themes[:3]])}")
+                
+                # Display as dataframe
+                theme_df = pd.DataFrame(theme_data)
+                st.dataframe(theme_df, use_container_width=True, height=200)
+    else:
+        with st.expander("📈 Theme Performance", expanded=False):
+            st.info("Play some questions to see your performance by theme!")
