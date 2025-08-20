@@ -737,12 +737,18 @@ with st.sidebar:
     
     # Time limit (only show if timer is enabled)
     if use_timer:
+        # Only update if it's a valid number
+        if isinstance(st.session_state.time_limit, (int, float)) and st.session_state.time_limit != 999999:
+            default_time = int(st.session_state.time_limit)
+        else:
+            default_time = 30
+        
         st.session_state.time_limit = st.slider(
             "Time (seconds):",
-            10, 60, st.session_state.time_limit
+            10, 60, default_time
         )
     else:
-        st.session_state.time_limit = float('inf')  # No time limit
+        st.session_state.time_limit = 999999  # Very large number instead of infinity
     
     # Study Mode
     st.session_state.study_mode = st.checkbox(
@@ -761,6 +767,17 @@ with st.sidebar:
             st.session_state.time_limit = 5
     else:
         st.session_state.speed_round = False
+    
+    # Round selector (difficulty)
+    if 'round' in df.columns:
+        rounds = df['round'].dropna().unique().tolist()
+        round_options = ['All Rounds'] + sorted(rounds)
+        selected_round = st.selectbox(
+            "📈 Difficulty (Round):",
+            round_options,
+            help="Filter by Jeopardy round"
+        )
+        st.session_state.selected_round = selected_round
     
     st.markdown("---")
     
@@ -849,8 +866,12 @@ if not st.session_state.selected_categories:
 
 filtered_df = df[df["category"].isin(st.session_state.selected_categories)]
 
+# Apply round filter if selected
+if 'selected_round' in st.session_state and st.session_state.selected_round != 'All Rounds':
+    filtered_df = filtered_df[filtered_df['round'] == st.session_state.selected_round]
+
 if filtered_df.empty:
-    st.warning("No clues found for selected themes. Please select different themes.")
+    st.warning("No clues found for selected themes/round. Please adjust your selection.")
     st.stop()
 
 # Get current clue
