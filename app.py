@@ -384,7 +384,7 @@ def main():
                     st.warning("⏰ Session complete!")
         
         # Category Selection - Using simplified selector
-        with st.expander("📚 Category Selection", expanded=True):
+        with st.expander("📚 Select Jeopardy Categories", expanded=True):
             selected_categories = create_simple_category_selector(df)
         
         # Goals & Preferences
