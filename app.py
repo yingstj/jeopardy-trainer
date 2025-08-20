@@ -537,7 +537,6 @@ if not st.session_state.authenticated:
             "Ken Jennings won 74 consecutive games",
             "The show has won 39 Emmy Awards"
         ]
-        import random
         st.info(random.choice(facts))
     
     st.stop()
@@ -656,26 +655,40 @@ with st.sidebar:
     # Game settings
     st.markdown("### ⚙️ Settings")
     
-    # Time limit
-    st.session_state.time_limit = st.slider(
-        "⏱️ Time (seconds):",
-        10, 60, st.session_state.time_limit
+    # Timer toggle
+    use_timer = st.checkbox(
+        "⏱️ Use Timer",
+        value=True,
+        help="Enable/disable time limit for answers",
+        key="use_timer"
     )
+    
+    # Time limit (only show if timer is enabled)
+    if use_timer:
+        st.session_state.time_limit = st.slider(
+            "Time (seconds):",
+            10, 60, st.session_state.time_limit
+        )
+    else:
+        st.session_state.time_limit = float('inf')  # No time limit
     
     # Study Mode
     st.session_state.study_mode = st.checkbox(
         "📚 Study Mode",
         value=st.session_state.study_mode,
-        help="No timer, see answers"
+        help="No timer, see answers immediately"
     )
     
-    # Speed Round
-    st.session_state.speed_round = st.checkbox(
-        "⚡ Speed Round",
-        help="5-second timer, 2x points"
-    )
-    if st.session_state.speed_round:
-        st.session_state.time_limit = 5
+    # Speed Round (only available if timer is on)
+    if use_timer:
+        st.session_state.speed_round = st.checkbox(
+            "⚡ Speed Round",
+            help="5-second timer, 2x points"
+        )
+        if st.session_state.speed_round:
+            st.session_state.time_limit = 5
+    else:
+        st.session_state.speed_round = False
     
     st.markdown("---")
     
@@ -683,6 +696,22 @@ with st.sidebar:
     if st.button("🎯 New Question", use_container_width=True):
         st.session_state.current_clue = None
         st.rerun()
+    
+    if st.button("🔁 Adaptive Retry", use_container_width=True, help="Practice missed questions"):
+        if st.session_state.history:
+            missed = [h for h in st.session_state.history if not h["was_correct"]]
+            if missed:
+                retry = random.choice(missed)
+                st.session_state.current_clue = {
+                    "category": retry["category"],
+                    "clue": retry["clue"],
+                    "correct_response": retry["correct_response"]
+                }
+                st.rerun()
+            else:
+                st.info("No missed questions to retry!")
+        else:
+            st.info("Play some questions first!")
     
     if st.button("🔄 Reset Game", use_container_width=True):
         for key in ["score", "total", "streak", "history", "daily_double_used"]:
@@ -881,25 +910,54 @@ if submitted:
         if st.button("Next Question →", type="primary", use_container_width=True):
             st.rerun()
 
-# Expandable session history (at the bottom)
-if st.session_state.history:
-    with st.expander("📊 Session History", expanded=False):
-        history_df = pd.DataFrame(st.session_state.history)
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Questions", len(history_df))
-        with col2:
-            st.metric("Correct", len(history_df[history_df["was_correct"]]))
-        with col3:
-            avg_time = history_df["time_taken"].mean()
-            st.metric("Avg Time", f"{avg_time:.1f}s")
-        with col4:
-            acc = (len(history_df[history_df["was_correct"]]) / len(history_df)) * 100
-            st.metric("Accuracy", f"{acc:.1f}%")
-        
-        # Show last 5 questions
-        st.markdown("#### Recent Questions")
-        recent = history_df.tail(5)[["category", "clue", "correct_response", "was_correct"]]
-        st.dataframe(recent, use_container_width=True)
+# Expandable sections at the bottom
+col_exp1, col_exp2 = st.columns(2)
+
+with col_exp1:
+    # Session history
+    if st.session_state.history:
+        with st.expander("📊 Session History", expanded=False):
+            history_df = pd.DataFrame(st.session_state.history)
+            
+            # Summary metrics
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Questions", len(history_df))
+                avg_time = history_df["time_taken"].mean()
+                st.metric("Avg Time", f"{avg_time:.1f}s")
+            with col2:
+                st.metric("Correct", len(history_df[history_df["was_correct"]]))
+                acc = (len(history_df[history_df["was_correct"]]) / len(history_df)) * 100
+                st.metric("Accuracy", f"{acc:.1f}%")
+            
+            # Show last 5 questions
+            st.markdown("#### Recent Questions")
+            recent = history_df.tail(5)[["category", "clue", "correct_response", "was_correct"]]
+            st.dataframe(recent, use_container_width=True, height=200)
+
+with col_exp2:
+    # Bookmarks viewer
+    if st.session_state.bookmarks:
+        with st.expander(f"🔖 Bookmarks ({len(st.session_state.bookmarks)})", expanded=False):
+            st.markdown("#### Your Bookmarked Questions")
+            
+            for i, bookmark in enumerate(st.session_state.bookmarks[-5:], 1):  # Show last 5
+                st.markdown(f"**{i}. {bookmark['category']}**")
+                st.markdown(f"Q: {bookmark['clue']}")
+                st.markdown(f"A: *{bookmark['correct_response']}*")
+                
+                # Option to practice this question
+                if st.button(f"Practice #{i}", key=f"practice_bookmark_{i}"):
+                    st.session_state.current_clue = {
+                        "category": bookmark["category"],
+                        "clue": bookmark["clue"],
+                        "correct_response": bookmark["correct_response"]
+                    }
+                    st.rerun()
+                st.markdown("---")
+            
+            if len(st.session_state.bookmarks) > 5:
+                st.info(f"Showing 5 of {len(st.session_state.bookmarks)} bookmarks")
+    else:
+        with st.expander("🔖 Bookmarks (0)", expanded=False):
+            st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
