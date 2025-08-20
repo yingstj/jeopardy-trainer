@@ -385,8 +385,45 @@ model = load_model()
 def normalize(text):
     text = text.lower()
     text = re.sub(r"^(what|who|where|when|why|how)\s+(is|are|was|were)\s+", "", text)
+    text = re.sub(r"^(a|an|the)\s+", "", text)  # Remove articles
     text = re.sub(r"[^a-z0-9 ]", "", text)
     return text.strip()
+
+# Fuzzy matching function
+def fuzzy_match(user_answer, correct_answer, threshold=80):
+    """Check if user answer is close enough to correct answer"""
+    # First try exact match after normalization
+    user_norm = normalize(user_answer)
+    correct_norm = normalize(correct_answer)
+    
+    if user_norm == correct_norm:
+        return True
+    
+    # Check if user answer contains the key parts of correct answer or vice versa
+    if len(user_norm) > 3 and len(correct_norm) > 3:
+        if user_norm in correct_norm or correct_norm in user_norm:
+            return True
+    
+    # Calculate similarity score (simple character-based)
+    # This is a simple implementation - could use fuzzywuzzy if available
+    shorter = min(len(user_norm), len(correct_norm))
+    longer = max(len(user_norm), len(correct_norm))
+    
+    if shorter == 0:
+        return False
+    
+    # Count matching characters in order
+    matches = 0
+    j = 0
+    for i in range(len(user_norm)):
+        while j < len(correct_norm) and user_norm[i] != correct_norm[j]:
+            j += 1
+        if j < len(correct_norm):
+            matches += 1
+            j += 1
+    
+    similarity = (matches / longer) * 100
+    return similarity >= threshold
 
 # Load and filter data
 @st.cache_data
@@ -1191,22 +1228,48 @@ if st.session_state.study_mode:
 
 # AI Mode - Handle buzzer and AI responses
 if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.session_state.study_mode:
-    # Buzzer phase
+    # Buzzer phase - AI might buzz automatically
     st.markdown("### 🔔 Ready to buzz in!")
-    col_buzz1, col_buzz2 = st.columns(2)
-    with col_buzz1:
-        if st.button("🎯 BUZZ IN!", use_container_width=True, key="buzzer", type="primary"):
-            # Simulate buzzer race
-            winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
-            st.session_state.buzzer_winner = winner
-            st.session_state.current_turn = winner
-            
-            if winner == "player":
-                st.balloons()
-            st.rerun()
     
-    with col_buzz2:
-        st.info(f"⏱️ Be quick! {st.session_state.ai_personality} is ready...")
+    # Check if AI buzzes first (happens automatically based on difficulty)
+    import time
+    ai_buzz_delay = AI_DIFFICULTY[st.session_state.ai_difficulty]["buzzer_speed"]
+    
+    # Create a container for dynamic updates
+    buzz_container = st.container()
+    
+    with buzz_container:
+        col_buzz1, col_buzz2 = st.columns(2)
+        
+        # Add a placeholder for AI buzzing notification
+        ai_buzz_placeholder = st.empty()
+        
+        with col_buzz1:
+            if st.button("🎯 BUZZ IN!", use_container_width=True, key="buzzer", type="primary"):
+                # Player buzzed - determine who was faster
+                winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
+                st.session_state.buzzer_winner = winner
+                st.session_state.current_turn = winner
+                
+                if winner == "player":
+                    st.balloons()
+                    st.success("🎯 You buzzed in first!")
+                else:
+                    st.warning(f"🤖 {st.session_state.ai_personality} was faster!")
+                st.rerun()
+        
+        with col_buzz2:
+            # Simulate AI potentially buzzing on its own
+            if random.random() < (0.3 + (0.2 * (["Easy", "Medium", "Hard", "Impossible"].index(st.session_state.ai_difficulty) / 3))):
+                # AI decides to buzz
+                with st.spinner(f"🤖 {st.session_state.ai_personality} is buzzing in..."):
+                    time.sleep(ai_buzz_delay)
+                st.session_state.buzzer_winner = "ai"
+                st.session_state.current_turn = "ai"
+                st.warning(f"🤖 {st.session_state.ai_personality} buzzed in!")
+                st.rerun()
+            else:
+                st.info(f"⏱️ Be quick! {st.session_state.ai_personality} is thinking...")
     
     # Don't show answer form during buzzer phase
     st.stop()
@@ -1235,42 +1298,53 @@ elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not
         points = 2 if is_daily_double else 1
         st.session_state.ai_score += points
         st.session_state.ai_streak += 1
+        
+        # Reset for next question
+        if st.button("Next Question ➡️", use_container_width=True, type="primary"):
+            st.session_state.current_clue = None
+            st.session_state.buzzer_winner = None
+            st.session_state.current_turn = None
+            st.rerun()
+        st.stop()  # Don't show answer form
     else:
-        st.success(f"❌ {st.session_state.ai_personality} got it wrong! Your turn for a steal!")
-        st.info(f"The correct answer was: **{clue['correct_response']}**")
-        st.session_state.ai_streak = 0
-    
-    # Reset for next question
-    if st.button("Next Question ➡️", use_container_width=True, type="primary"):
-        st.session_state.current_clue = None
-        st.session_state.buzzer_winner = None
-        st.session_state.current_turn = None
-        st.rerun()
-    
-    st.stop()
+        st.success(f"❌ {st.session_state.ai_personality} got it wrong!")
+        st.info("Your chance to steal the point! Answer below:")
+        # Let player try to steal - continue to answer form
 
-# Regular answer form (player answering or non-AI mode)
-with st.form(key="clue_form", clear_on_submit=True):
-    col_input, col_submit, col_bookmark = st.columns([3, 1, 1])
-    with col_input:
-        user_input = st.text_input(
-            "Your response:",
-            placeholder="Type your answer here...",
-            label_visibility="collapsed",
-            disabled=st.session_state.study_mode
-        )
-    with col_submit:
-        submit_text = "🎯 Submit"
-        if st.session_state.study_mode:
-            submit_text = "⏭️ Next"
-        elif st.session_state.ai_mode and st.session_state.buzzer_winner == "player":
-            submit_text = "🎯 Answer!"
-        submitted = st.form_submit_button(
-            submit_text, 
-            use_container_width=True
-        )
-    with col_bookmark:
-        bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark")
+# Show answer form if:
+# 1. Not in AI mode, OR
+# 2. Player buzzed in, OR  
+# 3. AI got it wrong and player can steal, OR
+# 4. In study mode
+show_answer_form = (
+    not st.session_state.ai_mode or
+    st.session_state.buzzer_winner == "player" or
+    st.session_state.study_mode or
+    (st.session_state.buzzer_winner == "ai" and st.session_state.ai_mode)  # AI wrong, player can steal
+)
+
+if show_answer_form:
+    with st.form(key="clue_form", clear_on_submit=True):
+        col_input, col_submit, col_bookmark = st.columns([3, 1, 1])
+        with col_input:
+            user_input = st.text_input(
+                "Your response:",
+                placeholder="Type your answer here...",
+                label_visibility="collapsed",
+                disabled=st.session_state.study_mode
+            )
+        with col_submit:
+            submit_text = "🎯 Submit"
+            if st.session_state.study_mode:
+                submit_text = "⏭️ Next"
+            elif st.session_state.ai_mode and st.session_state.buzzer_winner == "player":
+                submit_text = "🎯 Answer!"
+            submitted = st.form_submit_button(
+                submit_text, 
+                use_container_width=True
+            )
+        with col_bookmark:
+            bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark")
 
 if bookmark_btn:
     bookmark_entry = {
@@ -1300,8 +1374,10 @@ if submitted:
         elif is_daily_double:
             points_multiplier = 2
             
-        # Check correctness - only enforce timer if it's enabled (not 999999)
-        answer_matches = user_clean == answer_clean
+        # Check correctness using fuzzy matching
+        answer_matches = fuzzy_match(user_input, clue["correct_response"], threshold=75)
+        
+        # Only enforce timer if it's enabled (not 999999)
         if st.session_state.time_limit == 999999:  # Timer is off
             correct = answer_matches
         else:  # Timer is on
