@@ -675,14 +675,17 @@ with st.sidebar:
     # Theme selection
     st.markdown("### 📚 Theme Selection")
     
-    # Quick picks
+    # Quick picks - default to Everything (all themes)
     quick_pick = st.selectbox(
         "Quick Pick:",
-        ["Custom Selection", "🎓 Academic", "🎬 Entertainment", "🌍 World", "📚 Everything"],
-        key="quick_pick"
+        ["📚 Everything", "Custom Selection", "🎓 Academic", "🎬 Entertainment", "🌍 World"],
+        key="quick_pick",
+        index=0  # Default to Everything
     )
     
-    if quick_pick == "Custom Selection":
+    if quick_pick == "📚 Everything":
+        selected_categories = list(all_categories)
+    elif quick_pick == "Custom Selection":
         # Theme selector
         theme_options = []
         for theme, cats in theme_groups.items():
@@ -715,8 +718,6 @@ with st.sidebar:
         for theme in ["GEOGRAPHY", "HISTORY", "RELIGION & MYTHOLOGY"]:
             if theme in theme_groups:
                 selected_categories.extend(theme_groups[theme])
-    else:  # Everything
-        selected_categories = list(all_categories)
     
     if selected_categories:
         st.session_state.selected_categories = selected_categories
@@ -727,10 +728,10 @@ with st.sidebar:
     # Game settings
     st.markdown("### ⚙️ Settings")
     
-    # Timer toggle
+    # Timer toggle - default to off
     use_timer = st.checkbox(
         "⏱️ Use Timer",
-        value=True,
+        value=False,
         help="Enable/disable time limit for answers",
         key="use_timer"
     )
