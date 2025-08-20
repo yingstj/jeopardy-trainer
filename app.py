@@ -390,7 +390,7 @@ def normalize(text):
     return text.strip()
 
 # Fuzzy matching function
-def fuzzy_match(user_answer, correct_answer, threshold=80):
+def fuzzy_match(user_answer, correct_answer, threshold=70):
     """Check if user answer is close enough to correct answer"""
     # First try exact match after normalization
     user_norm = normalize(user_answer)
@@ -399,30 +399,63 @@ def fuzzy_match(user_answer, correct_answer, threshold=80):
     if user_norm == correct_norm:
         return True
     
-    # Check if user answer contains the key parts of correct answer or vice versa
-    if len(user_norm) > 3 and len(correct_norm) > 3:
-        if user_norm in correct_norm or correct_norm in user_norm:
+    # Special handling for names - accept last name only
+    correct_words = correct_norm.split()
+    user_words = user_norm.split()
+    
+    # If correct answer is a person's name (2-3 words) and user gave last word (last name)
+    if len(correct_words) >= 2 and len(user_words) == 1:
+        # Check if user answer matches last name
+        if user_norm == correct_words[-1]:
+            return True
+        # Also check if it matches any significant word in the answer
+        for word in correct_words:
+            if len(word) > 4 and user_norm == word:  # Significant word (>4 chars)
+                return True
+    
+    # Check if user gave multiple words that include the key part
+    if len(user_words) > 1 and len(correct_words) > 1:
+        # Check if last names match
+        if user_words[-1] == correct_words[-1]:
             return True
     
-    # Calculate similarity score (simple character-based)
-    # This is a simple implementation - could use fuzzywuzzy if available
-    shorter = min(len(user_norm), len(correct_norm))
-    longer = max(len(user_norm), len(correct_norm))
+    # Check if user answer contains the key parts of correct answer or vice versa
+    if len(user_norm) > 3 and len(correct_norm) > 3:
+        # For substring matching, be more lenient
+        if user_norm in correct_norm:
+            # User answer is contained in correct answer
+            # Accept if it's a significant portion (>40% of correct answer)
+            if len(user_norm) / len(correct_norm) > 0.4:
+                return True
+        if correct_norm in user_norm:
+            return True
     
-    if shorter == 0:
+    # For very short answers, require exact match
+    if len(user_norm) <= 3 or len(correct_norm) <= 3:
+        return user_norm == correct_norm
+    
+    # Calculate word-based similarity for multi-word answers
+    if len(correct_words) > 1 and len(user_words) > 0:
+        matching_words = sum(1 for word in user_words if word in correct_words)
+        if matching_words / len(correct_words) >= 0.5:  # At least 50% of words match
+            return True
+    
+    # Character-based similarity as fallback
+    # Use Levenshtein-like distance
+    max_len = max(len(user_norm), len(correct_norm))
+    if max_len == 0:
         return False
     
-    # Count matching characters in order
-    matches = 0
-    j = 0
-    for i in range(len(user_norm)):
-        while j < len(correct_norm) and user_norm[i] != correct_norm[j]:
-            j += 1
-        if j < len(correct_norm):
-            matches += 1
-            j += 1
+    # Count character differences
+    differences = abs(len(user_norm) - len(correct_norm))
+    min_len = min(len(user_norm), len(correct_norm))
     
-    similarity = (matches / longer) * 100
+    for i in range(min_len):
+        if i < len(user_norm) and i < len(correct_norm):
+            if user_norm[i] != correct_norm[i]:
+                differences += 1
+    
+    similarity = ((max_len - differences) / max_len) * 100
     return similarity >= threshold
 
 # Load and filter data
@@ -1377,7 +1410,7 @@ if submitted:
             points_multiplier = 2
             
         # Check correctness using fuzzy matching
-        answer_matches = fuzzy_match(user_input, clue["correct_response"], threshold=75)
+        answer_matches = fuzzy_match(user_input, clue["correct_response"], threshold=65)
         
         # Only enforce timer if it's enabled (not 999999)
         if st.session_state.time_limit == 999999:  # Timer is off
