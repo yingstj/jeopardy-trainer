@@ -13,6 +13,10 @@ import time
 # Import the R2 data loader
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
 
+# Import the category analyzer and simple selector
+from category_analyzer import JeopardyCategoryAnalyzer
+from simple_category_selector import create_simple_category_selector
+
 # Page configuration
 st.set_page_config(
     page_title="Jay's Jeopardy Trainer",
@@ -89,6 +93,28 @@ st.markdown("""
     
     .success-animation {
         animation: successPulse 0.5s ease-in-out;
+    }
+    
+    /* Sidebar styling for better visibility */
+    .stSidebar .stSelectbox > label,
+    .stSidebar .stMultiselect > label,
+    .stSidebar .stSlider > label,
+    .stSidebar .stNumberInput > label,
+    .stSidebar .stCheckbox > label {
+        color: #262730 !important;
+        font-weight: 500;
+    }
+    
+    /* Ensure dropdown text is visible */
+    .stSidebar .stSelectbox > div > div,
+    .stSidebar .stMultiselect > div > div {
+        color: #262730 !important;
+        background-color: white !important;
+    }
+    
+    /* Style toggle switches in sidebar */
+    .stSidebar .stCheckbox {
+        padding: 0.5rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -199,7 +225,14 @@ def init_session_state():
         "achievements": set(),
         "daily_goal": 10,
         "daily_completed": 0,
-        "last_played_date": datetime.date.today()
+        "last_played_date": datetime.date.today(),
+        "adaptive_mode": False,
+        "timed_session": False,
+        "session_duration": 5,
+        "session_start_time": None,
+        "practice_missed": False,
+        "show_answer_after": True,
+        "enable_sound": False
     }
     
     for key, value in defaults.items():
@@ -282,35 +315,103 @@ def main():
     with st.sidebar:
         st.header("⚙️ Game Settings")
         
-        # Difficulty selector
-        st.session_state.difficulty = st.selectbox(
-            "Difficulty Level",
-            list(DIFFICULTY_SETTINGS.keys()),
-            index=1
-        )
+        # Game Mode Settings
+        with st.expander("🎮 Game Mode", expanded=False):
+            # Difficulty selector
+            st.session_state.difficulty = st.selectbox(
+                "Difficulty Level",
+                list(DIFFICULTY_SETTINGS.keys()),
+                index=list(DIFFICULTY_SETTINGS.keys()).index(st.session_state.difficulty),
+                help="Affects time limits and hint availability"
+            )
+            
+            # Adaptive mode toggle
+            st.session_state.adaptive_mode = st.checkbox(
+                "Adaptive Mode",
+                value=st.session_state.adaptive_mode,
+                help="Focuses on categories where you need more practice"
+            )
+            
+            # Practice missed questions toggle
+            st.session_state.practice_missed = st.checkbox(
+                "Practice Missed Only",
+                value=st.session_state.practice_missed,
+                help="Only show questions you've previously missed"
+            )
         
-        # Category filter
-        categories = sorted(df["category"].unique())
-        selected_categories = st.multiselect(
-            "Select Categories:",
-            categories,
-            default=categories[:5] if len(categories) >= 5 else categories
-        )
+        # Timer Settings
+        with st.expander("⏱️ Timer Settings", expanded=False):
+            # Base time limit
+            base_time = st.slider(
+                "Base Time Limit (seconds):",
+                min_value=10,
+                max_value=60,
+                value=30,
+                help="Base time before difficulty adjustment"
+            )
+            difficulty_mult = DIFFICULTY_SETTINGS[st.session_state.difficulty]["time_multiplier"]
+            st.session_state.time_remaining = int(base_time * difficulty_mult)
+            st.caption(f"Adjusted time: {st.session_state.time_remaining}s")
+            
+            # Timed session toggle
+            st.session_state.timed_session = st.checkbox(
+                "Timed Session",
+                value=st.session_state.timed_session,
+                help="Play for a fixed duration"
+            )
+            
+            if st.session_state.timed_session:
+                st.session_state.session_duration = st.number_input(
+                    "Session Duration (minutes):",
+                    min_value=1,
+                    max_value=30,
+                    value=st.session_state.session_duration,
+                    step=1
+                )
+                
+                # Start session timer if not started
+                if st.session_state.session_start_time is None:
+                    st.session_state.session_start_time = datetime.datetime.now()
+                
+                # Check if session has ended
+                elapsed_minutes = (datetime.datetime.now() - st.session_state.session_start_time).seconds / 60
+                remaining_minutes = max(0, st.session_state.session_duration - elapsed_minutes)
+                
+                if remaining_minutes > 0:
+                    st.progress(1 - (elapsed_minutes / st.session_state.session_duration))
+                    st.caption(f"Session time remaining: {remaining_minutes:.1f} min")
+                else:
+                    st.warning("⏰ Session complete!")
         
-        # Time limit
-        base_time = st.slider("Base Time Limit (seconds):", 10, 60, 30)
-        difficulty_mult = DIFFICULTY_SETTINGS[st.session_state.difficulty]["time_multiplier"]
-        st.session_state.time_remaining = int(base_time * difficulty_mult)
-        st.caption(f"Adjusted time: {st.session_state.time_remaining}s")
+        # Category Selection - Using simplified selector
+        with st.expander("📚 Category Selection", expanded=True):
+            selected_categories = create_simple_category_selector(df)
         
-        # Daily goal
-        st.session_state.daily_goal = st.number_input(
-            "Daily Goal:",
-            min_value=5,
-            max_value=100,
-            value=st.session_state.daily_goal,
-            step=5
-        )
+        # Goals & Preferences
+        with st.expander("🎯 Goals & Preferences", expanded=False):
+            # Daily goal
+            st.session_state.daily_goal = st.number_input(
+                "Daily Goal:",
+                min_value=5,
+                max_value=100,
+                value=st.session_state.daily_goal,
+                step=5,
+                help="Number of questions to answer daily"
+            )
+            
+            # Show answer after incorrect
+            st.session_state.show_answer_after = st.checkbox(
+                "Show Answer After Incorrect",
+                value=st.session_state.show_answer_after,
+                help="Display correct answer when you get it wrong"
+            )
+            
+            # Enable sound effects
+            st.session_state.enable_sound = st.checkbox(
+                "Enable Sound Effects",
+                value=st.session_state.enable_sound,
+                help="Play sounds for correct/incorrect answers"
+            )
         
         st.markdown("---")
         
@@ -334,11 +435,56 @@ def main():
         st.warning("Please select at least one category to continue.")
         st.stop()
     
+    # Apply filtering based on mode
     filtered_df = df[df["category"].isin(selected_categories)]
     
+    # Handle practice missed mode
+    if st.session_state.practice_missed and st.session_state.history:
+        missed_clues = [h for h in st.session_state.history if not h["was_correct"]]
+        if missed_clues:
+            # Create a dataframe of missed questions
+            missed_df = pd.DataFrame([{
+                'category': m['category'],
+                'clue': m['clue'],
+                'correct_response': m['correct_response']
+            } for m in missed_clues])
+            filtered_df = missed_df
+        else:
+            st.info("🎉 No missed questions to practice! Showing all questions.")
+    
+    # Handle adaptive mode
+    if st.session_state.adaptive_mode and st.session_state.history and not st.session_state.practice_missed:
+        # Calculate performance by category
+        history_df = pd.DataFrame(st.session_state.history)
+        category_performance = history_df.groupby('category')['was_correct'].mean()
+        
+        # Focus on categories with lower performance
+        weak_categories = category_performance[category_performance < 0.6].index.tolist()
+        if weak_categories:
+            # Increase probability of weak categories
+            weak_df = filtered_df[filtered_df['category'].isin(weak_categories)]
+            if not weak_df.empty:
+                # 70% chance to pick from weak categories
+                if random.random() < 0.7:
+                    filtered_df = weak_df
+    
     if filtered_df.empty:
-        st.warning("No clues found for the selected categories.")
+        st.warning("No clues found for the selected criteria.")
         st.stop()
+    
+    # Check timed session
+    if st.session_state.timed_session and st.session_state.session_start_time:
+        elapsed_minutes = (datetime.datetime.now() - st.session_state.session_start_time).seconds / 60
+        if elapsed_minutes >= st.session_state.session_duration:
+            st.balloons()
+            st.success(f"🎉 Session Complete! You answered {st.session_state.total} questions!")
+            st.info(f"Final Score: {st.session_state.score}/{st.session_state.total} ({(st.session_state.score/max(st.session_state.total,1))*100:.1f}%)")
+            if st.button("Start New Session", type="primary"):
+                st.session_state.session_start_time = datetime.datetime.now()
+                st.session_state.score = 0
+                st.session_state.total = 0
+                st.rerun()
+            st.stop()
     
     # Display score dashboard
     display_score_dashboard()
@@ -346,7 +492,9 @@ def main():
     
     # Get or set current clue
     if st.session_state.current_clue is None:
-        st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+        # Select based on current mode
+        clue_list = filtered_df.to_dict(orient="records")
+        st.session_state.current_clue = random.choice(clue_list)
         st.session_state.start_time = datetime.datetime.now()
         st.session_state.timer_active = True
         st.session_state.show_hint = False
@@ -402,11 +550,20 @@ def main():
                 st.success(achievement)
         else:
             if elapsed_time > st.session_state.time_remaining:
-                st.error(f"⏰ Time's up! The correct response was: **{clue['correct_response']}**")
+                if st.session_state.show_answer_after:
+                    st.error(f"⏰ Time's up! The correct response was: **{clue['correct_response']}**")
+                else:
+                    st.error("⏰ Time's up!")
             elif similarity > 0.5:
-                st.warning(f"🤔 Close, but not quite right! The correct response was: **{clue['correct_response']}**")
+                if st.session_state.show_answer_after:
+                    st.warning(f"🤔 Close, but not quite right! The correct response was: **{clue['correct_response']}**")
+                else:
+                    st.warning("🤔 Close, but not quite right!")
             else:
-                st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
+                if st.session_state.show_answer_after:
+                    st.error(f"❌ Incorrect. The correct response was: **{clue['correct_response']}**")
+                else:
+                    st.error("❌ Incorrect.")
             st.session_state.streak = 0
         
         st.session_state.total += 1
