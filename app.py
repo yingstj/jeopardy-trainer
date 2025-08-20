@@ -12,6 +12,8 @@ from typing import Dict, List
 
 # Import the R2 data loader
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
+# Import user manager
+from user_manager import UserManager
 
 # Page configuration with custom icon
 st.set_page_config(
@@ -424,12 +426,18 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
 
+# Initialize user manager
+user_manager = UserManager()
+
 # Initialize session state
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if "username" not in st.session_state:
     st.session_state.username = ""
+
+if "user_data" not in st.session_state:
+    st.session_state.user_data = None
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -512,20 +520,70 @@ if not st.session_state.authenticated:
         </div>
         """, unsafe_allow_html=True)
         
-        with st.form("login_form"):
-            username = st.text_input("Enter your name to start playing:", placeholder="Alex Trebek")
-            st.markdown("*Your name will be used to track your progress and achievements*")
-            
-            submitted = st.form_submit_button("🎮 Start Playing", use_container_width=True, type="primary")
-            
-            if submitted:
-                if username.strip():
+        # Tab selection for Sign In / Sign Up
+        tab1, tab2 = st.tabs(["🔑 Sign In", "✨ Create Account"])
+        
+        with tab1:
+            with st.form("login_form"):
+                username = st.text_input("Username:", placeholder="Enter your username")
+                password = st.text_input("Password:", type="password", placeholder="Enter your password")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    submitted = st.form_submit_button("🎮 Sign In", use_container_width=True, type="primary")
+                with col2:
+                    guest = st.form_submit_button("👤 Play as Guest", use_container_width=True)
+                
+                if submitted:
+                    if username.strip() and password:
+                        if user_manager.authenticate(username.strip(), password):
+                            st.session_state.authenticated = True
+                            st.session_state.username = username.strip()
+                            st.session_state.user_data = user_manager.get_user_data(username.strip())
+                            
+                            # Load user's saved data
+                            if st.session_state.user_data:
+                                stats = st.session_state.user_data["stats"]
+                                st.session_state.best_streak = stats.get("best_streak", 0)
+                                st.session_state.bookmarks = stats.get("bookmarks", [])
+                            
+                            st.success(f"Welcome back, {username}! Loading your profile...")
+                            st.rerun()
+                        else:
+                            st.error("Invalid username or password")
+                    else:
+                        st.error("Please enter both username and password")
+                
+                if guest:
                     st.session_state.authenticated = True
-                    st.session_state.username = username.strip()
-                    st.success(f"Welcome, {username}! Loading game...")
+                    st.session_state.username = f"Guest_{random.randint(1000, 9999)}"
+                    st.info("Playing as guest - progress won't be saved")
                     st.rerun()
-                else:
-                    st.error("Please enter your name to continue")
+        
+        with tab2:
+            with st.form("signup_form"):
+                new_username = st.text_input("Choose a username:", placeholder="Pick a unique username")
+                new_password = st.text_input("Create password:", type="password", placeholder="At least 4 characters")
+                confirm_password = st.text_input("Confirm password:", type="password", placeholder="Re-enter password")
+                
+                create_account = st.form_submit_button("🌟 Create Account", use_container_width=True, type="primary")
+                
+                if create_account:
+                    if new_username.strip() and new_password:
+                        if len(new_password) < 4:
+                            st.error("Password must be at least 4 characters long")
+                        elif new_password != confirm_password:
+                            st.error("Passwords don't match")
+                        elif user_manager.user_exists(new_username.strip()):
+                            st.error("Username already taken. Please choose another.")
+                        else:
+                            if user_manager.create_user(new_username.strip(), new_password):
+                                st.success("Account created! You can now sign in.")
+                                st.balloons()
+                            else:
+                                st.error("Failed to create account. Please try again.")
+                    else:
+                        st.error("Please fill in all fields")
         
         # Fun facts while waiting
         st.markdown("---")
@@ -559,6 +617,20 @@ with st.sidebar:
     st.markdown("## 🎯 Jaypardy!")
     if st.session_state.username:
         st.markdown(f"👤 **Player:** {st.session_state.username}")
+        
+        # Show lifetime stats for registered users
+        if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
+            with st.expander("📊 Lifetime Stats", expanded=False):
+                stats = st.session_state.user_data["stats"]
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Total Games", stats.get("games_played", 0))
+                    st.metric("Total Score", stats.get("total_score", 0))
+                with col2:
+                    st.metric("Questions", stats.get("total_questions", 0))
+                    if stats.get("total_questions", 0) > 0:
+                        acc = (stats.get("correct_answers", 0) / stats.get("total_questions", 1)) * 100
+                        st.metric("Accuracy", f"{acc:.1f}%")
     st.markdown("---")
     
     # Score display in sidebar
@@ -727,8 +799,21 @@ with st.sidebar:
     st.markdown("---")
     
     if st.button("🚪 Logout", use_container_width=True):
+        # Save user session before logging out
+        if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
+            session_data = {
+                "total_questions": st.session_state.total,
+                "correct_answers": st.session_state.score,
+                "score": st.session_state.score,
+                "best_streak": st.session_state.best_streak,
+                "bookmarks": st.session_state.bookmarks
+            }
+            user_manager.save_user_session(st.session_state.username, session_data)
+        
+        # Clear session
         st.session_state.authenticated = False
         st.session_state.username = ""
+        st.session_state.user_data = None
         st.rerun()
 
 # MAIN GAME AREA
