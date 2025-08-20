@@ -4,6 +4,7 @@ import random
 import re
 import os
 import datetime
+import json
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -14,6 +15,128 @@ from typing import Dict, List
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
 # Import user manager
 from user_manager import UserManager
+
+# Challenge/Multiplayer Mode Functions
+class ChallengeManager:
+    """Manages multiplayer challenges between users"""
+    
+    def __init__(self):
+        self.challenges_file = "challenges.json"
+        self.challenges = self._load_challenges()
+    
+    def _load_challenges(self):
+        """Load challenges from JSON file"""
+        if os.path.exists(self.challenges_file):
+            try:
+                with open(self.challenges_file, 'r') as f:
+                    return json.load(f)
+            except:
+                return {"active": [], "completed": []}
+        return {"active": [], "completed": []}
+    
+    def _save_challenges(self):
+        """Save challenges to JSON file"""
+        with open(self.challenges_file, 'w') as f:
+            json.dump(self.challenges, f, indent=2)
+    
+    def create_challenge(self, challenger: str, opponent: str, categories: list, num_questions: int = 10):
+        """Create a new challenge"""
+        challenge = {
+            "id": datetime.datetime.now().isoformat(),
+            "challenger": challenger,
+            "opponent": opponent,
+            "categories": categories,
+            "num_questions": num_questions,
+            "challenger_score": 0,
+            "opponent_score": 0,
+            "challenger_completed": False,
+            "opponent_completed": False,
+            "status": "pending",
+            "created_at": datetime.datetime.now().isoformat()
+        }
+        self.challenges["active"].append(challenge)
+        self._save_challenges()
+        return challenge["id"]
+    
+    def accept_challenge(self, challenge_id: str, username: str):
+        """Accept a challenge"""
+        for challenge in self.challenges["active"]:
+            if challenge["id"] == challenge_id and challenge["opponent"] == username:
+                challenge["status"] = "active"
+                self._save_challenges()
+                return True
+        return False
+    
+    def complete_challenge(self, challenge_id: str, username: str, score: int):
+        """Complete one side of a challenge"""
+        for challenge in self.challenges["active"]:
+            if challenge["id"] == challenge_id:
+                if challenge["challenger"] == username:
+                    challenge["challenger_score"] = score
+                    challenge["challenger_completed"] = True
+                elif challenge["opponent"] == username:
+                    challenge["opponent_score"] = score
+                    challenge["opponent_completed"] = True
+                
+                # If both completed, move to completed
+                if challenge["challenger_completed"] and challenge["opponent_completed"]:
+                    challenge["status"] = "completed"
+                    challenge["winner"] = (challenge["challenger"] if challenge["challenger_score"] > challenge["opponent_score"]
+                                         else challenge["opponent"] if challenge["opponent_score"] > challenge["challenger_score"]
+                                         else "tie")
+                    self.challenges["completed"].append(challenge)
+                    self.challenges["active"].remove(challenge)
+                
+                self._save_challenges()
+                return True
+        return False
+    
+    def get_active_challenges(self, username: str):
+        """Get active challenges for a user"""
+        return [c for c in self.challenges["active"] 
+                if c["challenger"] == username or c["opponent"] == username]
+    
+    def get_challenge_results(self, username: str):
+        """Get completed challenges for a user"""
+        return [c for c in self.challenges["completed"]
+                if c["challenger"] == username or c["opponent"] == username]
+
+# Online Users Simulation (for demo purposes)
+class OnlineUsers:
+    """Simulates online users for multiplayer mode"""
+    
+    def __init__(self):
+        self.online_users = []
+        self.last_update = datetime.datetime.now()
+    
+    def update_online_users(self, current_user: str):
+        """Update list of online users (simulated)"""
+        # In a real app, this would check a database or server
+        # For demo, we'll simulate with random names
+        bot_names = ["QuizMaster", "TriviaKing", "JeopardyPro", "BrainiacBot", 
+                     "SmartPlayer", "QuickThinker", "FactFinder", "WiseOwl"]
+        
+        # Refresh every 30 seconds
+        if (datetime.datetime.now() - self.last_update).seconds > 30:
+            num_online = random.randint(3, 8)
+            self.online_users = random.sample(bot_names, num_online)
+            self.last_update = datetime.datetime.now()
+        
+        # Always include current user
+        if current_user and current_user not in self.online_users:
+            self.online_users.insert(0, current_user)
+        
+        return self.online_users
+    
+    def get_user_stats(self, username: str):
+        """Get simulated stats for a user"""
+        # In real app, would fetch from database
+        return {
+            "games_played": random.randint(10, 500),
+            "win_rate": random.randint(40, 85),
+            "avg_score": random.randint(60, 95),
+            "rank": random.choice(["Bronze", "Silver", "Gold", "Platinum", "Diamond"])
+        }
 
 # Page configuration with custom icon
 st.set_page_config(
@@ -547,6 +670,9 @@ if "study_mode" not in st.session_state:
 if "weak_themes" not in st.session_state:
     st.session_state.weak_themes = {}
 
+if "viewing_bookmark" not in st.session_state:
+    st.session_state.viewing_bookmark = None
+
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
     st.session_state.ai_difficulty = "Medium"
@@ -655,19 +781,50 @@ def simulate_buzzer_race(difficulty):
     """Simulate who wins the buzzer"""
     difficulty_data = AI_DIFFICULTY[difficulty]
     
-    # Player reaction time (random between 0.8 and 2.5 seconds)
-    player_time = random.uniform(0.8, 2.5)
+    # Player reaction time (random between 0.5 and buzzer_speed seconds)
+    max_player_time = difficulty_data["buzzer_speed"]
+    player_time = random.uniform(0.5, max_player_time)
     
-    # AI reaction time based on difficulty
-    ai_time = random.uniform(
-        difficulty_data["buzzer_speed"] * 0.8,
-        difficulty_data["buzzer_speed"] * 1.2
-    )
+    # AI reaction time based on difficulty (will try to buzz somewhere in the time window)
+    if difficulty == "Easy":
+        # AI buzzes slowly on easy mode (7-10 seconds)
+        ai_time = random.uniform(7.0, 10.0)
+    elif difficulty == "Medium":
+        # AI buzzes moderately on medium (3-5 seconds)
+        ai_time = random.uniform(3.0, 5.0)
+    else:  # Hard
+        # AI buzzes quickly on hard (1-2 seconds)
+        ai_time = random.uniform(1.0, 2.0)
     
     if player_time < ai_time:
         return "player", player_time
     else:
         return "ai", ai_time
+
+def get_ai_daily_double_wager(ai_score, player_score, difficulty):
+    """Determine AI's wager on Daily Double"""
+    difficulty_data = AI_DIFFICULTY[difficulty]
+    aggression = difficulty_data["daily_double_aggression"]
+    
+    # Base wager calculation
+    if ai_score <= 0:
+        max_wager = 1000
+    else:
+        max_wager = ai_score
+    
+    # Adjust based on game situation
+    if ai_score < player_score:
+        # Behind - more aggressive
+        wager_percent = min(1.0, aggression + 0.2)
+    elif ai_score > player_score * 2:
+        # Way ahead - conservative
+        wager_percent = max(0.2, aggression - 0.3)
+    else:
+        # Close game - normal aggression
+        wager_percent = aggression
+    
+    wager = int(max_wager * wager_percent)
+    return max(100, min(wager, max_wager))
 
 if "selected_categories" not in st.session_state:
     st.session_state.selected_categories = None
@@ -1101,6 +1258,104 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Challenge Mode Section
+    st.markdown("### 🏆 Challenge Mode")
+    
+    # Initialize challenge manager and online users
+    if "challenge_manager" not in st.session_state:
+        st.session_state.challenge_manager = ChallengeManager()
+    if "online_users" not in st.session_state:
+        st.session_state.online_users = OnlineUsers()
+    
+    challenge_manager = st.session_state.challenge_manager
+    online_users = st.session_state.online_users
+    
+    # Update online users list
+    online_list = online_users.update_online_users(st.session_state.username)
+    
+    # Show online users
+    with st.expander(f"🟢 Online Users ({len(online_list)})", expanded=False):
+        for user in online_list:
+            if user != st.session_state.username:
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(f"👤 {user}")
+                with col2:
+                    if st.button("⚔️", key=f"challenge_{user}", help=f"Challenge {user}"):
+                        # Create a challenge
+                        challenge_id = challenge_manager.create_challenge(
+                            st.session_state.username, 
+                            user,
+                            selected_categories[:10],  # Use first 10 categories
+                            num_questions=10
+                        )
+                        st.success(f"Challenge sent to {user}!")
+    
+    # Show active challenges
+    active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
+    if active_challenges:
+        with st.expander(f"⚔️ Active Challenges ({len(active_challenges)})", expanded=False):
+            for challenge in active_challenges:
+                opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                status_emoji = "⏳" if challenge["status"] == "pending" else "🎮"
+                
+                st.write(f"{status_emoji} vs **{opponent}**")
+                
+                # Show scores if available
+                if challenge["challenger_completed"] or challenge["opponent_completed"]:
+                    your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
+                    their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
+                    your_done = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
+                    their_done = challenge["opponent_completed"] if challenge["challenger"] == st.session_state.username else challenge["challenger_completed"]
+                    
+                    st.write(f"You: {your_score} {'✅' if your_done else '⏳'}")
+                    st.write(f"{opponent}: {their_score if their_done else '---'} {'✅' if their_done else '⏳'}")
+                
+                # Accept button for pending challenges
+                if challenge["status"] == "pending" and challenge["opponent"] == st.session_state.username:
+                    if st.button("✅ Accept", key=f"accept_{challenge['id']}"):
+                        challenge_manager.accept_challenge(challenge["id"], st.session_state.username)
+                        st.success("Challenge accepted!")
+                        st.rerun()
+                
+                # Play button for active challenges
+                elif challenge["status"] == "active":
+                    your_completed = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
+                    if not your_completed:
+                        if st.button("🎮 Play", key=f"play_{challenge['id']}"):
+                            st.session_state.current_challenge = challenge
+                            st.session_state.challenge_mode = True
+                            st.session_state.challenge_question_num = 0
+                            st.session_state.challenge_score = 0
+                            st.rerun()
+                
+                st.markdown("---")
+    
+    # Show completed challenges
+    completed = challenge_manager.get_challenge_results(st.session_state.username)
+    if completed:
+        with st.expander(f"🏅 Results ({len(completed)})", expanded=False):
+            for challenge in completed[-5:]:  # Show last 5
+                opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
+                their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
+                
+                if challenge["winner"] == st.session_state.username:
+                    result_emoji = "🏆"
+                    result_text = "Won"
+                elif challenge["winner"] == "tie":
+                    result_emoji = "🤝"
+                    result_text = "Tied"
+                else:
+                    result_emoji = "😔"
+                    result_text = "Lost"
+                
+                st.write(f"{result_emoji} **{result_text}** vs {opponent}")
+                st.write(f"Score: {your_score} - {their_score}")
+                st.markdown("---")
+    
+    st.markdown("---")
+    
     if st.button("🚪 Logout", use_container_width=True):
         # Save user session before logging out
         if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
@@ -1120,6 +1375,44 @@ with st.sidebar:
         st.rerun()
 
 # MAIN GAME AREA
+
+# Check if viewing a bookmark
+if st.session_state.viewing_bookmark:
+    st.info("📖 Viewing Bookmarked Question")
+    bookmark = st.session_state.viewing_bookmark
+    
+    st.markdown(f"""
+    <div class="theme-card">
+        BOOKMARKED: {bookmark['category']}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div class="clue-card">
+        <div class="clue-text">{bookmark['clue']}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("📖 View Answer", expanded=True):
+        st.success(f"**Answer:** {bookmark['correct_response']}")
+        
+        # Note section for bookmark
+        note_key = f"{bookmark['category']}_{bookmark['clue'][:50]}"
+        existing_note = st.session_state.notes.get(note_key, "")
+        new_note = st.text_area(
+            "📝 Edit note for this bookmark:",
+            value=existing_note,
+            placeholder="Add memory tricks, related facts, etc."
+        )
+        if new_note != existing_note:
+            st.session_state.notes[note_key] = new_note
+    
+    if st.button("↩️ Back to Game", use_container_width=True):
+        st.session_state.viewing_bookmark = None
+        st.rerun()
+    
+    st.stop()  # Don't show the regular game when viewing bookmark
+
 # Show different header for AI mode vs regular mode
 if st.session_state.ai_mode:
     # AI Mode - Show both player and AI scores
@@ -1203,12 +1496,64 @@ if filtered_df.empty:
     st.warning("No clues found for selected themes/round. Please adjust your selection.")
     st.stop()
 
-# Get current clue
-if st.session_state.current_clue is None:
-    st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
-    st.session_state.start_time = datetime.datetime.now()
-
-clue = st.session_state.current_clue
+# Challenge Mode Game Logic
+if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
+    challenge = st.session_state.current_challenge
+    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+    
+    # Display challenge header
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); 
+                color: white; padding: 1.5rem; border-radius: 15px; 
+                text-align: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">⚔️ Challenge Mode</h2>
+        <p style="margin: 0.5rem 0;">You vs {opponent}</p>
+        <p style="margin: 0;">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']}</p>
+        <p style="margin: 0; font-size: 1.2rem;">Your Score: {st.session_state.challenge_score}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Check if challenge is complete
+    if st.session_state.challenge_question_num >= challenge["num_questions"]:
+        # Complete the challenge
+        challenge_manager.complete_challenge(
+            challenge["id"],
+            st.session_state.username,
+            st.session_state.challenge_score
+        )
+        
+        st.success(f"Challenge complete! Your score: {st.session_state.challenge_score}/{challenge['num_questions']}")
+        
+        # Reset challenge mode
+        st.session_state.challenge_mode = False
+        st.session_state.current_challenge = None
+        st.session_state.challenge_question_num = 0
+        st.session_state.challenge_score = 0
+        
+        if st.button("Back to Normal Mode", type="primary"):
+            st.rerun()
+        st.stop()
+    
+    # Use challenge categories
+    challenge_df = df[df["category"].isin(challenge["categories"])]
+    if challenge_df.empty:
+        challenge_df = filtered_df  # Fallback to regular filtered df
+    
+    # Get challenge question
+    if "challenge_current_clue" not in st.session_state or st.session_state.challenge_current_clue is None:
+        st.session_state.challenge_current_clue = random.choice(challenge_df.to_dict(orient="records"))
+        st.session_state.start_time = datetime.datetime.now()
+    
+    clue = st.session_state.challenge_current_clue
+    
+# Regular game mode
+else:
+    # Get current clue
+    if st.session_state.current_clue is None:
+        st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
+        st.session_state.start_time = datetime.datetime.now()
+    
+    clue = st.session_state.current_clue
 
 # Check for Daily Double
 is_daily_double = False
@@ -1395,7 +1740,11 @@ if bookmark_btn:
 if submitted:
     if st.session_state.study_mode:
         # In study mode, just move to next question
-        st.session_state.current_clue = None
+        if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
+            st.session_state.challenge_current_clue = None
+            st.session_state.challenge_question_num += 1
+        else:
+            st.session_state.current_clue = None
         st.rerun()
     else:
         elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
@@ -1466,16 +1815,30 @@ if submitted:
             "points_earned": points_earned
         })
 
-        st.session_state.current_clue = None
-        
-        # Reset AI mode states
-        if st.session_state.ai_mode:
-            st.session_state.buzzer_winner = None
-            st.session_state.current_turn = None
-        
-        # Add a next button for better flow
-        if st.button("Next Question →", type="primary", use_container_width=True):
-            st.rerun()
+        # Handle challenge mode progression
+        if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
+            # Update challenge score
+            if correct:
+                st.session_state.challenge_score += 1
+            
+            # Move to next question
+            st.session_state.challenge_current_clue = None
+            st.session_state.challenge_question_num += 1
+            
+            # Show next button
+            if st.button("Next Challenge Question →", type="primary", use_container_width=True):
+                st.rerun()
+        else:
+            st.session_state.current_clue = None
+            
+            # Reset AI mode states
+            if st.session_state.ai_mode:
+                st.session_state.buzzer_winner = None
+                st.session_state.current_turn = None
+            
+            # Add a next button for better flow
+            if st.button("Next Question →", type="primary", use_container_width=True):
+                st.rerun()
 
 # Expandable sections at the bottom
 col_exp1, col_exp2, col_exp3 = st.columns(3)
