@@ -483,12 +483,6 @@ if not st.session_state.authenticated:
     # Custom CSS for login page
     st.markdown("""
     <style>
-        .login-container {
-            max-width: 400px;
-            margin: auto;
-            padding: 2rem;
-            margin-top: 5rem;
-        }
         .login-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -505,12 +499,6 @@ if not st.session_state.authenticated:
             color: #6c757d;
             font-size: 1.1rem;
         }
-        .login-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        }
     </style>
     """, unsafe_allow_html=True)
     
@@ -524,10 +512,7 @@ if not st.session_state.authenticated:
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        
         with st.form("login_form"):
-            st.markdown("### Welcome!")
             username = st.text_input("Enter your name to start playing:", placeholder="Alex Trebek")
             st.markdown("*Your name will be used to track your progress and achievements*")
             
@@ -541,8 +526,6 @@ if not st.session_state.authenticated:
                     st.rerun()
                 else:
                     st.error("Please enter your name to continue")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
         
         # Fun facts while waiting
         st.markdown("---")
