@@ -32,36 +32,36 @@ st.markdown("""
     /* Custom header */
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 10px;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     .main-header h1 {
         color: white;
         margin: 0;
-        font-size: 2.5rem;
+        font-size: 2rem;
         text-align: center;
     }
     
     .main-header p {
         color: rgba(255, 255, 255, 0.9);
         text-align: center;
-        margin-top: 0.5rem;
-        font-size: 1.1rem;
+        margin-top: 0.3rem;
+        font-size: 1rem;
     }
     
     /* Theme card */
     .theme-card {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
-        padding: 1rem;
+        padding: 0.8rem;
         border-radius: 10px;
         margin-bottom: 1rem;
         text-align: center;
         font-weight: bold;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
@@ -84,7 +84,7 @@ st.markdown("""
     /* Score display */
     .score-container {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        padding: 1.5rem;
+        padding: 1rem;
         border-radius: 10px;
         text-align: center;
         color: white;
@@ -92,13 +92,13 @@ st.markdown("""
     }
     
     .score-label {
-        font-size: 1rem;
+        font-size: 0.9rem;
         opacity: 0.9;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
     }
     
     .score-value {
-        font-size: 2.5rem;
+        font-size: 1.8rem;
         font-weight: bold;
     }
     
@@ -149,17 +149,17 @@ st.markdown("""
     }
     
     /* Sidebar styling */
-    .css-1d391kg {
+    section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
     }
     
     /* Progress bar */
     .progress-bar {
         background: #e9ecef;
-        height: 30px;
-        border-radius: 15px;
+        height: 25px;
+        border-radius: 12px;
         overflow: hidden;
-        margin: 1rem 0;
+        margin: 0.5rem 0;
     }
     
     .progress-fill {
@@ -170,49 +170,54 @@ st.markdown("""
         justify-content: center;
         color: white;
         font-weight: bold;
+        font-size: 0.9rem;
         transition: width 0.3s ease;
     }
     
     /* Stats cards */
     .stat-card {
         background: white;
-        padding: 1.5rem;
+        padding: 1rem;
         border-radius: 10px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem;
     }
     
     .stat-number {
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: bold;
         color: #667eea;
     }
     
     .stat-label {
         color: #6c757d;
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
     }
     
-    /* Theme selector cards */
-    .theme-selector-card {
-        background: white;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 0.5rem;
-        transition: all 0.2s;
+    /* Compact header stats */
+    .header-stats {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
     }
     
-    .theme-selector-card:hover {
-        border-color: #667eea;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    .header-stat {
+        text-align: center;
     }
     
-    .theme-count {
-        color: #6c757d;
-        font-size: 0.9rem;
+    .header-stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .header-stat-label {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.8);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -458,142 +463,37 @@ if "study_mode" not in st.session_state:
 if "weak_themes" not in st.session_state:
     st.session_state.weak_themes = {}
 
-# Header
-st.markdown("""
-<div class="main-header">
-    <h1>🎯 Jaypardy!</h1>
-    <p>Master the art of trivia with real Jeopardy questions!</p>
-</div>
-""", unsafe_allow_html=True)
+if "selected_categories" not in st.session_state:
+    st.session_state.selected_categories = None
+
+if "time_limit" not in st.session_state:
+    st.session_state.time_limit = 30
+
+if "speed_round" not in st.session_state:
+    st.session_state.speed_round = False
 
 # Loading data
-with st.spinner("🎯 Loading Jeopardy dataset..."):
-    df = load_data()
+df = load_data()
 
 if df.empty:
     st.error("❌ Failed to load Jeopardy dataset.")
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
 
-# Success message with animation
-success_placeholder = st.empty()
-success_placeholder.success(f"✅ Successfully loaded {len(df):,} Jeopardy clues!")
+# Initialize analyzer and categories
+analyzer = JeopardyCategoryAnalyzer()
+all_categories = df["category"].unique()
+theme_groups = analyzer.group_categories_by_theme(all_categories)
 
-# Create two columns for main layout
-col1, col2 = st.columns([2, 1])
-
-with col1:
-    # Theme selection with improved UI
-    st.markdown("### 🎯 Select Themes")
+# SIDEBAR FOR SETTINGS
+with st.sidebar:
+    st.markdown("## 🎯 Jaypardy!")
+    st.markdown("---")
     
-    # Initialize analyzer and group categories
-    analyzer = JeopardyCategoryAnalyzer()
-    all_categories = df["category"].unique()
-    theme_groups = analyzer.group_categories_by_theme(all_categories)
-    
-    # Calculate theme statistics
-    theme_stats = {}
-    for theme, categories in theme_groups.items():
-        theme_df = df[df["category"].isin(categories)]
-        theme_stats[theme] = {
-            'categories': len(categories),
-            'clues': len(theme_df)
-        }
-    
-    # Create theme options
-    theme_options = []
-    for theme, stats in theme_stats.items():
-        if stats['clues'] >= 10:  # Only show themes with enough clues
-            theme_options.append(f"{theme} ({stats['clues']:,} clues)")
-    
-    # Quick select buttons
-    col_quick1, col_quick2, col_quick3 = st.columns(3)
-    with col_quick1:
-        if st.button("📖 All Themes"):
-            selected_theme_displays = theme_options
-    with col_quick2:
-        if st.button("🎲 Random Mix"):
-            selected_theme_displays = random.sample(theme_options, min(5, len(theme_options)))
-    with col_quick3:
-        if st.button("🔄 Clear All"):
-            selected_theme_displays = []
-    
-    selected_theme_displays = st.multiselect(
-        "Choose themes to practice:",
-        theme_options,
-        default=theme_options[:3] if len(theme_options) >= 3 else theme_options,
-        help="Each theme contains related Jeopardy categories"
-    )
-    
-    if not selected_theme_displays:
-        st.warning("⚠️ Please select at least one theme to continue.")
-        st.stop()
-    
-    # Convert selected themes to categories
-    selected_categories = []
-    for theme_display in selected_theme_displays:
-        theme_name = theme_display.split(" (")[0]
-        if theme_name in theme_groups:
-            selected_categories.extend(theme_groups[theme_name])
-    
-    filtered_df = df[df["category"].isin(selected_categories)]
-
-    if filtered_df.empty:
-        st.warning("No clues found for the selected themes. Please select different themes.")
-        st.stop()
-    
-    # Show selection info
-    st.info(f"📊 Selected {len(selected_theme_displays)} themes • {len(set(selected_categories)):,} categories • {len(filtered_df):,} total clues")
-
-    # Game Settings
-    st.markdown("### ⚙️ Game Settings")
-    
-    col_set1, col_set2 = st.columns(2)
-    
-    with col_set1:
-        # Time limit slider
-        time_limit = st.slider(
-            "⏱️ Time Limit (seconds):",
-            10, 60, 30,
-            help="Set how long you have to answer each question"
-        )
-        
-        # Difficulty filter
-        if 'round' in df.columns:
-            rounds = ['All'] + sorted(df['round'].dropna().unique().tolist())
-            selected_round = st.selectbox(
-                "📈 Difficulty Level:",
-                rounds,
-                help="Filter by Jeopardy round for difficulty"
-            )
-            if selected_round != 'All':
-                filtered_df = filtered_df[filtered_df['round'] == selected_round]
-    
-    with col_set2:
-        # Study Mode toggle
-        study_mode = st.checkbox(
-            "📚 Study Mode",
-            value=st.session_state.study_mode,
-            help="No timer, see answers immediately"
-        )
-        st.session_state.study_mode = study_mode
-        
-        # Speed Round toggle
-        speed_round = st.checkbox(
-            "⚡ Speed Round",
-            help="5-second timer, 2x points for correct answers"
-        )
-        if speed_round:
-            time_limit = 5
-
-with col2:
-    # Stats dashboard
-    st.markdown("### 📊 Your Stats")
-    
-    # Score card
+    # Score display in sidebar
     st.markdown(f"""
     <div class="score-container">
-        <div class="score-label">Current Score</div>
+        <div class="score-label">Score</div>
         <div class="score-value">{st.session_state.score} / {st.session_state.total}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -604,65 +504,195 @@ with col2:
         st.markdown(f"""
         <div class="progress-bar">
             <div class="progress-fill" style="width: {accuracy}%">
-                {accuracy:.1f}% Accuracy
+                {accuracy:.1f}%
             </div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Streak counter
-    col_stat1, col_stat2 = st.columns(2)
-    with col_stat1:
+    # Streak display
+    col1, col2 = st.columns(2)
+    with col1:
         st.markdown(f"""
         <div class="stat-card">
             <div class="stat-number">{st.session_state.streak}</div>
-            <div class="stat-label">Current Streak</div>
+            <div class="stat-label">Streak</div>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_stat2:
+    with col2:
         st.markdown(f"""
         <div class="stat-card">
             <div class="stat-number">{st.session_state.best_streak}</div>
-            <div class="stat-label">Best Streak</div>
+            <div class="stat-label">Best</div>
         </div>
         """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Theme selection
+    st.markdown("### 📚 Theme Selection")
+    
+    # Quick picks
+    quick_pick = st.selectbox(
+        "Quick Pick:",
+        ["Custom Selection", "🎓 Academic", "🎬 Entertainment", "🌍 World", "📚 Everything"],
+        key="quick_pick"
+    )
+    
+    if quick_pick == "Custom Selection":
+        # Theme selector
+        theme_options = []
+        for theme, cats in theme_groups.items():
+            if len(cats) >= 10:  # Only show themes with enough categories
+                theme_options.append(f"{theme} ({len(cats)})")
+        
+        selected_theme_displays = st.multiselect(
+            "Select themes:",
+            theme_options,
+            default=theme_options[:3] if len(theme_options) >= 3 else theme_options
+        )
+        
+        selected_categories = []
+        for display in selected_theme_displays:
+            theme_name = display.split(" (")[0]
+            if theme_name in theme_groups:
+                selected_categories.extend(theme_groups[theme_name])
+    elif quick_pick == "🎓 Academic":
+        selected_categories = []
+        for theme in ["HISTORY", "SCIENCE", "LITERATURE", "GEOGRAPHY"]:
+            if theme in theme_groups:
+                selected_categories.extend(theme_groups[theme])
+    elif quick_pick == "🎬 Entertainment":
+        selected_categories = []
+        for theme in ["ENTERTAINMENT", "POP CULTURE", "SPORTS"]:
+            if theme in theme_groups:
+                selected_categories.extend(theme_groups[theme])
+    elif quick_pick == "🌍 World":
+        selected_categories = []
+        for theme in ["GEOGRAPHY", "HISTORY", "RELIGION & MYTHOLOGY"]:
+            if theme in theme_groups:
+                selected_categories.extend(theme_groups[theme])
+    else:  # Everything
+        selected_categories = list(all_categories)
+    
+    if selected_categories:
+        st.session_state.selected_categories = selected_categories
+        st.success(f"✅ {len(selected_categories)} categories")
+    
+    st.markdown("---")
+    
+    # Game settings
+    st.markdown("### ⚙️ Settings")
+    
+    # Time limit
+    st.session_state.time_limit = st.slider(
+        "⏱️ Time (seconds):",
+        10, 60, st.session_state.time_limit
+    )
+    
+    # Study Mode
+    st.session_state.study_mode = st.checkbox(
+        "📚 Study Mode",
+        value=st.session_state.study_mode,
+        help="No timer, see answers"
+    )
+    
+    # Speed Round
+    st.session_state.speed_round = st.checkbox(
+        "⚡ Speed Round",
+        help="5-second timer, 2x points"
+    )
+    if st.session_state.speed_round:
+        st.session_state.time_limit = 5
+    
+    st.markdown("---")
+    
+    # Quick actions
+    if st.button("🎯 New Question", use_container_width=True):
+        st.session_state.current_clue = None
+        st.rerun()
+    
+    if st.button("🔄 Reset Game", use_container_width=True):
+        for key in ["score", "total", "streak", "history", "daily_double_used"]:
+            if key in st.session_state:
+                if key in ["score", "total", "streak"]:
+                    st.session_state[key] = 0
+                elif key == "history":
+                    st.session_state[key] = []
+                else:
+                    st.session_state[key] = False
+        st.rerun()
 
-# Clear success message after display
-success_placeholder.empty()
+# MAIN GAME AREA
+# Compact header with stats
+st.markdown(f"""
+<div class="main-header">
+    <h1>🎯 Jaypardy!</h1>
+    <div class="header-stats">
+        <div class="header-stat">
+            <div class="header-stat-value">{st.session_state.score}</div>
+            <div class="header-stat-label">Score</div>
+        </div>
+        <div class="header-stat">
+            <div class="header-stat-value">{st.session_state.total}</div>
+            <div class="header-stat-label">Questions</div>
+        </div>
+        <div class="header-stat">
+            <div class="header-stat-value">{st.session_state.streak}</div>
+            <div class="header-stat-label">Streak</div>
+        </div>
+        <div class="header-stat">
+            <div class="header-stat-value">{(st.session_state.score/st.session_state.total*100):.0f}%" if st.session_state.total > 0 else "-%"}</div>
+            <div class="header-stat-label">Accuracy</div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# Main game area
-st.markdown("---")
+# Check if categories are selected
+if not st.session_state.selected_categories:
+    st.warning("⚠️ Please select themes from the sidebar to start playing!")
+    st.stop()
 
+filtered_df = df[df["category"].isin(st.session_state.selected_categories)]
+
+if filtered_df.empty:
+    st.warning("No clues found for selected themes. Please select different themes.")
+    st.stop()
+
+# Get current clue
 if st.session_state.current_clue is None:
     st.session_state.current_clue = random.choice(filtered_df.to_dict(orient="records"))
     st.session_state.start_time = datetime.datetime.now()
 
 clue = st.session_state.current_clue
 
-# Check for Daily Double (random 5% chance, once per session)
+# Check for Daily Double
 is_daily_double = False
 if not st.session_state.daily_double_used and random.random() < 0.05:
     is_daily_double = True
     st.session_state.daily_double_used = True
 
-# Display current clue with enhanced styling
+# Display Daily Double if applicable
 if is_daily_double:
     st.markdown("""
     <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                color: #1a1a1a; padding: 2rem; border-radius: 15px; 
+                color: #1a1a1a; padding: 1.5rem; border-radius: 15px; 
                 text-align: center; margin-bottom: 1rem; 
                 box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);">
-        <h2 style="margin: 0; font-size: 2rem;">⭐ DAILY DOUBLE! ⭐</h2>
-        <p style="margin-top: 0.5rem;">Double points for this question!</p>
+        <h2 style="margin: 0; font-size: 1.8rem;">⭐ DAILY DOUBLE! ⭐</h2>
+        <p style="margin-top: 0.3rem;">Double points for this question!</p>
     </div>
     """, unsafe_allow_html=True)
 
+# Display category
 st.markdown(f"""
 <div class="theme-card">
     {clue['category']}
 </div>
 """, unsafe_allow_html=True)
 
+# Display clue
 st.markdown(f"""
 <div class="clue-card">
     <div class="clue-text">{clue['clue']}</div>
@@ -678,7 +708,7 @@ if st.session_state.study_mode:
         note_key = f"{clue['category']}_{clue['clue'][:50]}"
         existing_note = st.session_state.notes.get(note_key, "")
         new_note = st.text_area(
-            "📝 Add a note for this question:",
+            "📝 Add a note:",
             value=existing_note,
             placeholder="Add memory tricks, related facts, etc.",
             key=f"note_{note_key}"
@@ -698,11 +728,11 @@ with st.form(key="clue_form", clear_on_submit=True):
         )
     with col_submit:
         submitted = st.form_submit_button(
-            "🎯 Submit Answer" if not st.session_state.study_mode else "⏭️ Next Question", 
+            "🎯 Submit" if not st.session_state.study_mode else "⏭️ Next", 
             use_container_width=True
         )
     with col_bookmark:
-        bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark this question")
+        bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark")
 
 if bookmark_btn:
     bookmark_entry = {
@@ -713,7 +743,7 @@ if bookmark_btn:
     }
     if bookmark_entry not in st.session_state.bookmarks:
         st.session_state.bookmarks.append(bookmark_entry)
-        st.success("🔖 Question bookmarked!")
+        st.success("🔖 Bookmarked!")
 
 if submitted:
     if st.session_state.study_mode:
@@ -725,19 +755,19 @@ if submitted:
         user_clean = normalize(user_input)
         answer_clean = normalize(clue["correct_response"])
         
-        # Check if it's speed round
+        # Calculate points
         points_multiplier = 1
-        if speed_round and elapsed_time <= 5:
+        if st.session_state.speed_round and elapsed_time <= 5:
             points_multiplier = 2
         elif is_daily_double:
             points_multiplier = 2
             
-        correct = user_clean == answer_clean and elapsed_time <= time_limit
+        correct = user_clean == answer_clean and elapsed_time <= st.session_state.time_limit
 
         if correct:
             st.balloons()
             points_earned = 1 * points_multiplier
-            st.success(f"🎉 **Correct!** {'⚡ Speed Bonus!' if speed_round and elapsed_time <= 5 else ''} {'⭐ Daily Double!' if is_daily_double else ''} +{points_earned} points")
+            st.success(f"🎉 **Correct!** +{points_earned} points")
             st.session_state.score += points_earned
             st.session_state.streak += 1
             st.session_state.best_streak = max(st.session_state.streak, st.session_state.best_streak)
@@ -745,132 +775,52 @@ if submitted:
             # Check for achievements
             if st.session_state.streak == 5 and "5_streak" not in st.session_state.achievements:
                 st.session_state.achievements.append("5_streak")
-                st.success("🏆 Achievement Unlocked: 5 Question Streak!")
+                st.success("🏆 Achievement: 5 Question Streak!")
             elif st.session_state.streak == 10 and "10_streak" not in st.session_state.achievements:
                 st.session_state.achievements.append("10_streak")
-                st.success("🏆 Achievement Unlocked: 10 Question Streak Master!")
+                st.success("🏆 Achievement: 10 Question Streak!")
         else:
-            st.error(f"❌ **Incorrect** {'(Time\'s up!)' if elapsed_time > time_limit else ''}")
+            st.error(f"❌ **Incorrect** {'(Time expired!)' if elapsed_time > st.session_state.time_limit else ''}")
             st.info(f"The correct response was: **{clue['correct_response']}**")
             st.session_state.streak = 0
             points_earned = 0
-            
-            # Track weak themes
-            theme = clue["category"]
-            if theme not in st.session_state.weak_themes:
-                st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
-            st.session_state.weak_themes[theme]["incorrect"] += 1
-
-        # Semantic similarity with better display
-        if "clue_embedding" in filtered_df.columns:
-            user_vector = model.encode(clue["clue"])
-            clue_vectors = np.vstack(filtered_df["clue_embedding"].values)
-            similarities = cosine_similarity([user_vector], clue_vectors)[0]
-            top_indices = similarities.argsort()[-4:][::-1]
-            similar_clues = filtered_df.iloc[top_indices]
-
-            with st.expander("🔍 Review similar clues to improve"):
-                for idx, (_, row) in enumerate(similar_clues.iterrows(), 1):
-                    st.markdown(f"""
-                    **{idx}. {row['category']}**  
-                    📝 {row['clue']}  
-                    ✅ *{row['correct_response']}*
-                    """)
-
-        # Update weak themes tracking
-        theme = clue["category"]
-        if theme not in st.session_state.weak_themes:
-            st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
-        st.session_state.weak_themes[theme]["total"] += 1
 
         st.session_state.total += 1
         st.session_state.history.append({
-            "game_id": clue.get("game_id", ""),
             "category": clue["category"],
             "clue": clue["clue"],
             "correct_response": clue["correct_response"],
-            "round": clue.get("round", ""),
             "user_response": user_input,
             "was_correct": correct,
-            "time_taken": elapsed_time if not st.session_state.study_mode else 0,
-            "points_earned": points_earned if not st.session_state.study_mode else 0
-        })
-
-        # Update progress tracking
-        today = datetime.date.today().isoformat()
-        st.session_state.progress_data.append({
-            "date": today,
-            "total": 1,
-            "correct": 1 if correct else 0
+            "time_taken": elapsed_time,
+            "points_earned": points_earned
         })
 
         st.session_state.current_clue = None
-        st.rerun()
+        
+        # Add a next button for better flow
+        if st.button("Next Question →", type="primary", use_container_width=True):
+            st.rerun()
 
-# Session history and tools
+# Expandable session history (at the bottom)
 if st.session_state.history:
-    st.markdown("---")
-    
-    tab1, tab2, tab3 = st.tabs(["📊 Session Recap", "📈 Progress Tracker", "🎮 Game Tools"])
-    
-    with tab1:
+    with st.expander("📊 Session History", expanded=False):
         history_df = pd.DataFrame(st.session_state.history)
         
         # Summary metrics
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        with col_m1:
-            st.metric("Total Questions", len(history_df))
-        with col_m2:
-            st.metric("Correct Answers", len(history_df[history_df["was_correct"]]))
-        with col_m3:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Questions", len(history_df))
+        with col2:
+            st.metric("Correct", len(history_df[history_df["was_correct"]]))
+        with col3:
             avg_time = history_df["time_taken"].mean()
-            st.metric("Avg. Time", f"{avg_time:.1f}s")
-        with col_m4:
+            st.metric("Avg Time", f"{avg_time:.1f}s")
+        with col4:
             acc = (len(history_df[history_df["was_correct"]]) / len(history_df)) * 100
             st.metric("Accuracy", f"{acc:.1f}%")
         
-        # Detailed history
-        st.dataframe(
-            history_df[["category", "clue", "user_response", "correct_response", "was_correct", "time_taken"]],
-            use_container_width=True
-        )
-    
-    with tab2:
-        if st.session_state.progress_data:
-            progress_df = pd.DataFrame(st.session_state.progress_data)
-            summary = progress_df.groupby("date").sum().reset_index()
-            summary["accuracy"] = (summary["correct"] / summary["total"] * 100).round(1)
-            
-            # Display progress chart
-            st.line_chart(summary.set_index("date")["accuracy"])
-            st.dataframe(summary, use_container_width=True)
-        else:
-            st.info("No progress data available yet. Keep playing!")
-    
-    with tab3:
-        col_tool1, col_tool2 = st.columns(2)
-        
-        with col_tool1:
-            if st.button("🔁 Adaptive Retry Mode", use_container_width=True):
-                missed = [h for h in st.session_state.history if not h["was_correct"]]
-                if missed:
-                    retry = random.choice(missed)
-                    st.session_state.current_clue = retry
-                    st.rerun()
-                else:
-                    st.info("No missed clues to retry yet!")
-        
-        with col_tool2:
-            if st.button("🎯 New Random Question", use_container_width=True):
-                st.session_state.current_clue = None
-                st.rerun()
-        
-        # Theme performance
-        st.markdown("### 📊 Performance by Category")
-        history_df = pd.DataFrame(st.session_state.history)
-        theme_stats = history_df.groupby("category").agg({
-            "was_correct": ["sum", "count"]
-        }).round(2)
-        theme_stats.columns = ["Correct", "Total"]
-        theme_stats["Accuracy %"] = (theme_stats["Correct"] / theme_stats["Total"] * 100).round(1)
-        st.dataframe(theme_stats, use_container_width=True)
+        # Show last 5 questions
+        st.markdown("#### Recent Questions")
+        recent = history_df.tail(5)[["category", "clue", "correct_response", "was_correct"]]
+        st.dataframe(recent, use_container_width=True)
