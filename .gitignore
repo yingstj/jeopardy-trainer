@@ -10,3 +10,8 @@ scraper_v2.py
 create_sample_data.py
 SCRAPER_ENHANCEMENTS.md
 data/all_jeopardy_clues_.csv
+
+# User data files
+users_data.json
+user_sessions/
+*.session
