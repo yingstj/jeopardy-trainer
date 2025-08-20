@@ -839,15 +839,15 @@ with st.sidebar:
     # Theme selection
     st.markdown("### 📚 Theme Selection")
     
-    # Quick picks - default to Everything (all themes)
+    # Quick picks - default to All (all themes)
     quick_pick = st.selectbox(
         "Quick Pick:",
-        ["📚 Everything", "Custom Selection", "🎓 Academic", "🎬 Entertainment", "🌍 World"],
+        ["📚 All", "Custom Selection", "🎓 Academic", "🎬 Entertainment", "🌍 World"],
         key="quick_pick",
-        index=0  # Default to Everything
+        index=0  # Default to All
     )
     
-    if quick_pick == "📚 Everything":
+    if quick_pick == "📚 All":
         selected_categories = list(all_categories)
     elif quick_pick == "Custom Selection":
         # Theme selector - show ALL themes
