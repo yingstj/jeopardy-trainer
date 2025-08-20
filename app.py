@@ -8,8 +8,9 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-# Import the R2 data loader
+# Import the R2 data loader and theme manager
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
+from theme_manager import ThemeManager
 
 # Page configuration
 st.set_page_config(
@@ -294,34 +295,65 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     # Theme selection with improved UI
-    st.markdown("### 📚 Select Categories")
-    categories = sorted(df["category"].unique())
+    st.markdown("### 🎯 Select Themes")
+    
+    # Initialize theme manager
+    theme_manager = ThemeManager()
+    
+    # Group categories into themes
+    all_categories = df["category"].unique()
+    theme_groups = theme_manager.group_categories_by_theme(all_categories)
+    
+    # Get theme statistics
+    theme_stats = theme_manager.get_theme_stats(df)
+    
+    # Create theme options with clue counts
+    theme_options = []
+    for theme, stats in theme_stats.items():
+        if stats['clue_count'] >= 50:  # Only show themes with enough clues
+            theme_options.append(f"{theme} ({stats['clue_count']:,} clues)")
     
     # Quick select buttons
-    col_quick1, col_quick2 = st.columns(2)
+    col_quick1, col_quick2, col_quick3 = st.columns(3)
     with col_quick1:
-        if st.button("📖 All Categories"):
-            selected_categories = categories
+        if st.button("📖 All Themes"):
+            selected_theme_displays = theme_options
     with col_quick2:
+        if st.button("🎲 Random Mix"):
+            selected_theme_displays = random.sample(theme_options, min(5, len(theme_options)))
+    with col_quick3:
         if st.button("🔄 Clear All"):
-            selected_categories = []
+            selected_theme_displays = []
     
-    selected_categories = st.multiselect(
-        "Choose your categories:",
-        categories,
-        default=categories[:5] if len(categories) >= 5 else categories,
-        help="Select the categories you want to practice"
+    # Theme selector
+    selected_theme_displays = st.multiselect(
+        "Choose themes to practice:",
+        theme_options,
+        default=theme_options[:3] if len(theme_options) >= 3 else theme_options,
+        help="Each theme contains multiple related Jeopardy categories"
     )
-
-    if not selected_categories:
-        st.warning("⚠️ Please select at least one category to continue.")
+    
+    if not selected_theme_displays:
+        st.warning("⚠️ Please select at least one theme to continue.")
         st.stop()
-
+    
+    # Convert selected themes back to categories
+    selected_categories = []
+    for theme_display in selected_theme_displays:
+        # Extract theme name from display string
+        theme_name = theme_display.split(" (")[0]
+        if theme_name in theme_groups:
+            selected_categories.extend(theme_groups[theme_name])
+    
+    # Filter dataframe by selected categories
     filtered_df = df[df["category"].isin(selected_categories)]
-
+    
     if filtered_df.empty:
-        st.warning("No clues found for the selected categories. Please select different categories.")
+        st.warning("No clues found for the selected themes. Please select different themes.")
         st.stop()
+    
+    # Show selected theme info
+    st.info(f"📊 Selected {len(selected_theme_displays)} themes containing {len(selected_categories):,} categories with {len(filtered_df):,} total clues")
 
     # Time limit slider with better styling
     st.markdown("### ⏱️ Game Settings")
