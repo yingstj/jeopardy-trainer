@@ -568,23 +568,18 @@ AI_PERSONALITIES = {
 AI_DIFFICULTY = {
     "Easy": {
         "accuracy_modifier": -0.20,
-        "buzzer_speed": 2.5,
+        "buzzer_speed": 10.0,  # 10 seconds to buzz in
         "daily_double_aggression": 0.3
     },
     "Medium": {
         "accuracy_modifier": 0,
-        "buzzer_speed": 1.5,
+        "buzzer_speed": 5.0,  # 5 seconds to buzz in
         "daily_double_aggression": 0.5
     },
     "Hard": {
         "accuracy_modifier": 0.10,
-        "buzzer_speed": 0.8,
+        "buzzer_speed": 2.0,  # 2 seconds to buzz in
         "daily_double_aggression": 0.8
-    },
-    "Impossible": {
-        "accuracy_modifier": 0.15,
-        "buzzer_speed": 0.5,
-        "daily_double_aggression": 0.95
     }
 }
 
@@ -941,10 +936,15 @@ with st.sidebar:
         st.caption(f"*{personality['description']}*")
         
         # Difficulty selector
+        difficulties = ["Easy", "Medium", "Hard"]
+        # Handle if user had Impossible selected before
+        if st.session_state.ai_difficulty not in difficulties:
+            st.session_state.ai_difficulty = "Medium"
+        
         st.session_state.ai_difficulty = st.selectbox(
             "Difficulty:",
-            ["Easy", "Medium", "Hard", "Impossible"],
-            index=["Easy", "Medium", "Hard", "Impossible"].index(st.session_state.ai_difficulty)
+            difficulties,
+            index=difficulties.index(st.session_state.ai_difficulty)
         )
         
         # Show AI stats
@@ -1260,7 +1260,9 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
         
         with col_buzz2:
             # Simulate AI potentially buzzing on its own
-            if random.random() < (0.3 + (0.2 * (["Easy", "Medium", "Hard", "Impossible"].index(st.session_state.ai_difficulty) / 3))):
+            # Easy: 30% chance, Medium: 50% chance, Hard: 70% chance
+            buzz_chances = {"Easy": 0.3, "Medium": 0.5, "Hard": 0.7}
+            if random.random() < buzz_chances[st.session_state.ai_difficulty]:
                 # AI decides to buzz
                 with st.spinner(f"🤖 {st.session_state.ai_personality} is buzzing in..."):
                     time.sleep(ai_buzz_delay)
