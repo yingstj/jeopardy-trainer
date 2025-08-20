@@ -813,23 +813,37 @@ with st.sidebar:
     if quick_pick == "📚 Everything":
         selected_categories = list(all_categories)
     elif quick_pick == "Custom Selection":
-        # Theme selector
+        # Theme selector - show ALL themes
         theme_options = []
-        for theme, cats in theme_groups.items():
-            if len(cats) >= 10:  # Only show themes with enough categories
-                theme_options.append(f"{theme} ({len(cats)})")
+        theme_mapping = {}
+        
+        # Sort themes by number of categories (most first)
+        sorted_themes = sorted(theme_groups.items(), key=lambda x: len(x[1]), reverse=True)
+        
+        for theme, cats in sorted_themes:
+            # Show all themes, even with 1 category
+            display_name = f"{theme} ({len(cats)} categories)"
+            theme_options.append(display_name)
+            theme_mapping[display_name] = theme
+        
+        # Show total available
+        st.caption(f"📊 {len(theme_groups)} themes available from {len(all_categories)} total categories")
         
         selected_theme_displays = st.multiselect(
             "Select themes:",
             theme_options,
-            default=theme_options[:3] if len(theme_options) >= 3 else theme_options
+            default=theme_options[:5] if len(theme_options) >= 5 else theme_options,  # Default to top 5
+            help="Select multiple themes to include their categories"
         )
         
         selected_categories = []
         for display in selected_theme_displays:
-            theme_name = display.split(" (")[0]
-            if theme_name in theme_groups:
+            theme_name = theme_mapping.get(display)
+            if theme_name and theme_name in theme_groups:
                 selected_categories.extend(theme_groups[theme_name])
+        
+        # Remove duplicates (some categories might be in multiple themes)
+        selected_categories = list(set(selected_categories))
     elif quick_pick == "🎓 Academic":
         selected_categories = []
         for theme in ["HISTORY", "SCIENCE", "LITERATURE", "GEOGRAPHY"]:
@@ -848,7 +862,25 @@ with st.sidebar:
     
     if selected_categories:
         st.session_state.selected_categories = selected_categories
-        st.success(f"✅ {len(selected_categories)} categories")
+        st.success(f"✅ {len(selected_categories)} categories selected")
+        
+        # Show sample categories in an expander
+        with st.expander("View selected categories", expanded=False):
+            # Show first 20 categories as a sample
+            sample_size = min(20, len(selected_categories))
+            sample_cats = sorted(selected_categories)[:sample_size]
+            
+            for i in range(0, sample_size, 2):
+                col1, col2 = st.columns(2)
+                with col1:
+                    if i < len(sample_cats):
+                        st.caption(f"• {sample_cats[i]}")
+                with col2:
+                    if i+1 < len(sample_cats):
+                        st.caption(f"• {sample_cats[i+1]}")
+            
+            if len(selected_categories) > sample_size:
+                st.caption(f"... and {len(selected_categories) - sample_size} more categories")
     
     st.markdown("---")
     
