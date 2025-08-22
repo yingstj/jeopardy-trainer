@@ -1,3 +1,6 @@
+# This is the Flask version of the app
+# For Streamlit version, see requirements_streamlit.txt
+
 # Web Framework
 Flask==3.0.0
 Werkzeug==3.0.1
@@ -43,4 +46,3 @@ psycopg2-binary==2.9.9  # PostgreSQL adapter for Railway deployment
 firebase-admin==6.4.0  # Firebase Admin SDK for server-side operations
 google-cloud-firestore==2.14.0  # Firestore for cloud data persistence
 pyrebase4==4.7.1  # Firebase client library (optional, for additional features)
-python-dotenv==1.0.1  # For loading environment variables from .env file
