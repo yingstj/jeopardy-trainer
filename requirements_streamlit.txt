@@ -1,0 +1,16 @@
+# Streamlit Core
+streamlit==1.31.0
+
+# Firebase & Cloud Storage
+firebase-admin==6.4.0
+google-cloud-firestore==2.14.0
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+
+# Authentication & Security
+python-dotenv==1.0.1
+
+# Additional utilities
+python-dateutil==2.8.2
