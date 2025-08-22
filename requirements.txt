@@ -1,48 +1,25 @@
-# This is the Flask version of the app
-# For Streamlit version, see requirements_streamlit.txt
-
-# Web Framework
-Flask==3.0.0
-Werkzeug==3.0.1
-
-# Web Scraping
-requests==2.31.0
-beautifulsoup4==4.12.3
-lxml==5.1.0
-
-# Data Science & AI
-numpy==1.26.3
-
-# Database
-# SQLite3 is included with Python standard library
+# Streamlit Core
+streamlit>=1.28.1
 
 # Data Processing
-python-dateutil==2.8.2
+pandas>=2.0.0
+numpy>=1.24.0
 
-# HTTP Security
-certifi==2024.2.2
-urllib3==2.2.1
-idna==3.6
-charset-normalizer==3.3.2
+# Machine Learning & NLP
+sentence-transformers>=2.2.2
+scikit-learn>=1.2.2
 
-# Development Tools (optional but recommended)
-python-dotenv==1.0.1  # For environment variables
-pytest==8.0.0  # For testing
-pytest-cov==4.1.0  # For test coverage
-black==24.1.1  # For code formatting
-flake8==7.0.0  # For code linting
+# Cloud Storage (R2)
+boto3>=1.28.15
 
-# Logging enhancements (optional)
-colorlog==6.8.2  # For colored logging output
+# Firebase & Authentication
+firebase-admin==6.4.0
+google-cloud-firestore==2.14.0
 
-# Performance monitoring (optional)
-flask-cors==4.0.0  # For CORS support if needed
+# Utilities
+python-dateutil>=2.8.2
+requests>=2.31.0
 
-# Production deployment
-gunicorn==21.2.0  # Production WSGI server
-psycopg2-binary==2.9.9  # PostgreSQL adapter for Railway deployment
-
-# Firebase Authentication & Cloud Storage
-firebase-admin==6.4.0  # Firebase Admin SDK for server-side operations
-google-cloud-firestore==2.14.0  # Firestore for cloud data persistence
-pyrebase4==4.7.1  # Firebase client library (optional, for additional features)
+# Optional: For OAuth if needed
+streamlit-oauth>=0.1.0
+PyJWT>=2.8.0
