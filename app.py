@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import logging
 from auth import auth_bp, login_required
+from firebase_auth import firebase_auth_bp, firebase_login_required
 from database import JeopardyDatabase
 from ai_engine import AdaptiveLearningEngine
 from answer_checker import AnswerChecker
@@ -16,8 +17,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-here')  # Change this to a secure random key
 app.permanent_session_lifetime = timedelta(days=7)
 
-# Register authentication blueprint
+# Register authentication blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(firebase_auth_bp, url_prefix='/firebase_auth')
 
 # Database setup - use DATABASE_URL if available for Railway deployment
 db_url = os.environ.get('DATABASE_URL')
@@ -30,21 +32,26 @@ answer_checker = AnswerChecker()
 @app.route('/landing')
 def landing():
     """Public landing page."""
-    if session.get('user_id'):
+    if session.get('user_id') or session.get('firebase_user'):
         return redirect(url_for('index'))
-    return render_template('landing.html')
+    # Redirect to Firebase login by default
+    return redirect(url_for('firebase_auth.login'))
 
 @app.route('/')
-@login_required
 def index():
     """Serve the main Jeopardy trainer page."""
+    # Check for either traditional or Firebase authentication
+    if not session.get('user_id') and not session.get('firebase_user'):
+        return redirect(url_for('firebase_auth.login'))
+    
     if 'session_id' not in session:
         session['session_id'] = os.urandom(16).hex()
-        db.create_session(session['session_id'], session['user_id'])
+        user_id = session.get('user_id')
+        if user_id:
+            db.create_session(session['session_id'], user_id)
     return render_template('jeopardy_simple.html')
 
 @app.route('/api/questions')
-@login_required
 def get_questions():
     """Get questions based on filters."""
     category = request.args.get('category')

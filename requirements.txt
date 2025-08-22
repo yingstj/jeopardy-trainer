@@ -38,3 +38,9 @@ flask-cors==4.0.0  # For CORS support if needed
 # Production deployment
 gunicorn==21.2.0  # Production WSGI server
 psycopg2-binary==2.9.9  # PostgreSQL adapter for Railway deployment
+
+# Firebase Authentication & Cloud Storage
+firebase-admin==6.4.0  # Firebase Admin SDK for server-side operations
+google-cloud-firestore==2.14.0  # Firestore for cloud data persistence
+pyrebase4==4.7.1  # Firebase client library (optional, for additional features)
+python-dotenv==1.0.1  # For loading environment variables from .env file

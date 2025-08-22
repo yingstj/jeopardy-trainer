@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - Jaypardy{% endblock %}
+
+{% block content %}
+<div class="container-main mx-auto" style="max-width: 500px; margin-top: 50px;">
+    <h2 class="text-center mb-4" style="color: #FFD700;">Join Jaypardy!</h2>
+    
+    <div class="card" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+        <div class="card-body p-4">
+            <h4 class="card-title text-center mb-4">Create Account</h4>
+            
+            <!-- Registration Form -->
+            <form id="registerForm">
+                <div class="mb-3">
+                    <label for="displayName" class="form-label">Display Name</label>
+                    <input type="text" class="form-control" id="displayName" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                    <small class="form-text text-muted">At least 6 characters</small>
+                </div>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn btn-jeopardy w-100 mb-3">Create Account</button>
+            </form>
+            
+            <div class="text-center mb-3">
+                <span style="color: #666;">or</span>
+            </div>
+            
+            <!-- Social Sign Up -->
+            <button id="googleSignUp" class="btn btn-danger w-100 mb-2">
+                <i class="fab fa-google"></i> Sign up with Google
+            </button>
+            
+            <hr>
+            
+            <div class="text-center">
+                <p>Already have an account? <a href="{{ url_for('firebase_auth.login') }}">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="text-center" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<script>
+// Initialize Firebase
+fetch('/firebase_auth/firebase_config')
+    .then(response => response.json())
+    .then(config => {
+        firebase.initializeApp(config);
+        
+        const auth = firebase.auth();
+        
+        // Email/Password Registration
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const displayName = document.getElementById('displayName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+            
+            // Validate password length
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long!');
+                return;
+            }
+            
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            try {
+                // Create user
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Update display name
+                await userCredential.user.updateProfile({
+                    displayName: displayName
+                });
+                
+                // Get ID token
+                const idToken = await userCredential.user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/firebase_auth/verify_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Send email verification
+                    await userCredential.user.sendEmailVerification();
+                    alert('Account created successfully! Please check your email for verification.');
+                    window.location.href = '/';
+                } else {
+                    alert('Registration failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    alert('This email is already registered. Please sign in instead.');
+                } else if (error.code === 'auth/weak-password') {
+                    alert('Password is too weak. Please use a stronger password.');
+                } else if (error.code === 'auth/invalid-email') {
+                    alert('Invalid email address.');
+                } else {
+                    alert('Registration failed: ' + error.message);
+                }
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+        
+        // Google Sign Up
+        document.getElementById('googleSignUp').addEventListener('click', async () => {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            try {
+                const result = await auth.signInWithPopup(provider);
+                const idToken = await result.user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/firebase_auth/verify_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    alert('Registration failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Google sign up failed: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Failed to load Firebase config:', error);
+        alert('Failed to initialize authentication. Please refresh the page.');
+    });
+</script>
+{% endblock %}

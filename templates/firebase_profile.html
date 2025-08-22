@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Jaypardy{% endblock %}
+
+{% block content %}
+<div class="container-main mx-auto" style="max-width: 800px; margin-top: 30px;">
+    <h2 class="text-center mb-4" style="color: #FFD700;">
+        <i class="fas fa-user-circle"></i> User Profile
+    </h2>
+    
+    <div class="row">
+        <!-- User Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+                <div class="card-body">
+                    <h5 class="card-title">Account Information</h5>
+                    <hr>
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Email:</strong> {{ firebase_user.email or user.email }}</p>
+                    <p><strong>Firebase UID:</strong> {{ firebase_user.uid[:8] }}...</p>
+                    <p><strong>Member Since:</strong> {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}</p>
+                    
+                    <button class="btn btn-primary mt-3" id="updateProfileBtn">
+                        <i class="fas fa-edit"></i> Update Profile
+                    </button>
+                    
+                    <button class="btn btn-warning mt-3" id="changePasswordBtn">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+                <div class="card-body">
+                    <h5 class="card-title">Game Statistics</h5>
+                    <hr>
+                    {% if stats %}
+                    <p><strong>Total Questions:</strong> {{ stats.total_questions }}</p>
+                    <p><strong>Correct Answers:</strong> {{ stats.correct_answers }}</p>
+                    <p><strong>Accuracy:</strong> {{ "%.1f"|format(stats.accuracy) }}%</p>
+                    <p><strong>Average Time:</strong> {{ "%.1f"|format(stats.avg_response_time) }}s</p>
+                    <p><strong>Best Streak:</strong> {{ stats.best_streak }}</p>
+                    {% else %}
+                    <p class="text-muted">No statistics available yet. Start playing to see your progress!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress Chart -->
+    {% if progress %}
+    <div class="card mb-4" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+        <div class="card-body">
+            <h5 class="card-title">Progress Over Time</h5>
+            <canvas id="progressChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Account Actions -->
+    <div class="card" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+        <div class="card-body">
+            <h5 class="card-title">Account Actions</h5>
+            <hr>
+            <button class="btn btn-danger" id="signOutBtn">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </button>
+            <button class="btn btn-secondary ms-2" id="deleteAccountBtn">
+                <i class="fas fa-trash"></i> Delete Account
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Update Profile Modal -->
+<div class="modal fade" id="updateProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateProfileForm">
+                    <div class="mb-3">
+                        <label for="newDisplayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="newDisplayName" value="{{ user.username }}">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Initialize Firebase
+fetch('/firebase_auth/firebase_config')
+    .then(response => response.json())
+    .then(config => {
+        firebase.initializeApp(config);
+        const auth = firebase.auth();
+        
+        // Update Profile
+        document.getElementById('updateProfileBtn').addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('updateProfileModal'));
+            modal.show();
+        });
+        
+        document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+            const displayName = document.getElementById('newDisplayName').value;
+            
+            try {
+                // Update Firebase display name
+                const user = auth.currentUser;
+                if (user) {
+                    await user.updateProfile({ displayName });
+                }
+                
+                // Update backend
+                const response = await fetch('/firebase_auth/update_profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ displayName })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Profile updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Failed to update profile: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error updating profile: ' + error.message);
+            }
+        });
+        
+        // Change Password
+        document.getElementById('changePasswordBtn').addEventListener('click', async () => {
+            const email = '{{ firebase_user.email or user.email }}';
+            if (email) {
+                try {
+                    await auth.sendPasswordResetEmail(email);
+                    alert('Password reset email sent! Check your inbox.');
+                } catch (error) {
+                    alert('Failed to send reset email: ' + error.message);
+                }
+            } else {
+                alert('No email address associated with this account.');
+            }
+        });
+        
+        // Sign Out
+        document.getElementById('signOutBtn').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to sign out?')) {
+                try {
+                    await auth.signOut();
+                    
+                    // Notify backend
+                    await fetch('/firebase_auth/logout', {
+                        method: 'POST'
+                    });
+                    
+                    window.location.href = '/firebase_auth/login';
+                } catch (error) {
+                    alert('Error signing out: ' + error.message);
+                }
+            }
+        });
+        
+        // Delete Account
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
+                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                    try {
+                        const user = auth.currentUser;
+                        if (user) {
+                            await user.delete();
+                            alert('Account deleted successfully.');
+                            window.location.href = '/firebase_auth/login';
+                        }
+                    } catch (error) {
+                        if (error.code === 'auth/requires-recent-login') {
+                            alert('Please sign in again before deleting your account.');
+                            await auth.signOut();
+                            window.location.href = '/firebase_auth/login';
+                        } else {
+                            alert('Error deleting account: ' + error.message);
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Progress Chart
+        {% if progress %}
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        const progressData = {{ progress | tojson }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: progressData.map(p => p.date),
+                datasets: [{
+                    label: 'Accuracy %',
+                    data: progressData.map(p => p.accuracy),
+                    borderColor: '#FFD700',
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#060CE9'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#060CE9'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#060CE9'
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    })
+    .catch(error => {
+        console.error('Failed to load Firebase config:', error);
+    });
+</script>
+{% endblock %}

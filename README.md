@@ -1,9 +1,10 @@
-# Jeopardy AI Trainer
+# Jeopardy AI Trainer (Jaypardy)
 
 An interactive web application for practicing Jeopardy questions with AI-powered assistance. This trainer helps users improve their trivia knowledge through spaced repetition, performance tracking, and intelligent question selection.
 
 ## Features
 
+- **Firebase Authentication**: Secure user authentication with email, Google, and phone sign-in
 - **Adaptive Learning AI**: Intelligent question selection based on your performance patterns
 - **Personalized Difficulty**: AI adjusts question difficulty to maintain optimal challenge level
 - **Spaced Repetition**: Scientific algorithm for long-term retention
@@ -19,11 +20,14 @@ An interactive web application for practicing Jeopardy questions with AI-powered
 ```
 jay-jeopardy-ai-trainer/
 ├── app.py                 # Main Flask application
-├── auth.py               # User authentication system
+├── auth.py               # Legacy authentication system
+├── firebase_auth.py      # Firebase authentication integration
+├── firebase_config.py    # Firebase configuration
 ├── database.py           # Database management and queries
 ├── ai_engine.py          # Adaptive learning AI algorithm
 ├── data_processor.py     # Question processing and difficulty rating
 ├── requirements.txt      # Python dependencies
+├── FIREBASE_SETUP.md     # Firebase integration documentation
 ├── static/              # Static assets
 │   ├── css/            # Stylesheets
 │   ├── js/             # JavaScript files
@@ -31,9 +35,12 @@ jay-jeopardy-ai-trainer/
 ├── templates/           # HTML templates
 │   ├── base.html       # Base template
 │   ├── landing.html    # Landing page
-│   ├── login.html      # Login page
-│   ├── register.html   # Registration page
-│   ├── profile.html    # User profile
+│   ├── login.html      # Legacy login page
+│   ├── register.html   # Legacy registration page
+│   ├── profile.html    # Legacy user profile
+│   ├── firebase_login.html    # Firebase login page
+│   ├── firebase_register.html # Firebase registration page
+│   ├── firebase_profile.html  # Firebase user profile
 │   └── jeopardy_trainer.html # Main game interface
 ├── scripts/             # Utility scripts
 │   └── scraper_final.py # Web scraper for questions

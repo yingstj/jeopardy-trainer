@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Jaypardy{% endblock %}
+
+{% block content %}
+<div class="container-main mx-auto" style="max-width: 500px; margin-top: 50px;">
+    <h2 class="text-center mb-4" style="color: #FFD700;">Welcome to Jaypardy!</h2>
+    
+    <div class="card" style="background-color: rgba(255, 255, 255, 0.95); color: #060CE9;">
+        <div class="card-body p-4">
+            <h4 class="card-title text-center mb-4">Sign In</h4>
+            
+            <!-- Email/Password Login -->
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-jeopardy w-100 mb-3">Sign In</button>
+            </form>
+            
+            <div class="text-center mb-3">
+                <span style="color: #666;">or</span>
+            </div>
+            
+            <!-- Social Login Buttons -->
+            <button id="googleSignIn" class="btn btn-danger w-100 mb-2">
+                <i class="fab fa-google"></i> Sign in with Google
+            </button>
+            
+            <!-- Phone Number Login -->
+            <button id="phoneSignIn" class="btn btn-success w-100 mb-3">
+                <i class="fas fa-phone"></i> Sign in with Phone
+            </button>
+            
+            <!-- Phone Login Form (initially hidden) -->
+            <div id="phoneLoginForm" style="display: none;">
+                <div class="mb-3">
+                    <label for="phoneNumber" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phoneNumber" placeholder="+1234567890">
+                </div>
+                <button id="sendCode" class="btn btn-primary w-100 mb-2">Send Verification Code</button>
+                <div id="recaptcha-container"></div>
+                
+                <div id="verificationSection" style="display: none;">
+                    <div class="mb-3">
+                        <label for="verificationCode" class="form-label">Verification Code</label>
+                        <input type="text" class="form-control" id="verificationCode" placeholder="123456">
+                    </div>
+                    <button id="verifyCode" class="btn btn-success w-100">Verify Code</button>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="text-center">
+                <p>Don't have an account? <a href="{{ url_for('firebase_auth.register') }}">Sign Up</a></p>
+                <p><a href="#" id="forgotPassword">Forgot Password?</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="text-center" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<script>
+// Initialize Firebase
+fetch('/firebase_auth/firebase_config')
+    .then(response => response.json())
+    .then(config => {
+        firebase.initializeApp(config);
+        
+        // Setup authentication
+        const auth = firebase.auth();
+        
+        // Email/Password Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const idToken = await userCredential.user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/firebase_auth/verify_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    alert('Login failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+        
+        // Google Sign In
+        document.getElementById('googleSignIn').addEventListener('click', async () => {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            try {
+                const result = await auth.signInWithPopup(provider);
+                const idToken = await result.user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/firebase_auth/verify_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    alert('Login failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Google sign in failed: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+        
+        // Phone Sign In
+        let confirmationResult = null;
+        
+        document.getElementById('phoneSignIn').addEventListener('click', () => {
+            document.getElementById('phoneLoginForm').style.display = 'block';
+            
+            // Setup recaptcha
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    'size': 'normal',
+                    'callback': (response) => {
+                        // reCAPTCHA solved
+                    }
+                });
+                window.recaptchaVerifier.render();
+            }
+        });
+        
+        document.getElementById('sendCode').addEventListener('click', async () => {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            
+            if (!phoneNumber) {
+                alert('Please enter a phone number');
+                return;
+            }
+            
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            try {
+                confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
+                document.getElementById('verificationSection').style.display = 'block';
+                alert('Verification code sent!');
+            } catch (error) {
+                alert('Failed to send code: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('verifyCode').addEventListener('click', async () => {
+            const code = document.getElementById('verificationCode').value;
+            
+            if (!code || !confirmationResult) {
+                alert('Please enter the verification code');
+                return;
+            }
+            
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            try {
+                const result = await confirmationResult.confirm(code);
+                const idToken = await result.user.getIdToken();
+                
+                // Verify token with backend
+                const response = await fetch('/firebase_auth/verify_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    alert('Login failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Invalid verification code: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }
+        });
+        
+        // Forgot Password
+        document.getElementById('forgotPassword').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = prompt('Enter your email address:');
+            
+            if (email) {
+                try {
+                    await auth.sendPasswordResetEmail(email);
+                    alert('Password reset email sent! Check your inbox.');
+                } catch (error) {
+                    alert('Failed to send reset email: ' + error.message);
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Failed to load Firebase config:', error);
+        alert('Failed to initialize authentication. Please refresh the page.');
+    });
+</script>
+{% endblock %}
