@@ -5,12 +5,8 @@ streamlit>=1.28.1
 pandas>=2.0.0
 numpy>=1.24.0
 
-# Machine Learning & NLP
-sentence-transformers>=2.2.2
-scikit-learn>=1.2.2
-
-# Cloud Storage (R2)
-boto3>=1.28.15
+# Simplified dependencies for Streamlit deployment
+# Removed heavy ML dependencies that aren't needed for basic version
 
 # Firebase & Authentication
 firebase-admin==6.4.0
