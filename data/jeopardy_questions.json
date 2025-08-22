@@ -1,1 +1,82 @@
-404: Not Found
+[
+  {
+    "category": "SCIENCE",
+    "question": "This planet is known as the Red Planet",
+    "answer": "Mars",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "HISTORY",
+    "question": "This president was the first President of the United States",
+    "answer": "George Washington",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "LITERATURE",
+    "question": "This Shakespeare play features star-crossed lovers",
+    "answer": "Romeo and Juliet",
+    "value": 100,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "GEOGRAPHY",
+    "question": "This is the capital of France",
+    "answer": "Paris",
+    "value": 100,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "SPORTS",
+    "question": "This sport is known as America's Pastime",
+    "answer": "Baseball",
+    "value": 200,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "MOVIES",
+    "question": "This 1939 film features Dorothy and her dog Toto",
+    "answer": "The Wizard of Oz",
+    "value": 300,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "MUSIC",
+    "question": "This band from Liverpool is known as the Fab Four",
+    "answer": "The Beatles",
+    "value": 300,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "FOOD & DRINK",
+    "question": "This Italian dish consists of thin dough topped with tomato sauce and cheese",
+    "answer": "Pizza",
+    "value": 100,
+    "round": "Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "TECHNOLOGY",
+    "question": "This company was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne",
+    "answer": "Apple",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01"
+  },
+  {
+    "category": "ANIMALS",
+    "question": "This is the largest mammal in the world",
+    "answer": "Blue Whale",
+    "value": 400,
+    "round": "Double Jeopardy!",
+    "air_date": "2024-01-01"
+  }
+]

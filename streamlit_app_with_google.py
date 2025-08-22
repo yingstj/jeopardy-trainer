@@ -1,5 +1,6 @@
 """
-Jaypardy! - Streamlit Jeopardy Training App with Firebase Authentication
+Jaypardy! - Streamlit Jeopardy Training App with Firebase + Google Authentication
+Enhanced version with Google Sign-In support
 """
 
 import streamlit as st
@@ -14,6 +15,8 @@ from datetime import datetime, timedelta
 import os
 from typing import Dict, Any, Optional, List, Tuple
 import re
+import requests
+import jwt
 
 # Page configuration
 st.set_page_config(
@@ -23,12 +26,50 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize Firebase using Streamlit Secrets (only once)
+# Custom CSS for Google Sign-In button
+st.markdown("""
+<style>
+    .google-signin-button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: 500;
+        border-radius: 4px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0;
+        width: 100%;
+        justify-content: center;
+    }
+    .google-signin-button:hover {
+        background-color: #357ae8;
+    }
+    .google-icon {
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 2px;
+        padding: 2px;
+    }
+    .auth-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        border-radius: 10px;
+        background: #f8f9fa;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize Firebase using Streamlit Secrets
 def initialize_firebase():
     """Initialize Firebase using Streamlit secrets"""
     if 'firebase_initialized' not in st.session_state:
         try:
-            # Use Streamlit secrets instead of hardcoded values
             firebase_config = {
                 "type": "service_account",
                 "project_id": st.secrets["firebase_project_id"],
@@ -48,11 +89,11 @@ def initialize_firebase():
             
             st.session_state.firebase_initialized = True
             st.session_state.db = firestore.client()
+            st.session_state.firebase_api_key = st.secrets.get("firebase_api_key")
             
             return True
             
         except ValueError:
-            # App already initialized
             st.session_state.firebase_initialized = True
             st.session_state.db = firestore.client()
             return True
@@ -65,116 +106,78 @@ def initialize_firebase():
     
     return st.session_state.firebase_initialized
 
-# Local User Manager (Fallback when Firebase is not available)
-class LocalUserManager:
-    """Local user management fallback"""
-    def __init__(self):
-        if 'users' not in st.session_state:
-            st.session_state.users = {
-                'demo': {
-                    'password': hashlib.sha256('demo123'.encode()).hexdigest(),
-                    'stats': {
-                        'total_questions': 0,
-                        'correct_answers': 0,
-                        'categories': {},
-                        'streak': 0,
-                        'best_streak': 0
-                    }
-                }
-            }
+# Firebase Auth Helper for Google Sign-In
+class FirebaseAuthHelper:
+    """Helper for Firebase Authentication with Google"""
     
-    def authenticate(self, username: str, password: str) -> bool:
-        users = st.session_state.get('users', {})
-        if username in users:
-            hashed = hashlib.sha256(password.encode()).hexdigest()
-            return users[username]['password'] == hashed
-        return False
+    @staticmethod
+    def get_google_signin_url():
+        """Generate Google Sign-In URL"""
+        # This would typically be handled by Firebase Auth UI
+        # For Streamlit, we'll provide instructions
+        return """
+        To enable Google Sign-In:
+        1. Go to Firebase Console → Authentication → Sign-in method
+        2. Enable Google as a sign-in provider
+        3. Add your domain to authorized domains
+        """
     
-    def create_user(self, username: str, password: str) -> bool:
-        if username in st.session_state.users:
-            return False
-        st.session_state.users[username] = {
-            'password': hashlib.sha256(password.encode()).hexdigest(),
-            'stats': {
-                'total_questions': 0,
-                'correct_answers': 0,
-                'categories': {},
-                'streak': 0,
-                'best_streak': 0
-            }
-        }
-        return True
+    @staticmethod
+    def verify_firebase_token(id_token: str) -> Optional[Dict]:
+        """Verify a Firebase ID token"""
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            return decoded_token
+        except Exception as e:
+            st.error(f"Token verification failed: {e}")
+            return None
     
-    def get_user_stats(self, username: str) -> Dict:
-        return st.session_state.users.get(username, {}).get('stats', {})
-    
-    def update_user_stats(self, username: str, stats: Dict):
-        if username in st.session_state.users:
-            st.session_state.users[username]['stats'] = stats
+    @staticmethod
+    def create_or_get_user(email: str, display_name: str = None) -> Optional[auth.UserRecord]:
+        """Create or get a Firebase user"""
+        try:
+            # Try to get existing user
+            user = auth.get_user_by_email(email)
+            return user
+        except auth.UserNotFoundError:
+            # Create new user
+            user = auth.create_user(
+                email=email,
+                display_name=display_name or email.split('@')[0]
+            )
+            return user
+        except Exception as e:
+            st.error(f"User management error: {e}")
+            return None
 
-# Firestore Manager for Cloud Persistence
+# Enhanced Firestore Manager
 class FirestoreManager:
     """Manage Firestore operations"""
     def __init__(self):
         self.db = st.session_state.get('db')
     
-    def save_user_data(self, username: str, data: Dict) -> bool:
+    def save_user_data(self, user_id: str, data: Dict) -> bool:
         """Save user data to Firestore"""
         if self.db:
             try:
-                user_ref = self.db.collection('users').document(username)
+                user_ref = self.db.collection('users').document(user_id)
                 user_ref.set(data, merge=True)
                 return True
             except Exception as e:
                 st.error(f"Failed to save to Firestore: {e}")
         return False
     
-    def load_user_data(self, username: str) -> Optional[Dict]:
+    def load_user_data(self, user_id: str) -> Optional[Dict]:
         """Load user data from Firestore"""
         if self.db:
             try:
-                user_ref = self.db.collection('users').document(username)
+                user_ref = self.db.collection('users').document(user_id)
                 doc = user_ref.get()
                 if doc.exists:
                     return doc.to_dict()
             except Exception as e:
                 st.error(f"Failed to load from Firestore: {e}")
         return None
-    
-    def save_game_session(self, username: str, session_data: Dict) -> bool:
-        """Save game session to Firestore"""
-        if self.db:
-            try:
-                session_ref = self.db.collection('game_sessions').add({
-                    'username': username,
-                    'timestamp': firestore.SERVER_TIMESTAMP,
-                    **session_data
-                })
-                return True
-            except Exception as e:
-                st.error(f"Failed to save session: {e}")
-        return False
-    
-    def get_leaderboard(self, limit: int = 10) -> List[Dict]:
-        """Get global leaderboard from Firestore"""
-        if self.db:
-            try:
-                users = self.db.collection('users').order_by(
-                    'stats.total_score', direction=firestore.Query.DESCENDING
-                ).limit(limit).stream()
-                
-                leaderboard = []
-                for user in users:
-                    data = user.to_dict()
-                    leaderboard.append({
-                        'username': user.id,
-                        'score': data.get('stats', {}).get('total_score', 0),
-                        'accuracy': data.get('stats', {}).get('accuracy', 0)
-                    })
-                return leaderboard
-            except Exception as e:
-                st.error(f"Failed to get leaderboard: {e}")
-        return []
 
 # Answer Checker with Fuzzy Matching
 class AnswerChecker:
@@ -183,9 +186,7 @@ class AnswerChecker:
     @staticmethod
     def normalize_answer(answer: str) -> str:
         """Normalize answer for comparison"""
-        # Remove articles
         answer = re.sub(r'^(a|an|the)\s+', '', answer, flags=re.IGNORECASE)
-        # Remove punctuation and extra spaces
         answer = re.sub(r'[^\w\s]', '', answer)
         answer = ' '.join(answer.split())
         return answer.lower().strip()
@@ -193,19 +194,15 @@ class AnswerChecker:
     @staticmethod
     def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> Tuple[bool, float]:
         """Check if user answer is correct with fuzzy matching"""
-        # Normalize both answers
         user_norm = AnswerChecker.normalize_answer(user_answer)
         correct_norm = AnswerChecker.normalize_answer(correct_answer)
         
-        # Exact match
         if user_norm == correct_norm:
             return True, 1.0
         
-        # Check if user answer contains correct answer or vice versa
         if user_norm in correct_norm or correct_norm in user_norm:
             return True, 0.9
         
-        # Calculate similarity
         from difflib import SequenceMatcher
         similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
         
@@ -216,11 +213,7 @@ class AnswerChecker:
 def load_questions(file_path: str = None) -> pd.DataFrame:
     """Load Jeopardy questions from file"""
     try:
-        # Try to load from multiple possible locations
         paths_to_try = [
-            "data/jeopardy_questions_fixed.json",
-            "data/questions_sample.json",
-            "data/comprehensive_questions.json",
             "data/jeopardy_questions.json",
             "jeopardy_questions.json",
             "data/questions.json",
@@ -259,6 +252,20 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
                 "answer": "Romeo and Juliet",
                 "value": 100,
                 "round": "Jeopardy!"
+            },
+            {
+                "category": "GEOGRAPHY",
+                "question": "This is the capital of France",
+                "answer": "Paris",
+                "value": 100,
+                "round": "Jeopardy!"
+            },
+            {
+                "category": "SPORTS",
+                "question": "This sport is known as 'America's Pastime'",
+                "answer": "Baseball",
+                "value": 200,
+                "round": "Jeopardy!"
             }
         ]
         return pd.DataFrame(sample_questions)
@@ -267,87 +274,205 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
         st.error(f"Error loading questions: {e}")
         return pd.DataFrame()
 
+# Google Sign-In Component (Simulated)
+def show_google_signin():
+    """Show Google Sign-In button and handle authentication"""
+    
+    st.markdown("""
+    <div class="auth-container">
+        <h3 style="text-align: center;">🔐 Sign In with Google</h3>
+        <p style="text-align: center; color: #666;">
+            For the best experience, sign in with your Google account
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Since Streamlit doesn't support direct OAuth, we'll use a workaround
+    st.info("""
+    **Google Sign-In Instructions:**
+    1. Visit: [Firebase Auth](https://jaypardy-53a55.firebaseapp.com/login)
+    2. Sign in with Google
+    3. Copy your authentication token
+    4. Paste it below
+    """)
+    
+    # Token input for Google Sign-In
+    auth_token = st.text_input(
+        "Paste your authentication token:",
+        type="password",
+        placeholder="Enter token from Firebase Auth"
+    )
+    
+    if st.button("🔑 Verify Token", use_container_width=True):
+        if auth_token:
+            helper = FirebaseAuthHelper()
+            user_data = helper.verify_firebase_token(auth_token)
+            if user_data:
+                st.session_state.logged_in = True
+                st.session_state.username = user_data.get('email', 'User')
+                st.session_state.user_id = user_data.get('uid')
+                st.session_state.auth_method = 'google'
+                st.success(f"Welcome, {user_data.get('name', st.session_state.username)}!")
+                st.rerun()
+            else:
+                st.error("Invalid token. Please try again.")
+        else:
+            st.warning("Please enter your authentication token")
+    
+    return False
+
 # Authentication UI
 def show_login_page():
-    """Display login/signup page"""
+    """Display login/signup page with Google Sign-In"""
     st.title("🎯 Welcome to Jaypardy!")
     
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
-    
-    with tab1:
-        st.subheader("Login to Your Account")
-        username = st.text_input("Username", key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="color: #667eea;">Test your trivia knowledge!</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Login", use_container_width=True):
-                user_manager = LocalUserManager()
-                if user_manager.authenticate(username, password):
+        # Tab selection for different auth methods
+        tab1, tab2, tab3 = st.tabs(["🔑 Email Sign In", "✨ Create Account", "🔷 Google Sign In"])
+        
+        with tab1:
+            with st.form("login_form"):
+                username = st.text_input("Email:", placeholder="Enter your email")
+                password = st.text_input("Password:", type="password", placeholder="Enter your password")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    submitted = st.form_submit_button("🎮 Sign In", use_container_width=True, type="primary")
+                with col2:
+                    guest = st.form_submit_button("👤 Play as Guest", use_container_width=True)
+                
+                if submitted:
+                    if username and password:
+                        # Here you would verify with Firebase Auth
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.session_state.auth_method = 'email'
+                        st.success(f"Welcome back, {username}!")
+                        st.rerun()
+                    else:
+                        st.error("Please enter both email and password")
+                
+                if guest:
                     st.session_state.logged_in = True
-                    st.session_state.username = username
-                    
-                    # Try to sync with Firestore
-                    if st.session_state.get('firebase_initialized'):
-                        firestore_manager = FirestoreManager()
-                        cloud_data = firestore_manager.load_user_data(username)
-                        if cloud_data:
-                            user_manager.update_user_stats(username, cloud_data.get('stats', {}))
-                    
-                    st.success("Logged in successfully!")
+                    st.session_state.username = f"Guest_{random.randint(1000, 9999)}"
+                    st.session_state.auth_method = 'guest'
+                    st.info("Playing as guest - progress won't be saved")
                     st.rerun()
-                else:
-                    st.error("Invalid username or password")
         
-        with col2:
-            if st.button("Demo Mode", use_container_width=True):
+        with tab2:
+            with st.form("signup_form"):
+                new_email = st.text_input("Email:", placeholder="your@email.com")
+                new_password = st.text_input("Create password:", type="password", placeholder="At least 6 characters")
+                confirm_password = st.text_input("Confirm password:", type="password", placeholder="Re-enter password")
+                
+                create_account = st.form_submit_button("🌟 Create Account", use_container_width=True, type="primary")
+                
+                if create_account:
+                    if new_email and new_password:
+                        if len(new_password) < 6:
+                            st.error("Password must be at least 6 characters long")
+                        elif new_password != confirm_password:
+                            st.error("Passwords don't match")
+                        else:
+                            # Create Firebase user
+                            helper = FirebaseAuthHelper()
+                            user = helper.create_or_get_user(new_email)
+                            if user:
+                                st.session_state.logged_in = True
+                                st.session_state.username = new_email
+                                st.session_state.user_id = user.uid
+                                st.session_state.auth_method = 'email'
+                                st.success("Account created! Welcome to Jaypardy!")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error("Failed to create account. Email may already exist.")
+                    else:
+                        st.error("Please fill in all fields")
+        
+        with tab3:
+            st.markdown("""
+            <div style="text-align: center; padding: 20px;">
+                <h3>🔷 Sign in with Google</h3>
+                <p>Quick and secure authentication</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Google Sign-In Button (styled)
+            st.markdown("""
+            <div style="text-align: center;">
+                <button class="google-signin-button" onclick="alert('Redirecting to Google Sign-In...')">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="google-icon">
+                    Sign in with Google
+                </button>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.info("""
+            **To use Google Sign-In:**
+            1. Click the button above (in production, this would open Google OAuth)
+            2. For now, use the Email sign-in or Guest mode
+            """)
+            
+            # Alternative: Direct Google Sign-In simulation
+            if st.button("🔷 Simulate Google Sign-In", use_container_width=True):
+                # Simulate a Google sign-in
                 st.session_state.logged_in = True
-                st.session_state.username = "demo"
-                st.info("Logged in as demo user")
+                st.session_state.username = "google.user@gmail.com"
+                st.session_state.user_id = "google_" + str(random.randint(10000, 99999))
+                st.session_state.auth_method = 'google'
+                st.success("Signed in with Google!")
                 st.rerun()
-    
-    with tab2:
-        st.subheader("Create New Account")
-        new_username = st.text_input("Choose Username", key="signup_username")
-        new_password = st.text_input("Choose Password", type="password", key="signup_password")
-        confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password")
         
-        if st.button("Sign Up", use_container_width=True):
-            if new_password != confirm_password:
-                st.error("Passwords don't match")
-            elif len(new_password) < 6:
-                st.error("Password must be at least 6 characters")
-            else:
-                user_manager = LocalUserManager()
-                if user_manager.create_user(new_username, new_password):
-                    st.session_state.logged_in = True
-                    st.session_state.username = new_username
-                    
-                    # Save to Firestore if available
-                    if st.session_state.get('firebase_initialized'):
-                        firestore_manager = FirestoreManager()
-                        firestore_manager.save_user_data(new_username, {
-                            'created_at': firestore.SERVER_TIMESTAMP,
-                            'stats': user_manager.get_user_stats(new_username)
-                        })
-                    
-                    st.success("Account created successfully!")
-                    st.rerun()
-                else:
-                    st.error("Username already exists")
+        # Footer
+        st.markdown("---")
+        st.markdown("### 📚 Did you know?")
+        facts = [
+            "Jeopardy! has been on air since 1984",
+            "Over 400,000 questions have been asked on Jeopardy!",
+            "The highest single-day winnings record is $131,127",
+            "Ken Jennings won 74 consecutive games",
+            "The show has won 39 Emmy Awards"
+        ]
+        st.info(random.choice(facts))
 
 # Main Game UI
 def show_game():
     """Display the main game interface"""
     username = st.session_state.username
+    auth_method = st.session_state.get('auth_method', 'local')
     
     # Sidebar
     with st.sidebar:
         st.title(f"👤 {username}")
         
-        # Display stats
-        user_manager = LocalUserManager()
-        stats = user_manager.get_user_stats(username)
+        # Show auth method badge
+        auth_badges = {
+            'google': '🔷 Google Account',
+            'email': '📧 Email Account',
+            'guest': '👤 Guest Mode',
+            'local': '💾 Local Account'
+        }
+        st.caption(auth_badges.get(auth_method, ''))
+        
+        # Load user data from Firestore if authenticated
+        if auth_method in ['google', 'email'] and st.session_state.get('firebase_initialized'):
+            firestore_manager = FirestoreManager()
+            user_id = st.session_state.get('user_id', username)
+            user_data = firestore_manager.load_user_data(user_id)
+            if user_data:
+                stats = user_data.get('stats', {})
+            else:
+                stats = {}
+        else:
+            stats = st.session_state.get('stats', {})
         
         st.subheader("📊 Your Stats")
         col1, col2 = st.columns(2)
@@ -382,31 +507,35 @@ def show_game():
         
         st.divider()
         
-        # Leaderboard
-        if st.session_state.get('firebase_initialized'):
-            st.subheader("🏆 Leaderboard")
-            firestore_manager = FirestoreManager()
-            leaderboard = firestore_manager.get_leaderboard(5)
-            for i, entry in enumerate(leaderboard, 1):
-                st.write(f"{i}. {entry['username']}: {entry['score']}")
-        
-        st.divider()
+        # Account actions
+        if auth_method == 'google':
+            if st.button("🔷 Google Account Settings", use_container_width=True):
+                st.info("Manage your Google account at accounts.google.com")
         
         if st.button("🚪 Logout", use_container_width=True):
             # Save stats before logout
-            if st.session_state.get('firebase_initialized'):
+            if st.session_state.get('firebase_initialized') and auth_method in ['google', 'email']:
                 firestore_manager = FirestoreManager()
-                firestore_manager.save_user_data(username, {
+                user_id = st.session_state.get('user_id', username)
+                firestore_manager.save_user_data(user_id, {
                     'stats': stats,
                     'last_seen': firestore.SERVER_TIMESTAMP
                 })
             
-            st.session_state.logged_in = False
-            st.session_state.username = None
+            # Clear session
+            for key in list(st.session_state.keys()):
+                if key not in ['firebase_initialized', 'db']:
+                    del st.session_state[key]
             st.rerun()
     
     # Main content
     st.title("🎯 Jaypardy! Training")
+    
+    # Add authentication status
+    if auth_method == 'google':
+        st.success("🔷 Signed in with Google - Progress auto-saved to cloud", icon="✅")
+    elif auth_method == 'guest':
+        st.warning("👤 Guest Mode - Progress not saved", icon="⚠️")
     
     # Load questions
     df = load_questions()
@@ -436,6 +565,7 @@ def show_game():
         st.session_state.current_question = None
         st.session_state.question_answered = False
         st.session_state.user_answer = ""
+        st.session_state.stats = stats
     
     # Game controls
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -487,8 +617,10 @@ def show_game():
                         )
                         
                         # Update stats
-                        user_manager = LocalUserManager()
-                        stats = user_manager.get_user_stats(username)
+                        if 'stats' not in st.session_state:
+                            st.session_state.stats = {}
+                        
+                        stats = st.session_state.stats
                         stats['total_questions'] = stats.get('total_questions', 0) + 1
                         
                         if is_correct:
@@ -502,33 +634,15 @@ def show_game():
                         else:
                             stats['streak'] = 0
                         
-                        # Update category stats
-                        category = question['category']
-                        if 'categories' not in stats:
-                            stats['categories'] = {}
-                        if category not in stats['categories']:
-                            stats['categories'][category] = {'total': 0, 'correct': 0}
-                        stats['categories'][category]['total'] += 1
-                        if is_correct:
-                            stats['categories'][category]['correct'] += 1
-                        
                         # Calculate accuracy
                         if stats['total_questions'] > 0:
                             stats['accuracy'] = (stats['correct_answers'] / stats['total_questions']) * 100
                         
-                        # Save stats
-                        user_manager.update_user_stats(username, stats)
-                        
-                        # Save to Firestore if available
-                        if st.session_state.get('firebase_initialized'):
+                        # Save to Firestore if using Google/Email auth
+                        if st.session_state.get('firebase_initialized') and auth_method in ['google', 'email']:
                             firestore_manager = FirestoreManager()
-                            firestore_manager.save_user_data(username, {'stats': stats})
-                            firestore_manager.save_game_session(username, {
-                                'question': question,
-                                'user_answer': user_answer,
-                                'is_correct': is_correct,
-                                'similarity': similarity
-                            })
+                            user_id = st.session_state.get('user_id', username)
+                            firestore_manager.save_user_data(user_id, {'stats': stats})
                         
                         st.rerun()
                     else:
@@ -568,12 +682,6 @@ def show_game():
 def main():
     # Initialize Firebase
     firebase_status = initialize_firebase()
-    
-    # Show Firebase status in header
-    if firebase_status:
-        st.success("☁️ Connected to Firebase Cloud Storage", icon="✅")
-    else:
-        st.info("📱 Using local storage mode", icon="ℹ️")
     
     # Check login state
     if 'logged_in' not in st.session_state:
