@@ -214,14 +214,14 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
     """Load Jeopardy questions from file"""
     try:
         paths_to_try = [
-            "data/jeopardy_questions_fixed.json",
-            "data/questions_sample.json",
+            "data/all_jeopardy_clues.csv",  # 577k questions - prioritize this
+            "data/questions_sample.json",    # 1000 questions
+            "data/jeopardy_questions_fixed.json",  # 220 questions
             "data/comprehensive_questions.json",
             "data/jeopardy_questions.json",
             "jeopardy_questions.json",
             "data/questions.json",
             "questions.json",
-            "data/all_jeopardy_clues.csv",
             "data/jeopardy_with_answers.csv"
         ]
         
@@ -244,9 +244,16 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
                             'Category': 'category',
                             'Value': 'value',
                             'Round': 'round',
-                            'Air Date': 'air_date'
+                            'Air Date': 'air_date',
+                            # For all_jeopardy_clues.csv format
+                            'clue': 'question',
+                            'correct_response': 'answer',
+                            'game_id': 'show_number'
                         }
                         df.rename(columns=column_mapping, inplace=True)
+                        # Make category uppercase for consistency
+                        if 'category' in df.columns:
+                            df['category'] = df['category'].str.upper()
                     else:
                         continue
                     
@@ -259,7 +266,13 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
                                 df['value'] = 200
                             if 'round' not in df.columns:
                                 df['round'] = 'Jeopardy!'
-                            st.success(f"Loaded {len(df)} questions from {path}")
+                            
+                            # For large datasets, show the actual count
+                            num_questions = len(df)
+                            if num_questions > 10000:
+                                st.success(f"🎉 Loaded {num_questions:,} questions from {path.split('/')[-1]}")
+                            else:
+                                st.success(f"Loaded {num_questions} questions from {path.split('/')[-1]}")
                             return df
                 except json.JSONDecodeError as e:
                     st.warning(f"Could not parse {path}: {e}")
