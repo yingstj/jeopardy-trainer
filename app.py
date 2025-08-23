@@ -214,10 +214,15 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
     """Load Jeopardy questions from file"""
     try:
         paths_to_try = [
+            "data/jeopardy_questions_fixed.json",
+            "data/questions_sample.json",
+            "data/comprehensive_questions.json",
             "data/jeopardy_questions.json",
             "jeopardy_questions.json",
             "data/questions.json",
-            "questions.json"
+            "questions.json",
+            "data/all_jeopardy_clues.csv",
+            "data/jeopardy_with_answers.csv"
         ]
         
         if file_path:
@@ -225,9 +230,43 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
         
         for path in paths_to_try:
             if os.path.exists(path):
-                with open(path, 'r') as f:
-                    data = json.load(f)
-                    return pd.DataFrame(data)
+                try:
+                    if path.endswith('.json'):
+                        with open(path, 'r') as f:
+                            data = json.load(f)
+                            df = pd.DataFrame(data)
+                    elif path.endswith('.csv'):
+                        df = pd.read_csv(path)
+                        # Standardize column names for CSV files
+                        column_mapping = {
+                            'Question': 'question',
+                            'Answer': 'answer',
+                            'Category': 'category',
+                            'Value': 'value',
+                            'Round': 'round',
+                            'Air Date': 'air_date'
+                        }
+                        df.rename(columns=column_mapping, inplace=True)
+                    else:
+                        continue
+                    
+                    if not df.empty:
+                        # Ensure required columns exist
+                        required_cols = ['question', 'answer', 'category']
+                        if all(col in df.columns for col in required_cols):
+                            # Add missing columns with defaults
+                            if 'value' not in df.columns:
+                                df['value'] = 200
+                            if 'round' not in df.columns:
+                                df['round'] = 'Jeopardy!'
+                            st.success(f"Loaded {len(df)} questions from {path}")
+                            return df
+                except json.JSONDecodeError as e:
+                    st.warning(f"Could not parse {path}: {e}")
+                    continue
+                except Exception as e:
+                    st.warning(f"Error reading {path}: {e}")
+                    continue
         
         # If no file found, create sample questions
         st.warning("No question file found. Using sample questions.")
@@ -405,30 +444,54 @@ def show_login_page():
             </div>
             """, unsafe_allow_html=True)
             
-            # Google Sign-In Button (styled)
-            st.markdown("""
-            <div style="text-align: center;">
-                <button class="google-signin-button" onclick="alert('Redirecting to Google Sign-In...')">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="google-icon">
-                    Sign in with Google
-                </button>
-            </div>
-            """, unsafe_allow_html=True)
+            # Two options for Google Sign-In
+            st.markdown("### Option 1: Use Authentication Token")
             
-            st.info("""
-            **To use Google Sign-In:**
-            1. Click the button above (in production, this would open Google OAuth)
-            2. For now, use the Email sign-in or Guest mode
-            """)
+            with st.expander("Get Google Auth Token", expanded=True):
+                st.markdown("""
+                1. **[Click here to sign in with Google](https://jaypardy-53a55.web.app/google_auth_helper.html)** 
+                   (Opens in new tab)
+                2. Sign in with your Google account
+                3. Copy the token that appears
+                4. Paste it below
+                """)
+                
+                auth_token = st.text_input(
+                    "Paste your authentication token:",
+                    type="password",
+                    placeholder="Paste token here",
+                    key="google_token"
+                )
+                
+                if st.button("🔷 Sign In with Token", use_container_width=True, key="google_token_btn"):
+                    if auth_token:
+                        try:
+                            # Verify the token
+                            helper = FirebaseAuthHelper()
+                            user_data = helper.verify_firebase_token(auth_token)
+                            if user_data:
+                                st.session_state.logged_in = True
+                                st.session_state.username = user_data.get('email', 'User')
+                                st.session_state.user_id = user_data.get('uid')
+                                st.session_state.auth_method = 'google'
+                                st.success(f"Welcome, {user_data.get('name', st.session_state.username)}!")
+                                st.rerun()
+                            else:
+                                st.error("Invalid token. Please try again.")
+                        except Exception as e:
+                            st.error(f"Authentication failed: {str(e)}")
+                    else:
+                        st.warning("Please paste your authentication token")
             
-            # Alternative: Direct Google Sign-In simulation
-            if st.button("🔷 Simulate Google Sign-In", use_container_width=True):
-                # Simulate a Google sign-in
+            st.markdown("### Option 2: Quick Demo")
+            
+            # Demo Google Sign-In
+            if st.button("🎮 Try Demo Mode", use_container_width=True, key="google_demo"):
                 st.session_state.logged_in = True
-                st.session_state.username = "google.user@gmail.com"
-                st.session_state.user_id = "google_" + str(random.randint(10000, 99999))
+                st.session_state.username = f"demo_{random.randint(1000, 9999)}@demo.com"
+                st.session_state.user_id = "demo_" + str(random.randint(10000, 99999))
                 st.session_state.auth_method = 'google'
-                st.success("Signed in with Google!")
+                st.success("Signed in with demo Google account!")
                 st.rerun()
         
         # Footer

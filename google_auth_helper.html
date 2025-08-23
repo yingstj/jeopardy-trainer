@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jaypardy - Google Sign In</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .google-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .google-btn:hover {
+            background: #357ae8;
+        }
+        .token-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            word-break: break-all;
+            display: none;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Jaypardy</h1>
+        <h2>Sign in with Google</h2>
+        
+        <button class="google-btn" onclick="signInWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
+            Sign in with Google
+        </button>
+        
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+        
+        <div id="tokenDisplay" class="token-display">
+            <strong>Your Authentication Token:</strong>
+            <p id="token"></p>
+            <button onclick="copyToken()">Copy Token</button>
+        </div>
+        
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Click "Sign in with Google"</li>
+                <li>Sign in with your Google account</li>
+                <li>Copy the token that appears</li>
+                <li>Go back to Streamlit app and paste the token</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration - Replace with your config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7OcmmwWY6zV4ngPHjsdwxvoXJ41r55UM",
+            authDomain: "jaypardy-53a55.firebaseapp.com",
+            projectId: "jaypardy-53a55",
+            storageBucket: "jaypardy-53a55.firebasestorage.app",
+            messagingSenderId: "367259134434",
+            appId: "1:367259134434:web:5728976d5fba3ef022b1bb",
+            databaseURL: "https://jaypardy-53a55-default-rtdb.firebaseio.com"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    document.getElementById('success').textContent = `Welcome, ${user.displayName}!`;
+                    
+                    // Get ID token
+                    user.getIdToken().then((idToken) => {
+                        document.getElementById('token').textContent = idToken;
+                        document.getElementById('tokenDisplay').style.display = 'block';
+                    });
+                })
+                .catch((error) => {
+                    document.getElementById('error').textContent = `Error: ${error.message}`;
+                });
+        }
+
+        function copyToken() {
+            const token = document.getElementById('token').textContent;
+            navigator.clipboard.writeText(token).then(() => {
+                alert('Token copied! Go back to Streamlit app and paste it.');
+            });
+        }
+
+        // Check if already signed in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('success').textContent = `Already signed in as ${user.displayName}`;
+                user.getIdToken().then((idToken) => {
+                    document.getElementById('token').textContent = idToken;
+                    document.getElementById('tokenDisplay').style.display = 'block';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
