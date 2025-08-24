@@ -1,228 +1,226 @@
-"""
-Jaypardy! - Streamlit Jeopardy Training App with Firebase + Google Authentication
-Enhanced version with Google Sign-In support
-"""
-
 import streamlit as st
 import pandas as pd
-import random
+import numpy as np
 import json
-import hashlib
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
+import random
 import time
-from datetime import datetime, timedelta
 import os
-from typing import Dict, Any, Optional, List, Tuple
-import re
-import requests
-import jwt
+from datetime import datetime
+from difflib import SequenceMatcher
+from typing import Dict, List, Optional, Tuple
+
+# Import AI components
+from ai_opponent import AI_PERSONALITIES, AI_DIFFICULTY, simulate_ai_response, simulate_buzzer_race, get_ai_daily_double_wager
+from firebase_auth import FirebaseAuthHelper
 
 # Page configuration
 st.set_page_config(
-    page_title="Jaypardy!",
+    page_title="🎯 Jaypardy! - AI Trainer",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Google Sign-In button
+# Enhanced CSS with game mode styling
 st.markdown("""
 <style>
-    .google-signin-button {
-        background-color: #4285f4;
+    /* Main container */
+    .main { padding: 0rem 1rem; }
+    
+    /* Header gradient */
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Game mode cards */
+    .game-mode-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .game-mode-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        border-color: #667eea;
+    }
+    
+    .game-mode-card.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        padding: 10px 20px;
-        font-size: 16px;
-        font-weight: 500;
-        border-radius: 4px;
-        cursor: pointer;
-        display: inline-flex;
+    }
+    
+    /* AI opponent card */
+    .ai-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .ai-personality {
+        display: flex;
         align-items: center;
-        gap: 10px;
-        margin: 10px 0;
-        width: 100%;
-        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        margin: 0.5rem 0;
     }
-    .google-signin-button:hover {
-        background-color: #357ae8;
+    
+    /* Score displays */
+    .score-display {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
-    .google-icon {
-        width: 20px;
-        height: 20px;
-        background: white;
-        border-radius: 2px;
-        padding: 2px;
+    
+    .ai-score-display {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     }
-    .auth-container {
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 20px;
-        border-radius: 10px;
+    
+    /* Buzzer indicator */
+    .buzzer-indicator {
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+    
+    /* Question card */
+    .question-card {
         background: #f8f9fa;
+        border-left: 5px solid #667eea;
+        padding: 2rem;
+        border-radius: 10px;
+        margin: 1.5rem 0;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Daily Double */
+    .daily-double {
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        color: #333;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin: 1rem 0;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+        animation: glow 2s ease-in-out infinite;
+    }
+    
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 15px 40px rgba(255, 215, 0, 0.6); }
+    }
+    
+    /* Stats dashboard */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .stat-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize Firebase using Streamlit Secrets
-def initialize_firebase():
-    """Initialize Firebase using Streamlit secrets"""
-    if 'firebase_initialized' not in st.session_state:
-        try:
-            firebase_config = {
-                "type": "service_account",
-                "project_id": st.secrets["firebase_project_id"],
-                "private_key_id": st.secrets["firebase_private_key_id"],
-                "private_key": st.secrets["firebase_private_key"].replace('\\n', '\n'),
-                "client_email": st.secrets["firebase_client_email"],
-                "client_id": st.secrets["firebase_client_id"],
-                "auth_uri": st.secrets.get("firebase_auth_uri", "https://accounts.google.com/o/oauth2/auth"),
-                "token_uri": st.secrets.get("firebase_token_uri", "https://oauth2.googleapis.com/token"),
-                "auth_provider_x509_cert_url": st.secrets.get("firebase_auth_provider_cert", "https://www.googleapis.com/oauth2/v1/certs"),
-                "client_x509_cert_url": st.secrets["firebase_client_cert_url"],
-                "universe_domain": "googleapis.com"
-            }
-            
-            cred = credentials.Certificate(firebase_config)
-            firebase_admin.initialize_app(cred)
-            
-            st.session_state.firebase_initialized = True
-            st.session_state.db = firestore.client()
-            st.session_state.firebase_api_key = st.secrets.get("firebase_api_key")
-            
-            return True
-            
-        except ValueError:
-            st.session_state.firebase_initialized = True
-            st.session_state.db = firestore.client()
-            return True
-            
-        except Exception as e:
-            st.error(f"Firebase initialization failed: {e}")
-            st.info("Using local authentication fallback")
-            st.session_state.firebase_initialized = False
-            return False
+# Initialize session state
+def init_session_state():
+    """Initialize all session state variables"""
+    defaults = {
+        'logged_in': False,
+        'username': None,
+        'user_id': None,
+        'auth_method': None,
+        'game_mode': None,
+        'ai_personality': 'Ken Jennings',
+        'ai_difficulty': 'Medium',
+        'score': 0,
+        'ai_score': 0,
+        'streak': 0,
+        'questions_answered': 0,
+        'correct_answers': 0,
+        'current_question': None,
+        'current_answer': None,
+        'current_value': 200,
+        'current_category': None,
+        'is_daily_double': False,
+        'daily_double_wager': 0,
+        'buzzer_winner': None,
+        'game_history': [],
+        'category_performance': {},
+        'achievements': [],
+        'total_games': 0,
+        'total_wins': 0,
+        'highest_score': 0,
+        'longest_streak': 0,
+        'ai_stats': {
+            'games_played': 0,
+            'games_won': 0,
+            'total_score': 0,
+            'questions_answered': 0,
+            'correct_answers': 0
+        }
+    }
     
-    return st.session_state.firebase_initialized
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-# Firebase Auth Helper for Google Sign-In
-class FirebaseAuthHelper:
-    """Helper for Firebase Authentication with Google"""
-    
-    @staticmethod
-    def get_google_signin_url():
-        """Generate Google Sign-In URL"""
-        # This would typically be handled by Firebase Auth UI
-        # For Streamlit, we'll provide instructions
-        return """
-        To enable Google Sign-In:
-        1. Go to Firebase Console → Authentication → Sign-in method
-        2. Enable Google as a sign-in provider
-        3. Add your domain to authorized domains
-        """
-    
-    @staticmethod
-    def verify_firebase_token(id_token: str) -> Optional[Dict]:
-        """Verify a Firebase ID token"""
-        try:
-            decoded_token = auth.verify_id_token(id_token)
-            return decoded_token
-        except Exception as e:
-            st.error(f"Token verification failed: {e}")
-            return None
-    
-    @staticmethod
-    def create_or_get_user(email: str, display_name: str = None) -> Optional[auth.UserRecord]:
-        """Create or get a Firebase user"""
-        try:
-            # Try to get existing user
-            user = auth.get_user_by_email(email)
-            return user
-        except auth.UserNotFoundError:
-            # Create new user
-            user = auth.create_user(
-                email=email,
-                display_name=display_name or email.split('@')[0]
-            )
-            return user
-        except Exception as e:
-            st.error(f"User management error: {e}")
-            return None
-
-# Enhanced Firestore Manager
-class FirestoreManager:
-    """Manage Firestore operations"""
-    def __init__(self):
-        self.db = st.session_state.get('db')
-    
-    def save_user_data(self, user_id: str, data: Dict) -> bool:
-        """Save user data to Firestore"""
-        if self.db:
-            try:
-                user_ref = self.db.collection('users').document(user_id)
-                user_ref.set(data, merge=True)
-                return True
-            except Exception as e:
-                st.error(f"Failed to save to Firestore: {e}")
-        return False
-    
-    def load_user_data(self, user_id: str) -> Optional[Dict]:
-        """Load user data from Firestore"""
-        if self.db:
-            try:
-                user_ref = self.db.collection('users').document(user_id)
-                doc = user_ref.get()
-                if doc.exists:
-                    return doc.to_dict()
-            except Exception as e:
-                st.error(f"Failed to load from Firestore: {e}")
-        return None
-
-# Answer Checker with Fuzzy Matching
-class AnswerChecker:
-    """Check answers with fuzzy matching"""
-    
-    @staticmethod
-    def normalize_answer(answer: str) -> str:
-        """Normalize answer for comparison"""
-        answer = re.sub(r'^(a|an|the)\s+', '', answer, flags=re.IGNORECASE)
-        answer = re.sub(r'[^\w\s]', '', answer)
-        answer = ' '.join(answer.split())
-        return answer.lower().strip()
-    
-    @staticmethod
-    def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> Tuple[bool, float]:
-        """Check if user answer is correct with fuzzy matching"""
-        user_norm = AnswerChecker.normalize_answer(user_answer)
-        correct_norm = AnswerChecker.normalize_answer(correct_answer)
-        
-        if user_norm == correct_norm:
-            return True, 1.0
-        
-        if user_norm in correct_norm or correct_norm in user_norm:
-            return True, 0.9
-        
-        from difflib import SequenceMatcher
-        similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
-        
-        return similarity >= threshold, similarity
-
-# Load Questions
+# Load questions with multiple sources
 @st.cache_data
 def load_questions(file_path: str = None) -> pd.DataFrame:
     """Load Jeopardy questions from file"""
     try:
         paths_to_try = [
-            "data/all_jeopardy_clues.csv",  # 577k questions - prioritize this
+            "data/all_jeopardy_clues.csv",  # 577k questions
             "data/questions_sample.json",    # 1000 questions
             "data/jeopardy_questions_fixed.json",  # 220 questions
             "data/comprehensive_questions.json",
             "data/jeopardy_questions.json",
-            "jeopardy_questions.json",
-            "data/questions.json",
-            "questions.json",
-            "data/jeopardy_with_answers.csv"
         ]
         
         if file_path:
@@ -237,537 +235,558 @@ def load_questions(file_path: str = None) -> pd.DataFrame:
                             df = pd.DataFrame(data)
                     elif path.endswith('.csv'):
                         df = pd.read_csv(path)
-                        # Standardize column names for CSV files
+                        # Standardize column names
                         column_mapping = {
-                            'Question': 'question',
-                            'Answer': 'answer',
-                            'Category': 'category',
-                            'Value': 'value',
-                            'Round': 'round',
-                            'Air Date': 'air_date',
-                            # For all_jeopardy_clues.csv format
                             'clue': 'question',
                             'correct_response': 'answer',
                             'game_id': 'show_number'
                         }
                         df.rename(columns=column_mapping, inplace=True)
-                        # Make category uppercase for consistency
                         if 'category' in df.columns:
                             df['category'] = df['category'].str.upper()
                     else:
                         continue
                     
                     if not df.empty:
-                        # Ensure required columns exist
                         required_cols = ['question', 'answer', 'category']
                         if all(col in df.columns for col in required_cols):
-                            # Add missing columns with defaults
                             if 'value' not in df.columns:
                                 df['value'] = 200
                             if 'round' not in df.columns:
                                 df['round'] = 'Jeopardy!'
                             
-                            # For large datasets, show the actual count
                             num_questions = len(df)
                             if num_questions > 10000:
-                                st.success(f"🎉 Loaded {num_questions:,} questions from {path.split('/')[-1]}")
+                                st.success(f"🎉 Loaded {num_questions:,} questions!")
                             else:
-                                st.success(f"Loaded {num_questions} questions from {path.split('/')[-1]}")
+                                st.success(f"Loaded {num_questions} questions")
                             return df
-                except json.JSONDecodeError as e:
-                    st.warning(f"Could not parse {path}: {e}")
-                    continue
                 except Exception as e:
                     st.warning(f"Error reading {path}: {e}")
                     continue
         
-        # If no file found, create sample questions
-        st.warning("No question file found. Using sample questions.")
-        sample_questions = [
-            {
-                "category": "SCIENCE",
-                "question": "This planet is known as the Red Planet",
-                "answer": "Mars",
-                "value": 200,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "HISTORY",
-                "question": "This president was the first President of the United States",
-                "answer": "George Washington",
-                "value": 200,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "LITERATURE",
-                "question": "This Shakespeare play features the characters Romeo and Juliet",
-                "answer": "Romeo and Juliet",
-                "value": 100,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "GEOGRAPHY",
-                "question": "This is the capital of France",
-                "answer": "Paris",
-                "value": 100,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "SPORTS",
-                "question": "This sport is known as 'America's Pastime'",
-                "answer": "Baseball",
-                "value": 200,
-                "round": "Jeopardy!"
-            }
-        ]
-        return pd.DataFrame(sample_questions)
-        
+        # Fallback to sample questions
+        st.warning("Using sample questions")
+        return pd.DataFrame([
+            {"category": "SCIENCE", "question": "This planet is known as the Red Planet", 
+             "answer": "Mars", "value": 200, "round": "Jeopardy!"},
+        ])
     except Exception as e:
         st.error(f"Error loading questions: {e}")
         return pd.DataFrame()
 
-# Google Sign-In Component (Simulated)
-def show_google_signin():
-    """Show Google Sign-In button and handle authentication"""
-    
+# Game Mode Selection
+def show_game_mode_selection():
+    """Display game mode selection screen"""
     st.markdown("""
-    <div class="auth-container">
-        <h3 style="text-align: center;">🔐 Sign In with Google</h3>
-        <p style="text-align: center; color: #666;">
-            For the best experience, sign in with your Google account
-        </p>
+    <div class="main-header">
+        <h1>🎯 Jaypardy! AI Trainer</h1>
+        <p>Choose Your Training Mode</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Since Streamlit doesn't support direct OAuth, we'll use a workaround
-    st.info("""
-    **Google Sign-In Instructions:**
-    1. Visit: [Firebase Auth](https://jaypardy-53a55.firebaseapp.com/login)
-    2. Sign in with Google
-    3. Copy your authentication token
-    4. Paste it below
-    """)
+    col1, col2, col3 = st.columns(3)
     
-    # Token input for Google Sign-In
-    auth_token = st.text_input(
-        "Paste your authentication token:",
-        type="password",
-        placeholder="Enter token from Firebase Auth"
-    )
+    with col1:
+        if st.button("🎮 **Solo Practice**\n\nPractice at your own pace", 
+                     use_container_width=True, key="solo_mode"):
+            st.session_state.game_mode = "solo"
+            st.rerun()
     
-    if st.button("🔑 Verify Token", use_container_width=True):
-        if auth_token:
-            helper = FirebaseAuthHelper()
-            user_data = helper.verify_firebase_token(auth_token)
-            if user_data:
-                st.session_state.logged_in = True
-                st.session_state.username = user_data.get('email', 'User')
-                st.session_state.user_id = user_data.get('uid')
-                st.session_state.auth_method = 'google'
-                st.success(f"Welcome, {user_data.get('name', st.session_state.username)}!")
-                st.rerun()
-            else:
-                st.error("Invalid token. Please try again.")
-        else:
-            st.warning("Please enter your authentication token")
-    
-    return False
-
-# Authentication UI
-def show_login_page():
-    """Display login/signup page with Google Sign-In"""
-    st.title("🎯 Welcome to Jaypardy!")
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h2 style="color: #667eea;">Test your trivia knowledge!</h2>
+        if st.button("🤖 **vs AI Opponent**\n\nCompete against AI champions", 
+                     use_container_width=True, key="ai_mode"):
+            st.session_state.game_mode = "ai_opponent"
+            st.rerun()
+    
+    with col3:
+        if st.button("📊 **Category Focus**\n\nMaster specific categories", 
+                     use_container_width=True, key="category_mode"):
+            st.session_state.game_mode = "category_focus"
+            st.rerun()
+    
+    # Show stats if user has played before
+    if st.session_state.total_games > 0:
+        st.markdown("---")
+        st.markdown("### 📈 Your Statistics")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Games", st.session_state.total_games)
+        with col2:
+            win_rate = (st.session_state.total_wins / st.session_state.total_games * 100) if st.session_state.total_games > 0 else 0
+            st.metric("Win Rate", f"{win_rate:.1f}%")
+        with col3:
+            st.metric("Highest Score", f"${st.session_state.highest_score:,}")
+        with col4:
+            st.metric("Longest Streak", st.session_state.longest_streak)
+
+# AI Opponent Setup
+def setup_ai_opponent():
+    """Configure AI opponent settings"""
+    st.markdown("### 🤖 Configure Your AI Opponent")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Select AI Personality")
+        for name, data in AI_PERSONALITIES.items():
+            if st.button(f"**{name}**\n{data['description']}", 
+                        use_container_width=True, 
+                        key=f"ai_{name}"):
+                st.session_state.ai_personality = name
+                st.rerun()
+        
+        if st.session_state.ai_personality:
+            personality = AI_PERSONALITIES[st.session_state.ai_personality]
+            st.info(f"**Selected:** {st.session_state.ai_personality}")
+            st.write(f"**Strengths:** {', '.join(personality['strengths']) if personality['strengths'] else 'None'}")
+            st.write(f"**Weaknesses:** {', '.join(personality['weaknesses']) if personality['weaknesses'] else 'None'}")
+    
+    with col2:
+        st.markdown("#### Select Difficulty")
+        difficulty = st.radio(
+            "AI Difficulty Level",
+            ["Easy", "Medium", "Hard"],
+            index=["Easy", "Medium", "Hard"].index(st.session_state.ai_difficulty)
+        )
+        st.session_state.ai_difficulty = difficulty
+        
+        diff_info = AI_DIFFICULTY[difficulty]
+        st.info(f"""
+        **{difficulty} Mode:**
+        - Accuracy: {(AI_PERSONALITIES[st.session_state.ai_personality]['base_accuracy'] + diff_info['accuracy_modifier'])*100:.0f}%
+        - Buzzer Speed: {diff_info['buzzer_speed']:.1f}s
+        - DD Aggression: {diff_info['daily_double_aggression']*100:.0f}%
+        """)
+    
+    if st.button("🎮 Start Game vs AI", use_container_width=True, type="primary"):
+        st.session_state.game_started = True
+        st.rerun()
+
+# Play against AI
+def play_vs_ai(df: pd.DataFrame):
+    """Main game loop for AI opponent mode"""
+    
+    # Score display
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        st.markdown(f"""
+        <div class="score-display">
+            <h3>Your Score</h3>
+            <div style="font-size: 2rem; font-weight: bold;">${st.session_state.score:,}</div>
+            <div>Streak: {st.session_state.streak}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="score-display ai-score-display">
+            <h3>{st.session_state.ai_personality}</h3>
+            <div style="font-size: 2rem; font-weight: bold;">${st.session_state.ai_score:,}</div>
+            <div>Accuracy: {(st.session_state.ai_stats['correct_answers'] / max(1, st.session_state.ai_stats['questions_answered']) * 100):.0f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        # Get random question
+        if st.session_state.current_question is None:
+            question_row = df.sample(1).iloc[0]
+            st.session_state.current_question = question_row['question']
+            st.session_state.current_answer = question_row['answer']
+            st.session_state.current_category = question_row.get('category', 'GENERAL')
+            st.session_state.current_value = question_row.get('value', 200)
+            
+            # Check for Daily Double (10% chance)
+            st.session_state.is_daily_double = random.random() < 0.1
+            st.session_state.buzzer_winner = None
+        
+        # Display category and value
+        st.markdown(f"""
+        <div style="text-align: center; margin: 1rem 0;">
+            <h3>{st.session_state.current_category}</h3>
+            <h4>${st.session_state.current_value}</h4>
         </div>
         """, unsafe_allow_html=True)
         
-        # Tab selection for different auth methods
-        tab1, tab2, tab3 = st.tabs(["🔑 Email Sign In", "✨ Create Account", "🔷 Google Sign In"])
-        
-        with tab1:
-            with st.form("login_form"):
-                username = st.text_input("Email:", placeholder="Enter your email")
-                password = st.text_input("Password:", type="password", placeholder="Enter your password")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    submitted = st.form_submit_button("🎮 Sign In", use_container_width=True, type="primary")
-                with col2:
-                    guest = st.form_submit_button("👤 Play as Guest", use_container_width=True)
-                
-                if submitted:
-                    if username and password:
-                        # Here you would verify with Firebase Auth
-                        st.session_state.logged_in = True
-                        st.session_state.username = username
-                        st.session_state.auth_method = 'email'
-                        st.success(f"Welcome back, {username}!")
-                        st.rerun()
-                    else:
-                        st.error("Please enter both email and password")
-                
-                if guest:
-                    st.session_state.logged_in = True
-                    st.session_state.username = f"Guest_{random.randint(1000, 9999)}"
-                    st.session_state.auth_method = 'guest'
-                    st.info("Playing as guest - progress won't be saved")
-                    st.rerun()
-        
-        with tab2:
-            with st.form("signup_form"):
-                new_email = st.text_input("Email:", placeholder="your@email.com")
-                new_password = st.text_input("Create password:", type="password", placeholder="At least 6 characters")
-                confirm_password = st.text_input("Confirm password:", type="password", placeholder="Re-enter password")
-                
-                create_account = st.form_submit_button("🌟 Create Account", use_container_width=True, type="primary")
-                
-                if create_account:
-                    if new_email and new_password:
-                        if len(new_password) < 6:
-                            st.error("Password must be at least 6 characters long")
-                        elif new_password != confirm_password:
-                            st.error("Passwords don't match")
-                        else:
-                            # Create Firebase user
-                            helper = FirebaseAuthHelper()
-                            user = helper.create_or_get_user(new_email)
-                            if user:
-                                st.session_state.logged_in = True
-                                st.session_state.username = new_email
-                                st.session_state.user_id = user.uid
-                                st.session_state.auth_method = 'email'
-                                st.success("Account created! Welcome to Jaypardy!")
-                                st.balloons()
-                                st.rerun()
-                            else:
-                                st.error("Failed to create account. Email may already exist.")
-                    else:
-                        st.error("Please fill in all fields")
-        
-        with tab3:
+        # Daily Double handling
+        if st.session_state.is_daily_double and st.session_state.daily_double_wager == 0:
             st.markdown("""
-            <div style="text-align: center; padding: 20px;">
-                <h3>🔷 Sign in with Google</h3>
-                <p>Quick and secure authentication</p>
+            <div class="daily-double">
+                <h2>⭐ DAILY DOUBLE! ⭐</h2>
             </div>
             """, unsafe_allow_html=True)
             
-            # Two options for Google Sign-In
-            st.markdown("### Option 1: Use Authentication Token")
+            # Buzzer race for Daily Double
+            winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
             
-            with st.expander("Get Google Auth Token", expanded=True):
-                st.markdown("""
-                1. **[Click here to sign in with Google](https://jaypardy-53a55.web.app/google_auth_helper.html)** 
-                   (Opens in new tab)
-                2. Sign in with your Google account
-                3. Copy the token that appears
-                4. Paste it below
-                """)
-                
-                auth_token = st.text_input(
-                    "Paste your authentication token:",
-                    type="password",
-                    placeholder="Paste token here",
-                    key="google_token"
+            if winner == "player":
+                st.success(f"🎯 You buzzed in first! ({reaction_time:.2f}s)")
+                max_wager = max(1000, st.session_state.score)
+                wager = st.number_input(
+                    f"Enter your wager (max ${max_wager:,})",
+                    min_value=5,
+                    max_value=max_wager,
+                    value=min(1000, max_wager),
+                    step=100
                 )
-                
-                if st.button("🔷 Sign In with Token", use_container_width=True, key="google_token_btn"):
-                    if auth_token:
-                        try:
-                            # Verify the token
-                            helper = FirebaseAuthHelper()
-                            user_data = helper.verify_firebase_token(auth_token)
-                            if user_data:
-                                st.session_state.logged_in = True
-                                st.session_state.username = user_data.get('email', 'User')
-                                st.session_state.user_id = user_data.get('uid')
-                                st.session_state.auth_method = 'google'
-                                st.success(f"Welcome, {user_data.get('name', st.session_state.username)}!")
-                                st.rerun()
-                            else:
-                                st.error("Invalid token. Please try again.")
-                        except Exception as e:
-                            st.error(f"Authentication failed: {str(e)}")
-                    else:
-                        st.warning("Please paste your authentication token")
-            
-            st.markdown("### Option 2: Quick Demo")
-            
-            # Demo Google Sign-In
-            if st.button("🎮 Try Demo Mode", use_container_width=True, key="google_demo"):
-                st.session_state.logged_in = True
-                st.session_state.username = f"demo_{random.randint(1000, 9999)}@demo.com"
-                st.session_state.user_id = "demo_" + str(random.randint(10000, 99999))
-                st.session_state.auth_method = 'google'
-                st.success("Signed in with demo Google account!")
+                if st.button("Lock in Wager"):
+                    st.session_state.daily_double_wager = wager
+                    st.session_state.buzzer_winner = "player"
+                    st.rerun()
+            else:
+                ai_wager = get_ai_daily_double_wager(
+                    st.session_state.ai_score,
+                    st.session_state.score,
+                    st.session_state.ai_difficulty
+                )
+                st.warning(f"🤖 {st.session_state.ai_personality} buzzed in first! ({reaction_time:.2f}s)")
+                st.info(f"AI wagers ${ai_wager:,}")
+                st.session_state.daily_double_wager = ai_wager
+                st.session_state.buzzer_winner = "ai"
+                time.sleep(2)
                 st.rerun()
         
-        # Footer
-        st.markdown("---")
-        st.markdown("### 📚 Did you know?")
-        facts = [
-            "Jeopardy! has been on air since 1984",
-            "Over 400,000 questions have been asked on Jeopardy!",
-            "The highest single-day winnings record is $131,127",
-            "Ken Jennings won 74 consecutive games",
-            "The show has won 39 Emmy Awards"
-        ]
-        st.info(random.choice(facts))
-
-# Main Game UI
-def show_game():
-    """Display the main game interface"""
-    username = st.session_state.username
-    auth_method = st.session_state.get('auth_method', 'local')
-    
-    # Sidebar
-    with st.sidebar:
-        st.title(f"👤 {username}")
+        # Display question
+        st.markdown(f"""
+        <div class="question-card">
+            <div style="font-size: 1.3rem; line-height: 1.6;">
+                {st.session_state.current_question}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Show auth method badge
-        auth_badges = {
-            'google': '🔷 Google Account',
-            'email': '📧 Email Account',
-            'guest': '👤 Guest Mode',
-            'local': '💾 Local Account'
-        }
-        st.caption(auth_badges.get(auth_method, ''))
+        # Handle regular question buzzer
+        if not st.session_state.is_daily_double and st.session_state.buzzer_winner is None:
+            if st.button("🔔 BUZZ IN!", use_container_width=True, type="primary"):
+                winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
+                st.session_state.buzzer_winner = winner
+                
+                if winner == "player":
+                    st.success(f"🎯 You buzzed in first! ({reaction_time:.2f}s)")
+                else:
+                    st.warning(f"🤖 {st.session_state.ai_personality} buzzed in first! ({reaction_time:.2f}s)")
+                    # AI answers
+                    is_correct, thinking_time = simulate_ai_response(
+                        st.session_state.current_question,
+                        st.session_state.current_category,
+                        st.session_state.ai_difficulty,
+                        st.session_state.ai_personality
+                    )
+                    
+                    with st.spinner(f"{st.session_state.ai_personality} is thinking..."):
+                        time.sleep(thinking_time)
+                    
+                    value = st.session_state.daily_double_wager if st.session_state.is_daily_double else st.session_state.current_value
+                    
+                    if is_correct:
+                        st.success(f"✅ {st.session_state.ai_personality} got it right!")
+                        st.session_state.ai_score += value
+                        st.session_state.ai_stats['correct_answers'] += 1
+                    else:
+                        st.error(f"❌ {st.session_state.ai_personality} got it wrong!")
+                        st.session_state.ai_score -= value
+                    
+                    st.session_state.ai_stats['questions_answered'] += 1
+                    st.info(f"The answer was: **{st.session_state.current_answer}**")
+                    
+                    if st.button("Next Question"):
+                        st.session_state.current_question = None
+                        st.session_state.is_daily_double = False
+                        st.session_state.daily_double_wager = 0
+                        st.rerun()
         
-        # Load user data from Firestore if authenticated
-        if auth_method in ['google', 'email'] and st.session_state.get('firebase_initialized'):
-            firestore_manager = FirestoreManager()
-            user_id = st.session_state.get('user_id', username)
-            user_data = firestore_manager.load_user_data(user_id)
-            if user_data:
-                stats = user_data.get('stats', {})
-            else:
-                stats = {}
-        else:
-            stats = st.session_state.get('stats', {})
-        
-        st.subheader("📊 Your Stats")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Questions", stats.get('total_questions', 0))
-            st.metric("Current Streak", stats.get('streak', 0))
-        with col2:
-            st.metric("Correct", stats.get('correct_answers', 0))
-            st.metric("Best Streak", stats.get('best_streak', 0))
-        
-        if stats.get('total_questions', 0) > 0:
-            accuracy = (stats.get('correct_answers', 0) / stats['total_questions']) * 100
-            st.metric("Accuracy", f"{accuracy:.1f}%")
-        
-        st.divider()
-        
-        # Game settings
-        st.subheader("⚙️ Game Settings")
-        difficulty = st.select_slider(
-            "Difficulty",
-            options=["Easy", "Medium", "Hard"],
-            value="Medium"
-        )
-        
-        # Category filter
-        df = load_questions()
-        if not df.empty:
-            categories = ["All"] + sorted(df['category'].unique().tolist())
-            selected_category = st.selectbox("Category", categories)
-        else:
-            selected_category = "All"
-        
-        st.divider()
-        
-        # Account actions
-        if auth_method == 'google':
-            if st.button("🔷 Google Account Settings", use_container_width=True):
-                st.info("Manage your Google account at accounts.google.com")
-        
-        if st.button("🚪 Logout", use_container_width=True):
-            # Save stats before logout
-            if st.session_state.get('firebase_initialized') and auth_method in ['google', 'email']:
-                firestore_manager = FirestoreManager()
-                user_id = st.session_state.get('user_id', username)
-                firestore_manager.save_user_data(user_id, {
-                    'stats': stats,
-                    'last_seen': firestore.SERVER_TIMESTAMP
-                })
+        # Player answers
+        if st.session_state.buzzer_winner == "player":
+            user_answer = st.text_input(
+                "Your answer (remember to phrase as a question!):",
+                placeholder="What is...? / Who is...?"
+            )
             
-            # Clear session
-            for key in list(st.session_state.keys()):
-                if key not in ['firebase_initialized', 'db']:
-                    del st.session_state[key]
-            st.rerun()
+            if st.button("Submit Answer", type="primary"):
+                if user_answer:
+                    # Check if phrased as question
+                    is_question = any(user_answer.lower().startswith(q) for q in 
+                                     ["what", "who", "where", "when", "why", "how"])
+                    
+                    if not is_question:
+                        st.warning("Remember: Answers must be in the form of a question!")
+                    
+                    # Check answer correctness
+                    is_correct = check_answer(user_answer, st.session_state.current_answer)
+                    value = st.session_state.daily_double_wager if st.session_state.is_daily_double else st.session_state.current_value
+                    
+                    if is_correct and is_question:
+                        st.success(f"✅ Correct! +${value}")
+                        st.session_state.score += value
+                        st.session_state.streak += 1
+                        st.session_state.correct_answers += 1
+                        
+                        if st.session_state.streak > st.session_state.longest_streak:
+                            st.session_state.longest_streak = st.session_state.streak
+                    else:
+                        st.error(f"❌ Incorrect! -${value}")
+                        st.session_state.score -= value
+                        st.session_state.streak = 0
+                    
+                    st.session_state.questions_answered += 1
+                    st.info(f"The answer was: **{st.session_state.current_answer}**")
+                    
+                    # Update category performance
+                    cat = st.session_state.current_category
+                    if cat not in st.session_state.category_performance:
+                        st.session_state.category_performance[cat] = {'correct': 0, 'total': 0}
+                    st.session_state.category_performance[cat]['total'] += 1
+                    if is_correct and is_question:
+                        st.session_state.category_performance[cat]['correct'] += 1
+                    
+                    if st.button("Next Question"):
+                        st.session_state.current_question = None
+                        st.session_state.is_daily_double = False
+                        st.session_state.daily_double_wager = 0
+                        st.rerun()
+
+# Check answer correctness
+def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> bool:
+    """Check if user's answer is correct"""
+    # Remove question formatting
+    user_clean = user_answer.lower()
+    for prefix in ["what is ", "who is ", "where is ", "when is ", "what are ", "who are "]:
+        if user_clean.startswith(prefix):
+            user_clean = user_clean[len(prefix):]
     
-    # Main content
-    st.title("🎯 Jaypardy! Training")
+    # Clean and normalize
+    import re
+    user_norm = re.sub(r'[^\w\s]', '', user_clean).strip().lower()
+    correct_norm = re.sub(r'[^\w\s]', '', correct_answer).strip().lower()
     
-    # Add authentication status
-    if auth_method == 'google':
-        st.success("🔷 Signed in with Google - Progress auto-saved to cloud", icon="✅")
-    elif auth_method == 'guest':
-        st.warning("👤 Guest Mode - Progress not saved", icon="⚠️")
+    # Exact match
+    if user_norm == correct_norm:
+        return True
     
-    # Load questions
-    df = load_questions()
+    # Fuzzy matching
+    similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
+    return similarity >= threshold
+
+# Solo Practice Mode
+def play_solo_practice(df: pd.DataFrame):
+    """Solo practice mode without AI opponent"""
+    st.markdown("### 🎮 Solo Practice Mode")
     
-    if df.empty:
-        st.error("No questions available. Please check your data files.")
-        return
+    # Score display
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Score", f"${st.session_state.score:,}")
+    with col2:
+        st.metric("Streak", st.session_state.streak)
+    with col3:
+        accuracy = (st.session_state.correct_answers / max(1, st.session_state.questions_answered) * 100)
+        st.metric("Accuracy", f"{accuracy:.1f}%")
     
-    # Filter by category if selected
+    # Category filter
+    categories = ["All"] + sorted(df['category'].unique().tolist())
+    selected_category = st.selectbox("Choose Category", categories)
+    
     if selected_category != "All":
         df = df[df['category'] == selected_category]
     
-    # Filter by difficulty
-    if difficulty == "Easy":
-        df = df[df['value'] <= 400]
-    elif difficulty == "Medium":
-        df = df[(df['value'] > 400) & (df['value'] <= 800)]
-    else:
-        df = df[df['value'] > 800]
-    
-    if df.empty:
-        st.warning("No questions match your filters. Try different settings.")
-        return
-    
-    # Initialize game state
-    if 'current_question' not in st.session_state:
+    # Get question
+    if st.button("🎲 New Question", use_container_width=True):
         st.session_state.current_question = None
-        st.session_state.question_answered = False
-        st.session_state.user_answer = ""
-        st.session_state.stats = stats
     
-    # Game controls
-    col1, col2, col3 = st.columns([1, 2, 1])
+    if st.session_state.current_question is None and not df.empty:
+        question_row = df.sample(1).iloc[0]
+        st.session_state.current_question = question_row['question']
+        st.session_state.current_answer = question_row['answer']
+        st.session_state.current_category = question_row.get('category', 'GENERAL')
+        st.session_state.current_value = question_row.get('value', 200)
     
-    with col2:
-        if st.button("🎲 New Question", use_container_width=True):
-            # Select random question
-            question = df.sample(1).iloc[0]
-            st.session_state.current_question = question.to_dict()
-            st.session_state.question_answered = False
-            st.session_state.user_answer = ""
-    
-    # Display current question
     if st.session_state.current_question:
-        question = st.session_state.current_question
-        
-        # Question display
-        st.divider()
-        
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.subheader(f"Category: {question['category']}")
-        with col2:
-            st.subheader(f"Value: ${question.get('value', 0)}")
-        
-        # Question box
-        st.info(f"**Question:** {question['question']}")
+        # Display question
+        st.markdown(f"""
+        <div class="question-card">
+            <h4>{st.session_state.current_category} - ${st.session_state.current_value}</h4>
+            <p style="font-size: 1.2rem; margin-top: 1rem;">
+                {st.session_state.current_question}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Answer input
-        if not st.session_state.question_answered:
-            user_answer = st.text_input(
-                "Your Answer:",
-                key="answer_input",
-                placeholder="Type your answer here..."
-            )
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Submit Answer", use_container_width=True):
-                    if user_answer:
-                        st.session_state.user_answer = user_answer
-                        st.session_state.question_answered = True
-                        
-                        # Check answer
-                        checker = AnswerChecker()
-                        is_correct, similarity = checker.check_answer(
-                            user_answer,
-                            question['answer']
-                        )
-                        
-                        # Update stats
-                        if 'stats' not in st.session_state:
-                            st.session_state.stats = {}
-                        
-                        stats = st.session_state.stats
-                        stats['total_questions'] = stats.get('total_questions', 0) + 1
-                        
-                        if is_correct:
-                            stats['correct_answers'] = stats.get('correct_answers', 0) + 1
-                            stats['streak'] = stats.get('streak', 0) + 1
-                            stats['best_streak'] = max(
-                                stats.get('best_streak', 0),
-                                stats['streak']
-                            )
-                            stats['total_score'] = stats.get('total_score', 0) + question.get('value', 0)
-                        else:
-                            stats['streak'] = 0
-                        
-                        # Calculate accuracy
-                        if stats['total_questions'] > 0:
-                            stats['accuracy'] = (stats['correct_answers'] / stats['total_questions']) * 100
-                        
-                        # Save to Firestore if using Google/Email auth
-                        if st.session_state.get('firebase_initialized') and auth_method in ['google', 'email']:
-                            firestore_manager = FirestoreManager()
-                            user_id = st.session_state.get('user_id', username)
-                            firestore_manager.save_user_data(user_id, {'stats': stats})
-                        
-                        st.rerun()
-                    else:
-                        st.warning("Please enter an answer")
-            
-            with col2:
-                if st.button("Skip Question", use_container_width=True):
-                    st.session_state.question_answered = True
-                    st.rerun()
+        user_answer = st.text_input("Your answer:", placeholder="Type your answer...")
         
-        else:
-            # Show result
-            checker = AnswerChecker()
-            is_correct, similarity = checker.check_answer(
-                st.session_state.user_answer,
-                question['answer']
-            )
-            
-            if is_correct:
-                st.success(f"✅ Correct! (Similarity: {similarity:.0%})")
-            else:
-                st.error(f"❌ Incorrect (Similarity: {similarity:.0%})")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.write(f"**Your Answer:** {st.session_state.user_answer}")
-            with col2:
-                st.write(f"**Correct Answer:** {question['answer']}")
-            
-            if st.button("Next Question", use_container_width=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Submit", type="primary", use_container_width=True):
+                if user_answer:
+                    is_correct = check_answer(user_answer, st.session_state.current_answer)
+                    
+                    if is_correct:
+                        st.success(f"✅ Correct! +${st.session_state.current_value}")
+                        st.session_state.score += st.session_state.current_value
+                        st.session_state.streak += 1
+                        st.session_state.correct_answers += 1
+                    else:
+                        st.error(f"❌ Incorrect!")
+                        st.session_state.streak = 0
+                    
+                    st.session_state.questions_answered += 1
+                    st.info(f"The answer was: **{st.session_state.current_answer}**")
+        
+        with col2:
+            if st.button("Skip", use_container_width=True):
+                st.info(f"The answer was: **{st.session_state.current_answer}**")
                 st.session_state.current_question = None
-                st.session_state.question_answered = False
-                st.session_state.user_answer = ""
+                st.session_state.streak = 0
                 st.rerun()
+
+# Category Focus Mode
+def play_category_focus(df: pd.DataFrame):
+    """Practice specific categories"""
+    st.markdown("### 📚 Category Focus Training")
+    
+    # Category selection
+    categories = sorted(df['category'].unique().tolist())
+    selected_categories = st.multiselect(
+        "Select categories to practice:",
+        categories,
+        default=categories[:3] if len(categories) >= 3 else categories
+    )
+    
+    if selected_categories:
+        df_filtered = df[df['category'].isin(selected_categories)]
+        
+        # Show category stats
+        st.markdown("#### 📊 Category Performance")
+        cols = st.columns(len(selected_categories))
+        
+        for i, cat in enumerate(selected_categories):
+            with cols[i]:
+                perf = st.session_state.category_performance.get(cat, {'correct': 0, 'total': 0})
+                accuracy = (perf['correct'] / max(1, perf['total'])) * 100 if perf['total'] > 0 else 0
+                st.metric(
+                    cat[:15] + "..." if len(cat) > 15 else cat,
+                    f"{accuracy:.0f}%",
+                    f"{perf['correct']}/{perf['total']}"
+                )
+        
+        # Practice questions
+        play_solo_practice(df_filtered)
+    else:
+        st.warning("Please select at least one category to practice")
+
+# Statistics Dashboard
+def show_statistics():
+    """Display detailed statistics"""
+    st.markdown("### 📈 Performance Analytics")
+    
+    # Overall stats
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Questions", st.session_state.questions_answered)
+    with col2:
+        accuracy = (st.session_state.correct_answers / max(1, st.session_state.questions_answered)) * 100
+        st.metric("Overall Accuracy", f"{accuracy:.1f}%")
+    with col3:
+        st.metric("Current Score", f"${st.session_state.score:,}")
+    with col4:
+        st.metric("Best Streak", st.session_state.longest_streak)
+    
+    # Category breakdown
+    if st.session_state.category_performance:
+        st.markdown("#### Category Mastery")
+        
+        cat_data = []
+        for cat, perf in st.session_state.category_performance.items():
+            if perf['total'] > 0:
+                cat_data.append({
+                    'Category': cat,
+                    'Questions': perf['total'],
+                    'Correct': perf['correct'],
+                    'Accuracy': f"{(perf['correct']/perf['total']*100):.1f}%"
+                })
+        
+        if cat_data:
+            df_stats = pd.DataFrame(cat_data)
+            df_stats = df_stats.sort_values('Questions', ascending=False)
+            st.dataframe(df_stats, use_container_width=True, hide_index=True)
+    
+    # AI Battle Stats (if played against AI)
+    if st.session_state.ai_stats['games_played'] > 0:
+        st.markdown("#### 🤖 AI Battle Statistics")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Games vs AI", st.session_state.ai_stats['games_played'])
+        with col2:
+            win_rate = (st.session_state.ai_stats['games_won'] / st.session_state.ai_stats['games_played']) * 100
+            st.metric("Win Rate vs AI", f"{win_rate:.1f}%")
+        with col3:
+            avg_score = st.session_state.ai_stats['total_score'] / st.session_state.ai_stats['games_played']
+            st.metric("Avg Score vs AI", f"${avg_score:.0f}")
 
 # Main App
 def main():
-    # Initialize Firebase
-    firebase_status = initialize_firebase()
+    init_session_state()
     
-    # Check login state
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
+    # Sidebar
+    with st.sidebar:
+        st.markdown("## 🎯 Jaypardy! AI Trainer")
+        
+        if st.session_state.logged_in:
+            st.success(f"👤 {st.session_state.username}")
+            
+            if st.button("📊 Statistics"):
+                st.session_state.show_stats = True
+            
+            if st.button("🏠 Change Game Mode"):
+                st.session_state.game_mode = None
+                st.session_state.game_started = False
+                st.rerun()
+            
+            if st.button("🚪 Logout"):
+                for key in st.session_state.keys():
+                    del st.session_state[key]
+                st.rerun()
+        else:
+            st.info("Please log in to save progress")
     
-    # Show appropriate page
+    # Main content
     if not st.session_state.logged_in:
+        # Show login page (reuse from original app.py)
+        from app import show_login_page
         show_login_page()
     else:
-        show_game()
+        # Load questions
+        df = load_questions()
+        
+        if df.empty:
+            st.error("No questions available. Please check data files.")
+            return
+        
+        # Show statistics if requested
+        if st.session_state.get('show_stats', False):
+            show_statistics()
+            if st.button("Back to Game"):
+                st.session_state.show_stats = False
+                st.rerun()
+        # Game mode selection
+        elif st.session_state.game_mode is None:
+            show_game_mode_selection()
+        # AI opponent setup
+        elif st.session_state.game_mode == "ai_opponent" and not st.session_state.get('game_started', False):
+            setup_ai_opponent()
+        # Play against AI
+        elif st.session_state.game_mode == "ai_opponent":
+            play_vs_ai(df)
+        # Solo practice
+        elif st.session_state.game_mode == "solo":
+            play_solo_practice(df)
+        # Category focus
+        elif st.session_state.game_mode == "category_focus":
+            play_category_focus(df)
 
 if __name__ == "__main__":
     main()
