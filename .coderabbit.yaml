@@ -1,0 +1,271 @@
+# CodeRabbit Configuration for Jaypardy! AI Trainer
+# This file configures automated code review settings for the project
+
+# Review Settings
+reviews:
+  # Enable automated reviews on pull requests
+  request_changes_workflow: true
+  
+  # High-level review instructions
+  high_level_summary: true
+  
+  # Generate poem or tagline about changes
+  poem: false
+  
+  # Review status configuration
+  review_status: true
+  
+  # Collapse generated wiki links
+  collapse_walkthrough: false
+  
+  # Automatic approval for small changes
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "DRAFT"
+    
+  # Path-based review settings
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        - Check for proper error handling and try-except blocks
+        - Verify Streamlit session state management
+        - Ensure Firebase calls use singleton pattern
+        - Check answer validation logic for false positives
+        - Verify no hardcoded credentials or API keys
+        - Ensure proper type hints are used
+        - Check for SQL injection vulnerabilities in database queries
+        
+    - path: "**/ai_*.py"
+      instructions: |
+        - Verify AI difficulty balancing
+        - Check buzzer timing logic
+        - Ensure personality traits are properly implemented
+        - Validate Daily Double wagering strategy
+        
+    - path: "**/firebase_*.py"
+      instructions: |
+        - Ensure singleton pattern is maintained
+        - Check for proper authentication error handling
+        - Verify no credentials are hardcoded
+        - Ensure thread-safe operations
+        
+    - path: "**/jeopardy_answer_checker.py"
+      instructions: |
+        - CRITICAL: Verify no false positive matches (e.g., "car" should NOT match "carburetor")
+        - Check word boundary detection is working
+        - Ensure abbreviation handling is correct
+        - Verify alternative answer parsing
+        
+    - path: "**/*.html"
+      instructions: |
+        - Check for XSS vulnerabilities
+        - Verify Firebase config is from environment
+        - Ensure proper CORS handling
+        - Check for exposed API keys
+        
+    - path: "**/requirements.txt"
+      instructions: |
+        - Check for security vulnerabilities in dependencies
+        - Verify versions are compatible with Streamlit Cloud
+        - Ensure no unnecessary heavy dependencies
+        
+    - path: "**/*.json"
+      instructions: |
+        - Verify no sensitive data or credentials
+        - Check JSON structure validity
+        - Ensure question format consistency
+
+# Language-specific settings
+language_specific:
+  python:
+    # Enforce Python style guidelines
+    style_guide: "PEP 8"
+    
+    # Check for common Python issues
+    check_lists:
+      - "No print() statements in production code (use logging instead)"
+      - "Proper exception handling with specific exception types"
+      - "No mutable default arguments"
+      - "Use of f-strings for formatting"
+      - "Proper use of context managers for file operations"
+      - "No hardcoded passwords or API keys"
+
+# Security checks
+security:
+  # Scan for secrets and credentials
+  secrets_scan: true
+  
+  # Security patterns to flag
+  patterns_to_flag:
+    - "password\\s*=\\s*[\"'][^\"']+[\"']"
+    - "api_key\\s*=\\s*[\"'][^\"']+[\"']"
+    - "private_key\\s*=\\s*[\"'][^\"']+[\"']"
+    - "firebase.*[\"']AIza[^\"']+[\"']"  # Firebase API keys
+    
+  # Allowed patterns (false positives)
+  allowed_patterns:
+    - "os.environ.get"
+    - "st.secrets"
+    - "getenv"
+
+# Performance checks
+performance:
+  # Flag performance issues
+  check_for:
+    - "Large files loaded without caching"
+    - "Database queries in loops"
+    - "Synchronous operations that should be async"
+    - "Missing st.cache_data decorators"
+    - "Inefficient DataFrame operations"
+
+# Documentation requirements
+documentation:
+  # Require docstrings for public functions
+  require_docstrings: true
+  
+  # Check for README updates
+  check_readme_updates: true
+  
+  # Verify CLAUDE.md is updated with significant changes
+  check_documentation:
+    - "CLAUDE.md"
+    - "README.md"
+    - "GOOGLE_AUTH_SETUP.md"
+
+# Test coverage
+testing:
+  # Minimum test coverage percentage
+  min_coverage: 60
+  
+  # Required test files
+  required_test_files:
+    - "jeopardy_answer_checker.py"  # Has built-in tests
+    - "test_ai_engine.py"
+  
+  # Test patterns to check
+  test_patterns:
+    - "Test answer validation edge cases"
+    - "Test AI opponent logic"
+    - "Test Firebase authentication flow"
+    - "Test score calculation"
+
+# Pull request checks
+pull_request:
+  # Required checks before merge
+  required_checks:
+    - "No exposed credentials"
+    - "Answer checker tests pass"
+    - "No console.log or print statements"
+    - "Firebase singleton pattern maintained"
+    
+  # Auto-label PRs based on files changed
+  labels:
+    - path: "**/ai_*.py"
+      label: "ai-features"
+    - path: "**/firebase_*.py"
+      label: "authentication"
+    - path: "**/*.html"
+      label: "frontend"
+    - path: "**/test_*.py"
+      label: "tests"
+    - path: "**/*.md"
+      label: "documentation"
+    - path: "requirements.txt"
+      label: "dependencies"
+
+# Issue tracking
+issues:
+  # Auto-link issues mentioned in PR
+  auto_link: true
+  
+  # Keywords that close issues
+  close_keywords:
+    - "fixes"
+    - "closes"
+    - "resolves"
+    - "fixed"
+
+# Code quality thresholds
+quality:
+  # Maximum cyclomatic complexity
+  max_complexity: 10
+  
+  # Maximum line length
+  max_line_length: 120
+  
+  # Maximum function length
+  max_function_length: 50
+  
+  # Maximum file length
+  max_file_length: 500
+
+# Specific Jaypardy checks
+jaypardy_specific:
+  # Check game logic
+  game_checks:
+    - "Verify Daily Double appears 10% of the time"
+    - "Check score calculations are correct"
+    - "Ensure buzzer timing is fair"
+    - "Validate answer checking logic"
+    
+  # Check data integrity
+  data_checks:
+    - "Question format: must have question, answer, category"
+    - "Value must be positive integer"
+    - "Category should be uppercase"
+    
+  # Firebase specific
+  firebase_checks:
+    - "Singleton pattern enforced"
+    - "No multiple initialization"
+    - "Proper error handling"
+    - "Credentials from environment only"
+
+# Ignore patterns
+ignore:
+  # Files to ignore
+  files:
+    - "*.pyc"
+    - "__pycache__"
+    - ".DS_Store"
+    - "*.db"
+    - "*.log"
+    - "node_modules/"
+    - "venv/"
+    - ".firebase/"
+    
+  # Paths to ignore
+  paths:
+    - "data/all_jeopardy_clues.csv"  # Large file
+    - "temp_*"
+    - "test_*"
+    - "debug_*"
+
+# Custom messages
+messages:
+  # Welcome message for new contributors
+  welcome: |
+    Welcome to Jaypardy! 🎯
+    
+    Thank you for contributing! Please ensure:
+    - No credentials are hardcoded
+    - Answer validation tests pass
+    - Firebase singleton pattern is maintained
+    - Documentation is updated if needed
+    
+  # Message for successful PR
+  success: |
+    Great job! Your PR is ready for review. 🎉
+    All automated checks have passed.
+    
+  # Message for failed checks
+  failure: |
+    Some checks failed. Please review the comments above.
+    Common issues:
+    - Exposed credentials
+    - Answer checker false positives
+    - Missing error handling
+    - Firebase initialization issues
