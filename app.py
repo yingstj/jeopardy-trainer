@@ -11,7 +11,8 @@ from typing import Dict, List, Optional, Tuple
 
 # Import AI components
 from ai_opponent import AI_PERSONALITIES, AI_DIFFICULTY, simulate_ai_response, simulate_buzzer_race, get_ai_daily_double_wager
-from firebase_auth import FirebaseAuthHelper
+from firebase_auth_streamlit import firebase_auth_helper
+from jeopardy_answer_checker import JeopardyAnswerChecker
 
 # Page configuration
 st.set_page_config(
@@ -547,27 +548,14 @@ def play_vs_ai(df: pd.DataFrame):
                         st.session_state.daily_double_wager = 0
                         st.rerun()
 
+# Initialize answer checker
+answer_checker = JeopardyAnswerChecker()
+
 # Check answer correctness
 def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> bool:
-    """Check if user's answer is correct"""
-    # Remove question formatting
-    user_clean = user_answer.lower()
-    for prefix in ["what is ", "who is ", "where is ", "when is ", "what are ", "who are "]:
-        if user_clean.startswith(prefix):
-            user_clean = user_clean[len(prefix):]
-    
-    # Clean and normalize
-    import re
-    user_norm = re.sub(r'[^\w\s]', '', user_clean).strip().lower()
-    correct_norm = re.sub(r'[^\w\s]', '', correct_answer).strip().lower()
-    
-    # Exact match
-    if user_norm == correct_norm:
-        return True
-    
-    # Fuzzy matching
-    similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
-    return similarity >= threshold
+    """Check if user's answer is correct using improved Jeopardy rules"""
+    is_correct, confidence = answer_checker.check_answer(user_answer, correct_answer, threshold)
+    return is_correct
 
 # Solo Practice Mode
 def play_solo_practice(df: pd.DataFrame):
