@@ -14,6 +14,12 @@ from datetime import datetime, timedelta
 import os
 from typing import Dict, Any, Optional, List, Tuple
 import re
+from jeopardy.answer_checker import JeopardyAnswerChecker
+from data_loader import load_questions_prefer_csv
+
+# Environment Configuration
+APP_MODE = os.getenv("APP_MODE", "local")
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 
 # Page configuration
 st.set_page_config(
@@ -176,96 +182,13 @@ class FirestoreManager:
                 st.error(f"Failed to get leaderboard: {e}")
         return []
 
-# Answer Checker with Fuzzy Matching
-class AnswerChecker:
-    """Check answers with fuzzy matching"""
-    
-    @staticmethod
-    def normalize_answer(answer: str) -> str:
-        """Normalize answer for comparison"""
-        # Remove articles
-        answer = re.sub(r'^(a|an|the)\s+', '', answer, flags=re.IGNORECASE)
-        # Remove punctuation and extra spaces
-        answer = re.sub(r'[^\w\s]', '', answer)
-        answer = ' '.join(answer.split())
-        return answer.lower().strip()
-    
-    @staticmethod
-    def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> Tuple[bool, float]:
-        """Check if user answer is correct with fuzzy matching"""
-        # Normalize both answers
-        user_norm = AnswerChecker.normalize_answer(user_answer)
-        correct_norm = AnswerChecker.normalize_answer(correct_answer)
-        
-        # Exact match
-        if user_norm == correct_norm:
-            return True, 1.0
-        
-        # Check if user answer contains correct answer or vice versa
-        if user_norm in correct_norm or correct_norm in user_norm:
-            return True, 0.9
-        
-        # Calculate similarity
-        from difflib import SequenceMatcher
-        similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
-        
-        return similarity >= threshold, similarity
+# Initialize Answer Checker
+_checker = JeopardyAnswerChecker()
 
 # Load Questions
-@st.cache_data
 def load_questions(file_path: str = None) -> pd.DataFrame:
-    """Load Jeopardy questions from file"""
-    try:
-        # Try to load from multiple possible locations
-        paths_to_try = [
-            "data/jeopardy_questions_fixed.json",
-            "data/questions_sample.json",
-            "data/comprehensive_questions.json",
-            "data/jeopardy_questions.json",
-            "jeopardy_questions.json",
-            "data/questions.json",
-            "questions.json"
-        ]
-        
-        if file_path:
-            paths_to_try.insert(0, file_path)
-        
-        for path in paths_to_try:
-            if os.path.exists(path):
-                with open(path, 'r') as f:
-                    data = json.load(f)
-                    return pd.DataFrame(data)
-        
-        # If no file found, create sample questions
-        st.warning("No question file found. Using sample questions.")
-        sample_questions = [
-            {
-                "category": "SCIENCE",
-                "question": "This planet is known as the Red Planet",
-                "answer": "Mars",
-                "value": 200,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "HISTORY",
-                "question": "This president was the first President of the United States",
-                "answer": "George Washington",
-                "value": 200,
-                "round": "Jeopardy!"
-            },
-            {
-                "category": "LITERATURE",
-                "question": "This Shakespeare play features the characters Romeo and Juliet",
-                "answer": "Romeo and Juliet",
-                "value": 100,
-                "round": "Jeopardy!"
-            }
-        ]
-        return pd.DataFrame(sample_questions)
-        
-    except Exception as e:
-        st.error(f"Error loading questions: {e}")
-        return pd.DataFrame()
+    """Load Jeopardy questions using consolidated loader"""
+    return load_questions_prefer_csv(file_path or "data/all_jeopardy_clues.csv")
 
 # Authentication UI
 def show_login_page():
@@ -300,7 +223,7 @@ def show_login_page():
                     st.error("Invalid username or password")
         
         with col2:
-            if st.button("Demo Mode", use_container_width=True):
+            if st.button("Demo Mode", use_container_width=True, disabled=not DEMO_MODE):
                 st.session_state.logged_in = True
                 st.session_state.username = "demo"
                 st.info("Logged in as demo user")
@@ -480,8 +403,7 @@ def show_game():
                         st.session_state.question_answered = True
                         
                         # Check answer
-                        checker = AnswerChecker()
-                        is_correct, similarity = checker.check_answer(
+                        is_correct, similarity = _checker.check_answer(
                             user_answer,
                             question['answer']
                         )
@@ -541,8 +463,7 @@ def show_game():
         
         else:
             # Show result
-            checker = AnswerChecker()
-            is_correct, similarity = checker.check_answer(
+            is_correct, similarity = _checker.check_answer(
                 st.session_state.user_answer,
                 question['answer']
             )

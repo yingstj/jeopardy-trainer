@@ -8,7 +8,9 @@
 
 ## Step 1: Update Your GitHub Repository
 
-1. **Copy the Streamlit files to your repo:**
+1. **Use a single Streamlit entrypoint:**
+   - The app entrypoint is **streamlit_app.py** (do not rename to app.py; a Flask app.py also exists).
+   - Set Streamlit Cloud to run **streamlit_app.py**.
 ```bash
 # In your local jay-jeopardy-ai-trainer directory
 git add streamlit_app.py requirements_streamlit.txt migrate_users.py

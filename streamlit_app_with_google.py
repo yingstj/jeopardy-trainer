@@ -17,6 +17,8 @@ from typing import Dict, Any, Optional, List, Tuple
 import re
 import requests
 import jwt
+from jeopardy.answer_checker import JeopardyAnswerChecker
+from data_loader import load_questions_prefer_csv
 
 # Page configuration
 st.set_page_config(
@@ -179,34 +181,8 @@ class FirestoreManager:
                 st.error(f"Failed to load from Firestore: {e}")
         return None
 
-# Answer Checker with Fuzzy Matching
-class AnswerChecker:
-    """Check answers with fuzzy matching"""
-    
-    @staticmethod
-    def normalize_answer(answer: str) -> str:
-        """Normalize answer for comparison"""
-        answer = re.sub(r'^(a|an|the)\s+', '', answer, flags=re.IGNORECASE)
-        answer = re.sub(r'[^\w\s]', '', answer)
-        answer = ' '.join(answer.split())
-        return answer.lower().strip()
-    
-    @staticmethod
-    def check_answer(user_answer: str, correct_answer: str, threshold: float = 0.85) -> Tuple[bool, float]:
-        """Check if user answer is correct with fuzzy matching"""
-        user_norm = AnswerChecker.normalize_answer(user_answer)
-        correct_norm = AnswerChecker.normalize_answer(correct_answer)
-        
-        if user_norm == correct_norm:
-            return True, 1.0
-        
-        if user_norm in correct_norm or correct_norm in user_norm:
-            return True, 0.9
-        
-        from difflib import SequenceMatcher
-        similarity = SequenceMatcher(None, user_norm, correct_norm).ratio()
-        
-        return similarity >= threshold, similarity
+# Initialize Answer Checker
+_checker = JeopardyAnswerChecker()
 
 # Load Questions
 @st.cache_data
@@ -610,8 +586,7 @@ def show_game():
                         st.session_state.question_answered = True
                         
                         # Check answer
-                        checker = AnswerChecker()
-                        is_correct, similarity = checker.check_answer(
+                        is_correct, similarity = _checker.check_answer(
                             user_answer,
                             question['answer']
                         )
@@ -655,8 +630,7 @@ def show_game():
         
         else:
             # Show result
-            checker = AnswerChecker()
-            is_correct, similarity = checker.check_answer(
+            is_correct, similarity = _checker.check_answer(
                 st.session_state.user_answer,
                 question['answer']
             )

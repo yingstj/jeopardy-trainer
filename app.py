@@ -26,7 +26,7 @@ from collections import defaultdict
 # Import components
 from ai_opponent import AI_PERSONALITIES, AI_DIFFICULTY, simulate_ai_response, simulate_buzzer_race, get_ai_daily_double_wager
 from firebase_auth_streamlit import firebase_auth_helper
-from jeopardy_answer_checker import JeopardyAnswerChecker
+from jeopardy.answer_checker import JeopardyAnswerChecker
 
 # Page configuration
 st.set_page_config(
