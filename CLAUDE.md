@@ -3,6 +3,8 @@
 ## Overview
 Jaypardy! is a Jeopardy training application with AI opponents, deployed on Streamlit Cloud at jaypardy.streamlit.app. The app features 577k+ real Jeopardy questions, multiple game modes, AI opponents with different personalities, and Firebase authentication.
 
+📋 **For a complete file catalog and navigation guide, see [REPOSITORY_INDEX.md](./REPOSITORY_INDEX.md)**
+
 ## Quick Commands
 ```bash
 # Run locally
