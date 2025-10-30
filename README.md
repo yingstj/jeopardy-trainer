@@ -53,6 +53,9 @@ The app requires these environment variables (set as Streamlit secrets):
 
 ## Files
 
+📋 **For a complete catalog of all files in this repository, see [REPOSITORY_INDEX.md](./REPOSITORY_INDEX.md)**
+
+Key files:
 - `app.py` - Main Streamlit application
 - `r2_jeopardy_data_loader.py` - Module to load data from Cloudflare R2
 - `semantic_explorer.py` - Tool for exploring semantically similar clues
