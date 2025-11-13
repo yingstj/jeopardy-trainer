@@ -5,9 +5,6 @@ import re
 import os
 import datetime
 import json
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 from collections import defaultdict
 from typing import Dict, List
 
@@ -15,128 +12,14 @@ from typing import Dict, List
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
 # Import user manager
 from user_manager import UserManager
+from managers.challenge_manager import ChallengeManager
+from managers.online_users_manager import OnlineUsers
+from managers.category_analyzer import JeopardyCategoryAnalyzer
+from utils import normalize, fuzzy_match
+from database import initialize_database
 
-# Challenge/Multiplayer Mode Functions
-class ChallengeManager:
-    """Manages multiplayer challenges between users"""
-    
-    def __init__(self):
-        self.challenges_file = "challenges.json"
-        self.challenges = self._load_challenges()
-    
-    def _load_challenges(self):
-        """Load challenges from JSON file"""
-        if os.path.exists(self.challenges_file):
-            try:
-                with open(self.challenges_file, 'r') as f:
-                    return json.load(f)
-            except:
-                return {"active": [], "completed": []}
-        return {"active": [], "completed": []}
-    
-    def _save_challenges(self):
-        """Save challenges to JSON file"""
-        with open(self.challenges_file, 'w') as f:
-            json.dump(self.challenges, f, indent=2)
-    
-    def create_challenge(self, challenger: str, opponent: str, categories: list, num_questions: int = 10):
-        """Create a new challenge"""
-        challenge = {
-            "id": datetime.datetime.now().isoformat(),
-            "challenger": challenger,
-            "opponent": opponent,
-            "categories": categories,
-            "num_questions": num_questions,
-            "challenger_score": 0,
-            "opponent_score": 0,
-            "challenger_completed": False,
-            "opponent_completed": False,
-            "status": "pending",
-            "created_at": datetime.datetime.now().isoformat()
-        }
-        self.challenges["active"].append(challenge)
-        self._save_challenges()
-        return challenge["id"]
-    
-    def accept_challenge(self, challenge_id: str, username: str):
-        """Accept a challenge"""
-        for challenge in self.challenges["active"]:
-            if challenge["id"] == challenge_id and challenge["opponent"] == username:
-                challenge["status"] = "active"
-                self._save_challenges()
-                return True
-        return False
-    
-    def complete_challenge(self, challenge_id: str, username: str, score: int):
-        """Complete one side of a challenge"""
-        for challenge in self.challenges["active"]:
-            if challenge["id"] == challenge_id:
-                if challenge["challenger"] == username:
-                    challenge["challenger_score"] = score
-                    challenge["challenger_completed"] = True
-                elif challenge["opponent"] == username:
-                    challenge["opponent_score"] = score
-                    challenge["opponent_completed"] = True
-                
-                # If both completed, move to completed
-                if challenge["challenger_completed"] and challenge["opponent_completed"]:
-                    challenge["status"] = "completed"
-                    challenge["winner"] = (challenge["challenger"] if challenge["challenger_score"] > challenge["opponent_score"]
-                                         else challenge["opponent"] if challenge["opponent_score"] > challenge["challenger_score"]
-                                         else "tie")
-                    self.challenges["completed"].append(challenge)
-                    self.challenges["active"].remove(challenge)
-                
-                self._save_challenges()
-                return True
-        return False
-    
-    def get_active_challenges(self, username: str):
-        """Get active challenges for a user"""
-        return [c for c in self.challenges["active"] 
-                if c["challenger"] == username or c["opponent"] == username]
-    
-    def get_challenge_results(self, username: str):
-        """Get completed challenges for a user"""
-        return [c for c in self.challenges["completed"]
-                if c["challenger"] == username or c["opponent"] == username]
-
-# Online Users Simulation (for demo purposes)
-class OnlineUsers:
-    """Simulates online users for multiplayer mode"""
-    
-    def __init__(self):
-        self.online_users = []
-        self.last_update = datetime.datetime.now()
-    
-    def update_online_users(self, current_user: str):
-        """Update list of online users (simulated)"""
-        # In a real app, this would check a database or server
-        # For demo, we'll simulate with random names
-        bot_names = ["QuizMaster", "TriviaKing", "JeopardyPro", "BrainiacBot", 
-                     "SmartPlayer", "QuickThinker", "FactFinder", "WiseOwl"]
-        
-        # Refresh every 30 seconds
-        if (datetime.datetime.now() - self.last_update).seconds > 30:
-            num_online = random.randint(3, 8)
-            self.online_users = random.sample(bot_names, num_online)
-            self.last_update = datetime.datetime.now()
-        
-        # Always include current user
-        if current_user and current_user not in self.online_users:
-            self.online_users.insert(0, current_user)
-        
-        return self.online_users
-    
-    def get_user_stats(self, username: str):
-        """Get simulated stats for a user"""
-        # In real app, would fetch from database
-        return {
-            "games_played": random.randint(10, 500),
-            "win_rate": random.randint(40, 85),
-            "avg_score": random.randint(60, 95),
-            "rank": random.choice(["Bronze", "Silver", "Gold", "Platinum", "Diamond"])
-        }
+# Initialize the database
+initialize_database()
 
 # Page configuration with custom icon
 st.set_page_config(
@@ -347,240 +230,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-class JeopardyCategoryAnalyzer:
-    """Analyze and categorize Jeopardy categories into themes"""
-    
-    def __init__(self):
-        # Define theme keywords and patterns
-        self.theme_patterns = {
-            "HISTORY": {
-                "keywords": ["history", "historical", "ancient", "medieval", "war", "battle", 
-                            "empire", "dynasty", "revolution", "civil war", "world war", 
-                            "century", "era", "period", "ages", "civilization", "historic",
-                            "past", "founding", "colonial", "conquest", "president", "king", 
-                            "queen", "royal", "monarch"],
-                "patterns": [r"\b\d{4}\b", r"\b\d{1,2}th century\b", r"\bwar\b", r"the \d{2,4}s"]
-            },
-            
-            "GEOGRAPHY": {
-                "keywords": ["geography", "countries", "cities", "states", "capitals", 
-                            "nations", "world", "islands", "mountains", "rivers", "lakes",
-                            "oceans", "continents", "maps", "places", "landmarks", "wonders",
-                            "national parks", "territories", "regions", "hemispheres", "travel"],
-                "patterns": [r"countries", r"u\.s\. states", r"capitals", r"cities of"]
-            },
-            
-            "SCIENCE": {
-                "keywords": ["science", "biology", "chemistry", "physics", "anatomy", 
-                            "medicine", "astronomy", "geology", "meteorology", "elements",
-                            "atoms", "molecules", "space", "planets", "stars", "medical",
-                            "body", "human", "animals", "nature", "environment", "ecology",
-                            "evolution", "genetics", "dna", "cells", "periodic table", "math",
-                            "mathematics", "computer", "technology"],
-                "patterns": [r"scientific", r"the body", r"in space"]
-            },
-            
-            "LITERATURE": {
-                "keywords": ["literature", "books", "novels", "authors", "writers", "poets",
-                            "poetry", "poems", "shakespeare", "classics", "fiction", 
-                            "characters", "novels", "stories", "tales", "fables", "plays",
-                            "playwright", "literary", "reading", "bibliography", "novel"],
-                "patterns": [r"shakespeare", r"authors?", r"literat", r"book"]
-            },
-            
-            "ENTERTAINMENT": {
-                "keywords": ["movies", "films", "cinema", "hollywood", "actors", "actresses",
-                            "oscars", "academy awards", "directors", "television", "tv",
-                            "shows", "series", "sitcom", "drama", "comedy", "entertainment",
-                            "celebrities", "stars", "emmys", "tonys", "grammys", "awards",
-                            "music", "songs", "singers", "bands", "albums", "composers"],
-                "patterns": [r"at the movies", r"on tv", r"oscar", r"film", r"music"]
-            },
-            
-            "SPORTS": {
-                "keywords": ["sports", "football", "baseball", "basketball", "hockey",
-                            "soccer", "tennis", "golf", "olympics", "athletes", "teams",
-                            "championship", "tournament", "league", "nfl", "nba", "mlb",
-                            "nhl", "fifa", "espn", "stadium", "arena", "game", "match",
-                            "player", "coach", "referee", "score", "bowl", "cup"],
-                "patterns": [r"sports", r"olympi", r"super bowl", r"world cup"]
-            },
-            
-            "BUSINESS": {
-                "keywords": ["business", "company", "corporation", "brand", "ceo", "economy",
-                            "money", "dollar", "bank", "finance", "stock", "market", "trade",
-                            "industry", "commerce", "entrepreneur", "startup", "investment",
-                            "wall street", "nasdaq", "fortune"],
-                "patterns": [r"business", r"compan", r"corporate", r"\$\d+", r"money"]
-            },
-            
-            "FOOD & DRINK": {
-                "keywords": ["food", "cuisine", "cooking", "chef", "recipe", "restaurant",
-                            "meal", "dish", "ingredient", "flavor", "taste", "drink",
-                            "beverage", "wine", "beer", "cocktail", "coffee", "tea",
-                            "fruit", "vegetable", "meat", "dessert", "kitchen"],
-                "patterns": [r"food", r"cook", r"eat", r"drink", r"cuisine"]
-            },
-            
-            "WORDPLAY": {
-                "keywords": ["rhyme", "rhyming", "pun", "anagram", "palindrome", "crossword",
-                            "puzzle", "riddle", "wordplay", "scramble", "spell", "letter",
-                            "before & after", "before and after", "quotation", "phrase"],
-                "patterns": [r"rhym", r"pun", r"anagram", r"wordplay", r"before.*after"]
-            },
-            
-            "POP CULTURE": {
-                "keywords": ["pop culture", "celebrity", "famous", "trend", "fashion", "style",
-                            "social media", "internet", "meme", "viral", "modern", "contemporary",
-                            "current", "today", "recent", "millennial", "gen z", "popular"],
-                "patterns": [r"pop cultur", r"celebrit", r"fashion", r"modern"]
-            },
-            
-            "RELIGION & MYTHOLOGY": {
-                "keywords": ["religion", "religious", "god", "goddess", "bible", "church",
-                            "faith", "mythology", "myth", "legend", "zeus", "greek god",
-                            "roman god", "norse", "saint", "prophet", "temple", "sacred",
-                            "holy", "worship", "prayer", "spiritual"],
-                "patterns": [r"relig", r"god", r"myth", r"bible", r"saint"]
-            },
-            
-            "GENERAL KNOWLEDGE": {
-                "keywords": ["potpourri", "hodgepodge", "mixed", "general", "trivia",
-                            "miscellaneous", "variety", "assorted"],
-                "patterns": [r"potpourri", r"hodgepodge", r"mixed bag"]
-            }
-        }
-    
-    def categorize_single(self, category: str) -> str:
-        """Categorize a single category string into a theme"""
-        if not category:
-            return "GENERAL KNOWLEDGE"
-        
-        category_lower = str(category).lower()
-        theme_scores = {}
-        
-        # Score each theme based on keyword matches
-        for theme, criteria in self.theme_patterns.items():
-            score = 0
-            
-            # Check keywords
-            for keyword in criteria["keywords"]:
-                if keyword in category_lower:
-                    score += len(keyword)  # Longer matches score higher
-            
-            # Check patterns
-            for pattern in criteria["patterns"]:
-                if re.search(pattern, category_lower):
-                    score += 10
-            
-            if score > 0:
-                theme_scores[theme] = score
-        
-        # Return the theme with highest score, or GENERAL KNOWLEDGE if no match
-        if theme_scores:
-            return max(theme_scores.items(), key=lambda x: x[1])[0]
-        else:
-            return "GENERAL KNOWLEDGE"
-    
-    def group_categories_by_theme(self, categories: List[str]) -> Dict[str, List[str]]:
-        """Group all categories into themes"""
-        theme_groups = defaultdict(list)
-        
-        for category in categories:
-            theme = self.categorize_single(category)
-            theme_groups[theme].append(category)
-        
-        # Sort themes by number of categories (most popular first)
-        sorted_themes = dict(sorted(theme_groups.items(), 
-                                  key=lambda x: len(x[1]), 
-                                  reverse=True))
-        
-        return sorted_themes
-
-# Load model once
-@st.cache_resource
-def load_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
-
-model = load_model()
-
-# Normalize text for fuzzy matching
-def normalize(text):
-    text = text.lower()
-    text = re.sub(r"^(what|who|where|when|why|how)\s+(is|are|was|were)\s+", "", text)
-    text = re.sub(r"^(a|an|the)\s+", "", text)  # Remove articles
-    text = re.sub(r"[^a-z0-9 ]", "", text)
-    return text.strip()
-
-# Fuzzy matching function
-def fuzzy_match(user_answer, correct_answer, threshold=70):
-    """Check if user answer is close enough to correct answer"""
-    # First try exact match after normalization
-    user_norm = normalize(user_answer)
-    correct_norm = normalize(correct_answer)
-    
-    if user_norm == correct_norm:
-        return True
-    
-    # Special handling for names - accept last name only
-    correct_words = correct_norm.split()
-    user_words = user_norm.split()
-    
-    # If correct answer is a person's name (2-3 words) and user gave last word (last name)
-    if len(correct_words) >= 2 and len(user_words) == 1:
-        # Check if user answer matches last name
-        if user_norm == correct_words[-1]:
-            return True
-        # Also check if it matches any significant word in the answer
-        for word in correct_words:
-            if len(word) > 4 and user_norm == word:  # Significant word (>4 chars)
-                return True
-    
-    # Check if user gave multiple words that include the key part
-    if len(user_words) > 1 and len(correct_words) > 1:
-        # Check if last names match
-        if user_words[-1] == correct_words[-1]:
-            return True
-    
-    # Check if user answer contains the key parts of correct answer or vice versa
-    if len(user_norm) > 3 and len(correct_norm) > 3:
-        # For substring matching, be more lenient
-        if user_norm in correct_norm:
-            # User answer is contained in correct answer
-            # Accept if it's a significant portion (>40% of correct answer)
-            if len(user_norm) / len(correct_norm) > 0.4:
-                return True
-        if correct_norm in user_norm:
-            return True
-    
-    # For very short answers, require exact match
-    if len(user_norm) <= 3 or len(correct_norm) <= 3:
-        return user_norm == correct_norm
-    
-    # Calculate word-based similarity for multi-word answers
-    if len(correct_words) > 1 and len(user_words) > 0:
-        matching_words = sum(1 for word in user_words if word in correct_words)
-        if matching_words / len(correct_words) >= 0.5:  # At least 50% of words match
-            return True
-    
-    # Character-based similarity as fallback
-    # Use Levenshtein-like distance
-    max_len = max(len(user_norm), len(correct_norm))
-    if max_len == 0:
-        return False
-    
-    # Count character differences
-    differences = abs(len(user_norm) - len(correct_norm))
-    min_len = min(len(user_norm), len(correct_norm))
-    
-    for i in range(min_len):
-        if i < len(user_norm) and i < len(correct_norm):
-            if user_norm[i] != correct_norm[i]:
-                differences += 1
-    
-    similarity = ((max_len - differences) / max_len) * 100
-    return similarity >= threshold
-
 # Load and filter data
 @st.cache_data
 def load_data():
@@ -606,14 +255,7 @@ def load_data():
             return pd.DataFrame()
         
         df = df.dropna(subset=["clue", "correct_response"])
-        
-        # Compute embeddings (can be expensive, so we'll do it on demand)
-        with st.spinner("🧮 Computing clue embeddings..."):
-            # Process in batches to avoid memory issues
-            batch_size = min(1000, len(df))
-            sample_df = df.sample(n=batch_size) if len(df) > batch_size else df
-            sample_df["clue_embedding"] = sample_df["clue"].apply(lambda x: model.encode(x))
-            return sample_df
+        return df
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -1261,101 +903,124 @@ with st.sidebar:
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
     
-    # Initialize challenge manager and online users
-    if "challenge_manager" not in st.session_state:
-        st.session_state.challenge_manager = ChallengeManager()
-    if "online_users" not in st.session_state:
-        st.session_state.online_users = OnlineUsers()
-    
-    challenge_manager = st.session_state.challenge_manager
-    online_users = st.session_state.online_users
-    
-    # Update online users list
-    online_list = online_users.update_online_users(st.session_state.username)
-    
-    # Show online users
-    with st.expander(f"🟢 Online Users ({len(online_list)})", expanded=False):
-        for user in online_list:
-            if user != st.session_state.username:
+    if st.session_state.user_data is None:
+        st.info("Sign in with a registered account to create or accept challenges.")
+    else:
+        # Initialize challenge manager and online users
+        if "challenge_manager" not in st.session_state:
+            st.session_state.challenge_manager = ChallengeManager()
+        if "online_users" not in st.session_state:
+            st.session_state.online_users = OnlineUsers()
+        
+        challenge_manager = st.session_state.challenge_manager
+        online_users = st.session_state.online_users
+        
+        # Update online users list
+        online_list = online_users.update_online_users(st.session_state.username)
+        
+        # Show online users
+        with st.expander(f"🟢 Online Users ({len(online_list)})", expanded=False):
+            for user in online_list:
+                if user == st.session_state.username:
+                    continue
+                
+                is_registered = user_manager.user_exists(user)
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.write(f"👤 {user}")
+                    label = f"👤 {user}"
+                    if not is_registered:
+                        label += " (demo)"
+                    st.write(label)
                 with col2:
-                    if st.button("⚔️", key=f"challenge_{user}", help=f"Challenge {user}"):
-                        # Create a challenge
+                    if st.button(
+                        "⚔️",
+                        key=f"challenge_{user}",
+                        help=f"Challenge {user}" if is_registered else "Demo opponents are not available for challenges",
+                        disabled=not is_registered,
+                    ):
                         challenge_id = challenge_manager.create_challenge(
-                            st.session_state.username, 
+                            st.session_state.username,
                             user,
-                            selected_categories[:10],  # Use first 10 categories
+                            st.session_state.selected_categories[:10],
                             num_questions=10
                         )
-                        st.success(f"Challenge sent to {user}!")
-    
-    # Show active challenges
-    active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
-    if active_challenges:
-        with st.expander(f"⚔️ Active Challenges ({len(active_challenges)})", expanded=False):
-            for challenge in active_challenges:
-                opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
-                status_emoji = "⏳" if challenge["status"] == "pending" else "🎮"
-                
-                st.write(f"{status_emoji} vs **{opponent}**")
-                
-                # Show scores if available
-                if challenge["challenger_completed"] or challenge["opponent_completed"]:
+                        if challenge_id:
+                            st.success(f"Challenge sent to {user}!")
+                        else:
+                            st.warning("Unable to send challenge. Make sure both players have registered accounts.")
+
+        # Show active challenges
+        active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
+        if active_challenges:
+            with st.expander(f"⚔️ Active Challenges ({len(active_challenges)})", expanded=False):
+                for challenge in active_challenges:
+                    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                    st.write(f"🎮 vs **{opponent}**")
+
+                    # Show scores
                     your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
                     their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
                     your_done = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
                     their_done = challenge["opponent_completed"] if challenge["challenger"] == st.session_state.username else challenge["challenger_completed"]
-                    
+
                     st.write(f"You: {your_score} {'✅' if your_done else '⏳'}")
                     st.write(f"{opponent}: {their_score if their_done else '---'} {'✅' if their_done else '⏳'}")
-                
-                # Accept button for pending challenges
-                if challenge["status"] == "pending" and challenge["opponent"] == st.session_state.username:
-                    if st.button("✅ Accept", key=f"accept_{challenge['id']}"):
-                        challenge_manager.accept_challenge(challenge["id"], st.session_state.username)
-                        st.success("Challenge accepted!")
-                        st.rerun()
-                
-                # Play button for active challenges
-                elif challenge["status"] == "active":
-                    your_completed = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
-                    if not your_completed:
+
+                    if not your_done:
                         if st.button("🎮 Play", key=f"play_{challenge['id']}"):
                             st.session_state.current_challenge = challenge
                             st.session_state.challenge_mode = True
                             st.session_state.challenge_question_num = 0
                             st.session_state.challenge_score = 0
                             st.rerun()
-                
-                st.markdown("---")
-    
-    # Show completed challenges
-    completed = challenge_manager.get_challenge_results(st.session_state.username)
-    if completed:
-        with st.expander(f"🏅 Results ({len(completed)})", expanded=False):
-            for challenge in completed[-5:]:  # Show last 5
-                opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
-                your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
-                their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
-                
-                if challenge["winner"] == st.session_state.username:
-                    result_emoji = "🏆"
-                    result_text = "Won"
-                elif challenge["winner"] == "tie":
-                    result_emoji = "🤝"
-                    result_text = "Tied"
+                    st.markdown("---")
+
+        # Show pending challenges
+        pending_challenges = challenge_manager.get_pending_challenges(st.session_state.username)
+        if pending_challenges:
+            with st.expander(f"⏳ Pending Challenges ({len(pending_challenges)})", expanded=False):
+                for challenge in pending_challenges:
+                    if challenge['opponent'] == st.session_state.username:
+                        challenger = challenge['challenger']
+                        st.write(f"⚔️ From **{challenger}**")
+                        if st.button("✅ Accept", key=f"accept_{challenge['id']}"):
+                            challenge_manager.accept_challenge(challenge["id"], st.session_state.username)
+                            st.success("Challenge accepted!")
+                            st.rerun()
+                    else:
+                        opponent = challenge['opponent']
+                        st.write(f"⏳ Waiting for **{opponent}**")
+                    st.markdown("---")
+
+        # Show completed challenges
+        completed_challenges = challenge_manager.get_completed_challenges(st.session_state.username)
+        if completed_challenges:
+            user_id = st.session_state.user_data.get("id")
+            with st.expander(f"🏅 Results ({len(completed_challenges)})", expanded=False):
+                if not user_id:
+                    st.info("Sign in with a registered account to view challenge results.")
                 else:
-                    result_emoji = "😔"
-                    result_text = "Lost"
-                
-                st.write(f"{result_emoji} **{result_text}** vs {opponent}")
-                st.write(f"Score: {your_score} - {their_score}")
-                st.markdown("---")
-    
+                    for challenge in completed_challenges[-5:]:  # Show last 5
+                        opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+
+                        your_score = challenge["challenger_score"] if challenge["challenger_id"] == user_id else challenge["opponent_score"]
+                        their_score = challenge["opponent_score"] if challenge["challenger_id"] == user_id else challenge["challenger_score"]
+
+                        result_emoji = "🤝"
+                        result_text = "Tied"
+                        if challenge['winner_id']:
+                            if challenge['winner_id'] == user_id:
+                                result_emoji = "🏆"
+                                result_text = "Won"
+                            else:
+                                result_emoji = "😔"
+                                result_text = "Lost"
+
+                        st.write(f"{result_emoji} **{result_text}** vs {opponent} ({your_score} - {their_score})")
+                        st.markdown("---")
+
     st.markdown("---")
-    
+
     if st.button("🚪 Logout", use_container_width=True):
         # Save user session before logging out
         if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
@@ -1499,7 +1164,7 @@ if filtered_df.empty:
 # Challenge Mode Game Logic
 if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
     challenge = st.session_state.current_challenge
-    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+    opponent = challenge["opponent"]
     
     # Display challenge header
     st.markdown(f"""
@@ -1512,7 +1177,7 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
         <p style="margin: 0; font-size: 1.2rem;">Your Score: {st.session_state.challenge_score}</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # Check if challenge is complete
     if st.session_state.challenge_question_num >= challenge["num_questions"]:
         # Complete the challenge
@@ -1521,9 +1186,9 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
             st.session_state.username,
             st.session_state.challenge_score
         )
-        
+
         st.success(f"Challenge complete! Your score: {st.session_state.challenge_score}/{challenge['num_questions']}")
-        
+
         # Reset challenge mode
         st.session_state.challenge_mode = False
         st.session_state.current_challenge = None

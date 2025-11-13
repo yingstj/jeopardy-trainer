@@ -4,6 +4,7 @@ venv/
 .env
 .DS_Store
 *.log
+.cursor/
 debug_*.py
 test_*.py
 scraper_v2.py
@@ -16,3 +17,4 @@ users_data.json
 user_sessions/
 *.session
 challenges.json
+jeopardy_trainer.db

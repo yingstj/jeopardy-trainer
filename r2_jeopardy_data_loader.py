@@ -2,31 +2,82 @@
 R2 Jeopardy Data Loader
 Loads Jeopardy data from Cloudflare R2 storage
 """
-import pandas as pd
-import requests
+import os
+from io import BytesIO
 from typing import Optional
+
+import boto3
+import pandas as pd
 import streamlit as st
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_jeopardy_data_from_r2() -> pd.DataFrame:
     """
-    Load Jeopardy data from R2 storage or fallback sources
+    Load Jeopardy data from Cloudflare R2 storage or fallback sources.
     """
-    # Try primary sources in order
+    df = _load_from_r2()
+    if df is not None and not df.empty:
+        return df
+
+    df = _load_from_github()
+    if df is not None and not df.empty:
+        return df
+
+    return _load_sample_data()
+
+
+def _load_from_r2() -> Optional[pd.DataFrame]:
+    """Attempt to load the dataset from Cloudflare R2 using S3-compatible API."""
+    endpoint = _get_secret("R2_ENDPOINT_URL")
+    access_key = _get_secret("R2_ACCESS_KEY")
+    secret_key = _get_secret("R2_SECRET_KEY")
+    bucket_name = _get_secret("R2_BUCKET_NAME") or "jeopardy-dataset"
+    object_key = _get_secret("R2_FILE_KEY") or "all_jeopardy_clues.csv"
+    region_name = _get_secret("R2_REGION_NAME") or os.getenv("R2_REGION_NAME", "auto")
+
+    if not all([endpoint, access_key, secret_key, bucket_name, object_key]):
+        return None
+
+    try:
+        session = boto3.session.Session()
+        client = session.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=Config(signature_version="s3v4"),
+            region_name=region_name,
+        )
+
+        response = client.get_object(Bucket=bucket_name, Key=object_key)
+        payload = response["Body"].read()
+        return pd.read_csv(BytesIO(payload))
+    except (ClientError, BotoCoreError, ValueError, pd.errors.ParserError):
+        st.warning("Unable to load dataset from Cloudflare R2; falling back to public dataset.")
+        return None
+
+
+def _load_from_github() -> Optional[pd.DataFrame]:
+    """Fallback to the public GitHub dataset."""
     sources = [
         "https://github.com/yingstj/jeopardy-trainer/raw/main/data/all_jeopardy_clues.csv",
         "https://raw.githubusercontent.com/yingstj/jeopardy-trainer/main/data/all_jeopardy_clues.csv",
     ]
-    
+
     for url in sources:
         try:
             df = pd.read_csv(url)
             if not df.empty and len(df) > 100:
                 return df
-        except Exception as e:
+        except Exception:
             continue
-    
-    # If all sources fail, return sample data
+    return None
+
+
+def _load_sample_data() -> pd.DataFrame:
+    """Return a small, static dataset suitable for local demos."""
     return pd.DataFrame({
         'category': ['HISTORY'] * 10 + ['SCIENCE'] * 10 + ['MOVIES'] * 10,
         'clue': [
@@ -67,10 +118,20 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
             'Hydrogen', '299,792,458', 'Charles Darwin', '100', 'Mars',
             '46', 'Skin', 'Oxygen', 'Gravity', 'Deoxyribonucleic acid',
             'Parasite', 'Steven Spielberg', 'Leonardo DiCaprio', 'Star Wars', 'The Wizard of Oz',
-            'Heath Ledger', 'The Lord of the Rings: The Return of the King', 'Finding Nemo', 
+            'Heath Ledger', 'The Lord of the Rings: The Return of the King', 'Finding Nemo',
             'Robert Downey Jr.', 'The Terminator'
         ],
         'round': ['Jeopardy'] * 15 + ['Double Jeopardy'] * 15,
         'game_id': [str(i//5) for i in range(30)],
         'value': [200, 400, 600, 800, 1000] * 6
     })
+
+
+def _get_secret(name: str) -> Optional[str]:
+    """Fetch a secret value from Streamlit or environment variables."""
+    if os.getenv(name):
+        return os.getenv(name)
+    try:
+        return st.secrets[name]
+    except (AttributeError, KeyError):
+        return None
