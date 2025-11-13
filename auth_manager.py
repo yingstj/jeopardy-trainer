@@ -159,14 +159,20 @@ class AuthManager:
                 except KeyError as ke:
                     st.error(f"Missing secret: {ke}")
                     st.info("Available secrets keys: " + str(list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else "None"))
-                    st.info("Please add the following to Streamlit Cloud Secrets:")
-                    st.code("""GOOGLE_CLIENT_ID = "your-client-id"
-GOOGLE_CLIENT_SECRET = "your-secret"
-REDIRECT_URI = "https://jayopardy.streamlit.app" """)
+                    st.info("Please add the following to Streamlit Secrets (Cloud or .streamlit/secrets.toml locally):")
+                    st.code("""# .streamlit/secrets.toml
+GOOGLE_CLIENT_ID = "your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "your-client-secret"
+# Local dev:
+REDIRECT_URI = "http://localhost:8501"
+# Streamlit Cloud (optional override):
+# REDIRECT_URI = "https://your-app.streamlit.app"
+""")
+                    st.caption("See AUTH_SETUP.md for step-by-step instructions.")
                     return
                 
                 if not CLIENT_ID or not CLIENT_SECRET:
-                    st.warning("OAuth credentials are empty. Please check Streamlit Cloud settings.")
+                    st.warning("OAuth credentials are empty. Please check Streamlit Secrets.")
                     return
             else:
                 st.info("For local testing, use email login. Google Sign-In requires Streamlit Cloud deployment.")
@@ -400,6 +406,12 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
         </style>
         """, unsafe_allow_html=True)
         
+        # Sidebar quick Google sign-in (optional)
+        with st.sidebar:
+            st.markdown("### 🔐 Google Sign-In")
+            if st.button("Continue with Google", use_container_width=True):
+                self.google_oauth_login()
+
         # Logo and title
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -418,7 +430,7 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
             # Add container background for better readability
             st.markdown('<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px;">', unsafe_allow_html=True)
             # Tabs for login options
-            tab1, tab2 = st.tabs(["🎮 Guest Play", "📧 Email Login"])
+            tab1, tab2, tab3 = st.tabs(["🎮 Guest Play", "📧 Email Login", "🔐 Google Sign-In"])
             
             with tab1:
                 st.markdown("""
@@ -497,6 +509,11 @@ REDIRECT_URI = "https://jayopardy.streamlit.app" """)
                     st.success(f"🎊 Account created! Welcome, {st.session_state.user_name}!")
                     time.sleep(1)
                     st.rerun()
+            
+            with tab3:
+                st.markdown("### 🔐 Sign in with Google")
+                st.caption("Use your Google account to sign in. Configure credentials as described in AUTH_SETUP.md.")
+                self.google_oauth_login()
             
             
             # Close container div

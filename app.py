@@ -7,19 +7,132 @@ import datetime
 import json
 from collections import defaultdict
 from typing import Dict, List
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Import the R2 data loader
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
-# Import user manager
-from user_manager import UserManager
-from managers.challenge_manager import ChallengeManager
-from managers.online_users_manager import OnlineUsers
-from managers.category_analyzer import JeopardyCategoryAnalyzer
-from utils import normalize, fuzzy_match
-from database import initialize_database
+from auth_manager import AuthManager
+from category_analyzer import JeopardyCategoryAnalyzer
+from database import initialize_database, get_db_connection
 
 # Initialize the database
 initialize_database()
+
+class ChallengeManager:
+    """SQLite-backed challenge manager using database.py schema."""
+    def __init__(self):
+        pass
+
+    def _get_or_create_user(self, username: str) -> int:
+        """Ensure a user exists in sqlite users table and return id."""
+        if not username:
+            return 0
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if row:
+            user_id = row["id"]
+        else:
+            cur.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, ""))
+            user_id = cur.lastrowid
+            # Initialize stats row
+            cur.execute("INSERT INTO user_stats (user_id) VALUES (?)", (user_id,))
+            conn.commit()
+        conn.close()
+        return int(user_id)
+
+    def create_challenge(self, challenger_name: str, opponent_name: str, categories: list, num_questions: int = 10) -> int:
+        challenger_id = self._get_or_create_user(challenger_name)
+        opponent_id = self._get_or_create_user(opponent_name)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO challenges (challenger_id, opponent_id, status, num_questions, categories) VALUES (?, ?, 'pending', ?, ?)",
+            (challenger_id, opponent_id, int(num_questions), json.dumps(categories or [])),
+        )
+        challenge_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        return int(challenge_id)
+
+    def accept_challenge(self, challenge_id: int, username: str) -> bool:
+        user_id = self._get_or_create_user(username)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE challenges SET status = 'active' WHERE id = ? AND opponent_id = ?", (challenge_id, user_id))
+        updated = cur.rowcount > 0
+        conn.commit()
+        conn.close()
+        return updated
+
+    def complete_challenge(self, challenge_id: int, username: str, score: int) -> bool:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Fetch current challenge
+        cur.execute("SELECT * FROM challenges WHERE id = ?", (challenge_id,))
+        ch = cur.fetchone()
+        if not ch:
+            conn.close()
+            return False
+        # Determine which side completed
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return False
+        user_id = row["id"]
+
+        # Update scores and completed flags
+        if ch["challenger_id"] == user_id:
+            cur.execute("UPDATE challenges SET challenger_score = ?, challenger_completed = 1 WHERE id = ?", (int(score), challenge_id))
+        elif ch["opponent_id"] == user_id:
+            cur.execute("UPDATE challenges SET opponent_score = ?, opponent_completed = 1 WHERE id = ?", (int(score), challenge_id))
+        else:
+            conn.close()
+            return False
+
+        # If both completed, compute winner and mark completed
+        cur.execute("SELECT * FROM challenges WHERE id = ?", (challenge_id,))
+        ch2 = cur.fetchone()
+        if ch2 and ch2["challenger_completed"] and ch2["opponent_completed"]:
+            winner_id = None
+            if ch2["challenger_score"] > ch2["opponent_score"]:
+                winner_id = ch2["challenger_id"]
+            elif ch2["opponent_score"] > ch2["challenger_score"]:
+                winner_id = ch2["opponent_id"]
+            cur.execute("UPDATE challenges SET status = 'completed', winner_id = ? WHERE id = ?", (winner_id, challenge_id))
+        conn.commit()
+        conn.close()
+        return True
+
+    def _by_user(self, username: str, where_clause: str):
+        user_id = self._get_or_create_user(username)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        query = f"""
+            SELECT c.*, u1.username as challenger, u2.username as opponent
+            FROM challenges c
+            JOIN users u1 ON u1.id = c.challenger_id
+            JOIN users u2 ON u2.id = c.opponent_id
+            WHERE (c.challenger_id = ? OR c.opponent_id = ?) AND {where_clause}
+            ORDER BY c.created_at DESC
+        """
+        cur.execute(query, (user_id, user_id))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+
+    def get_active_challenges(self, username: str):
+        return self._by_user(username, "c.status = 'active'")
+
+    def get_pending_challenges(self, username: str):
+        return self._by_user(username, "c.status = 'pending'")
+
+    def get_completed_challenges(self, username: str):
+        return self._by_user(username, "c.status = 'completed'")
 
 # Page configuration with custom icon
 st.set_page_config(
@@ -261,8 +374,8 @@ def load_data():
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
 
-# Initialize user manager
-user_manager = UserManager()
+# Initialize auth manager
+auth = AuthManager()
 
 # Initialize session state
 if "authenticated" not in st.session_state:
@@ -384,6 +497,100 @@ AI_DIFFICULTY = {
     }
 }
 
+@st.cache_resource
+def load_model():
+    return SentenceTransformer("all-MiniLM-L6-v2")
+
+model = load_model()
+
+def normalize(text: str) -> str:
+    text = (text or "").lower()
+    text = re.sub(r"^(what|who|where|when|why|how)\s+(is|are|was|were)\s+", "", text)
+    text = re.sub(r"^(a|an|the)\s+", "", text)  # Remove articles
+    text = re.sub(r"[^a-z0-9 ]", "", text)
+    return text.strip()
+
+def fuzzy_match(user_answer: str, correct_answer: str, threshold: int = 70) -> bool:
+    user_norm = normalize(user_answer)
+    correct_norm = normalize(correct_answer)
+    if user_norm == correct_norm:
+        return True
+
+    correct_words = correct_norm.split()
+    user_words = user_norm.split()
+
+    if len(correct_words) >= 2 and len(user_words) == 1:
+        if user_norm == correct_words[-1]:
+            return True
+        for word in correct_words:
+            if len(word) > 4 and user_norm == word:
+                return True
+
+    if len(user_words) > 1 and len(correct_words) > 1:
+        if user_words[-1] == correct_words[-1]:
+            return True
+
+    if len(user_norm) > 3 and len(correct_norm) > 3:
+        if user_norm in correct_norm and len(user_norm) / len(correct_norm) > 0.4:
+            return True
+        if correct_norm in user_norm:
+            return True
+
+    if len(user_norm) <= 3 or len(correct_norm) <= 3:
+        return user_norm == correct_norm
+
+    if len(correct_words) > 1 and len(user_words) > 0:
+        matching_words = sum(1 for word in user_words if word in correct_words)
+        if matching_words / len(correct_words) >= 0.5:
+            return True
+
+    max_len = max(len(user_norm), len(correct_norm))
+    if max_len == 0:
+        return False
+    differences = abs(len(user_norm) - len(correct_norm))
+    min_len = min(len(user_norm), len(correct_norm))
+    for i in range(min_len):
+        if user_norm[i] != correct_norm[i]:
+            differences += 1
+    similarity = ((max_len - differences) / max_len) * 100
+    return similarity >= threshold
+
+def find_similar_clues(df: pd.DataFrame, target_clue: str, top_k: int = 3) -> pd.DataFrame:
+    try:
+        if df.empty or not target_clue:
+            return pd.DataFrame()
+        working_df = df.copy()
+        if len(working_df) > 1000:
+            working_df = working_df.sample(n=1000, random_state=42)
+        texts = working_df["clue"].astype(str).tolist()
+        embeddings = compute_embeddings_for_texts(texts)
+        target_vec = model.encode(target_clue).reshape(1, -1)
+        sims = cosine_similarity(target_vec, embeddings)[0]
+        working_df = working_df.assign(_sim=sims)
+        results = working_df[working_df["clue"] != target_clue].sort_values("_sim", ascending=False).head(top_k)
+        return results[["category", "clue", "correct_response"]]
+    except Exception:
+        return pd.DataFrame()
+
+@st.cache_data
+def compute_embeddings_for_texts(texts: List[str]) -> np.ndarray:
+    return np.vstack([model.encode(t) for t in texts])
+
+def parse_clue_value(value) -> int:
+    """Parse clue value like 200 or '$1,000' to an int. Fallback to 200."""
+    try:
+        if value is None:
+            return 200
+        if isinstance(value, (int, float)):
+            return int(value)
+        s = str(value)
+        s = s.replace("$", "").replace(",", "").strip()
+        if s.isdigit():
+            return int(s)
+        return int(float(s))
+    except Exception:
+        return 200
+
 def simulate_ai_response(clue, category, difficulty, personality):
     """Simulate AI response based on difficulty and personality"""
     import time
@@ -477,117 +684,9 @@ if "time_limit" not in st.session_state:
 if "speed_round" not in st.session_state:
     st.session_state.speed_round = False
 
-# Login Screen
-if not st.session_state.authenticated:
-    # Custom CSS for login page
-    st.markdown("""
-    <style>
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-title {
-            font-size: 3rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .login-subtitle {
-            color: #6c757d;
-            font-size: 1.1rem;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Login container
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div class="login-header">
-            <div class="login-title">🎯 Jaypardy!</div>
-            <div class="login-subtitle">Test your trivia knowledge with real Jeopardy questions</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Tab selection for Sign In / Sign Up
-        tab1, tab2 = st.tabs(["🔑 Sign In", "✨ Create Account"])
-        
-        with tab1:
-            with st.form("login_form"):
-                username = st.text_input("Username:", placeholder="Enter your username")
-                password = st.text_input("Password:", type="password", placeholder="Enter your password")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    submitted = st.form_submit_button("🎮 Sign In", use_container_width=True, type="primary")
-                with col2:
-                    guest = st.form_submit_button("👤 Play as Guest", use_container_width=True)
-                
-                if submitted:
-                    if username.strip() and password:
-                        if user_manager.authenticate(username.strip(), password):
-                            st.session_state.authenticated = True
-                            st.session_state.username = username.strip()
-                            st.session_state.user_data = user_manager.get_user_data(username.strip())
-                            
-                            # Load user's saved data
-                            if st.session_state.user_data:
-                                stats = st.session_state.user_data["stats"]
-                                st.session_state.best_streak = stats.get("best_streak", 0)
-                                st.session_state.bookmarks = stats.get("bookmarks", [])
-                            
-                            st.success(f"Welcome back, {username}! Loading your profile...")
-                            st.rerun()
-                        else:
-                            st.error("Invalid username or password")
-                    else:
-                        st.error("Please enter both username and password")
-                
-                if guest:
-                    st.session_state.authenticated = True
-                    st.session_state.username = f"Guest_{random.randint(1000, 9999)}"
-                    st.info("Playing as guest - progress won't be saved")
-                    st.rerun()
-        
-        with tab2:
-            with st.form("signup_form"):
-                new_username = st.text_input("Choose a username:", placeholder="Pick a unique username")
-                new_password = st.text_input("Create password:", type="password", placeholder="At least 4 characters")
-                confirm_password = st.text_input("Confirm password:", type="password", placeholder="Re-enter password")
-                
-                create_account = st.form_submit_button("🌟 Create Account", use_container_width=True, type="primary")
-                
-                if create_account:
-                    if new_username.strip() and new_password:
-                        if len(new_password) < 4:
-                            st.error("Password must be at least 4 characters long")
-                        elif new_password != confirm_password:
-                            st.error("Passwords don't match")
-                        elif user_manager.user_exists(new_username.strip()):
-                            st.error("Username already taken. Please choose another.")
-                        else:
-                            if user_manager.create_user(new_username.strip(), new_password):
-                                st.success("Account created! You can now sign in.")
-                                st.balloons()
-                            else:
-                                st.error("Failed to create account. Please try again.")
-                    else:
-                        st.error("Please fill in all fields")
-        
-        # Fun facts while waiting
-        st.markdown("---")
-        st.markdown("### 📚 Did you know?")
-        facts = [
-            "Jeopardy! has been on air since 1984",
-            "Over 400,000 questions have been asked on Jeopardy!",
-            "The highest single-day winnings record is $131,127",
-            "Ken Jennings won 74 consecutive games",
-            "The show has won 39 Emmy Awards"
-        ]
-        st.info(random.choice(facts))
-    
+# Login Screen via AuthManager (email/guest and optional Google OAuth)
+if not st.session_state.get("authenticated", False):
+    auth.show_login_page()
     st.stop()
 
 # Loading data (only after authentication)
@@ -606,22 +705,10 @@ theme_groups = analyzer.group_categories_by_theme(all_categories)
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
     st.markdown("## 🎯 Jaypardy!")
-    if st.session_state.username:
-        st.markdown(f"👤 **Player:** {st.session_state.username}")
-        
-        # Show lifetime stats for registered users
-        if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
-            with st.expander("📊 Lifetime Stats", expanded=False):
-                stats = st.session_state.user_data["stats"]
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Total Games", stats.get("games_played", 0))
-                    st.metric("Total Score", stats.get("total_score", 0))
-                with col2:
-                    st.metric("Questions", stats.get("total_questions", 0))
-                    if stats.get("total_questions", 0) > 0:
-                        acc = (stats.get("correct_answers", 0) / stats.get("total_questions", 1)) * 100
-                        st.metric("Accuracy", f"{acc:.1f}%")
+    # Derive username from AuthManager
+    current_username = st.session_state.get("user_name") or st.session_state.get("username") or "Player"
+    st.session_state.username = current_username
+    st.markdown(f"👤 **Player:** {current_username}")
     st.markdown("---")
     
     # Score display in sidebar
@@ -902,52 +989,28 @@ with st.sidebar:
     
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
+    st.caption("Identity note: challenges use your AuthManager display name (`st.session_state.user_name`). Opponents must use the same username to be recognized in SQLite.")
+    st.caption("To enable Google OAuth for sign-in, add secrets as described in `AUTH_SETUP.md`.")
     
-    if st.session_state.user_data is None:
-        st.info("Sign in with a registered account to create or accept challenges.")
-    else:
-        # Initialize challenge manager and online users
-        if "challenge_manager" not in st.session_state:
-            st.session_state.challenge_manager = ChallengeManager()
-        if "online_users" not in st.session_state:
-            st.session_state.online_users = OnlineUsers()
-        
-        challenge_manager = st.session_state.challenge_manager
-        online_users = st.session_state.online_users
-        
-        # Update online users list
-        online_list = online_users.update_online_users(st.session_state.username)
-        
-        # Show online users
-        with st.expander(f"🟢 Online Users ({len(online_list)})", expanded=False):
-            for user in online_list:
-                if user == st.session_state.username:
-                    continue
-                
-                is_registered = user_manager.user_exists(user)
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    label = f"👤 {user}"
-                    if not is_registered:
-                        label += " (demo)"
-                    st.write(label)
-                with col2:
-                    if st.button(
-                        "⚔️",
-                        key=f"challenge_{user}",
-                        help=f"Challenge {user}" if is_registered else "Demo opponents are not available for challenges",
-                        disabled=not is_registered,
-                    ):
-                        challenge_id = challenge_manager.create_challenge(
-                            st.session_state.username,
-                            user,
-                            st.session_state.selected_categories[:10],
-                            num_questions=10
-                        )
-                        if challenge_id:
-                            st.success(f"Challenge sent to {user}!")
-                        else:
-                            st.warning("Unable to send challenge. Make sure both players have registered accounts.")
+    # Initialize challenge manager
+    if "challenge_manager" not in st.session_state:
+        st.session_state.challenge_manager = ChallengeManager()
+    challenge_manager = st.session_state.challenge_manager
+
+    with st.expander("➕ Create Challenge", expanded=False):
+        opponent_name = st.text_input("Opponent username or email", key="challenge_opponent")
+        num_q = st.number_input("Number of questions", min_value=5, max_value=20, value=10, step=1)
+        if st.button("Send Challenge", use_container_width=True):
+            if opponent_name and st.session_state.get("selected_categories"):
+                cid = challenge_manager.create_challenge(
+                    st.session_state.username,
+                    opponent_name.strip(),
+                    st.session_state.selected_categories[:10],
+                    int(num_q)
+                )
+                st.success(f"Challenge created (ID {cid}) for {opponent_name}")
+            else:
+                st.warning("Please provide an opponent and select themes first.")
 
         # Show active challenges
         active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
@@ -968,7 +1031,14 @@ with st.sidebar:
 
                     if not your_done:
                         if st.button("🎮 Play", key=f"play_{challenge['id']}"):
-                            st.session_state.current_challenge = challenge
+                            # Ensure categories are parsed
+                            ch_copy = dict(challenge)
+                            if isinstance(ch_copy.get("categories"), str):
+                                try:
+                                    ch_copy["categories"] = json.loads(ch_copy["categories"])
+                                except Exception:
+                                    ch_copy["categories"] = []
+                            st.session_state.current_challenge = ch_copy
                             st.session_state.challenge_mode = True
                             st.session_state.challenge_question_num = 0
                             st.session_state.challenge_score = 0
@@ -995,49 +1065,29 @@ with st.sidebar:
         # Show completed challenges
         completed_challenges = challenge_manager.get_completed_challenges(st.session_state.username)
         if completed_challenges:
-            user_id = st.session_state.user_data.get("id")
             with st.expander(f"🏅 Results ({len(completed_challenges)})", expanded=False):
-                if not user_id:
-                    st.info("Sign in with a registered account to view challenge results.")
-                else:
-                    for challenge in completed_challenges[-5:]:  # Show last 5
-                        opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
-
-                        your_score = challenge["challenger_score"] if challenge["challenger_id"] == user_id else challenge["opponent_score"]
-                        their_score = challenge["opponent_score"] if challenge["challenger_id"] == user_id else challenge["challenger_score"]
-
-                        result_emoji = "🤝"
-                        result_text = "Tied"
-                        if challenge['winner_id']:
-                            if challenge['winner_id'] == user_id:
-                                result_emoji = "🏆"
-                                result_text = "Won"
-                            else:
-                                result_emoji = "😔"
-                                result_text = "Lost"
-
-                        st.write(f"{result_emoji} **{result_text}** vs {opponent} ({your_score} - {their_score})")
-                        st.markdown("---")
+                for challenge in completed_challenges[-5:]:  # Show last 5
+                    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                    # Determine user's score side
+                    your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
+                    their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
+                    result_emoji = "🤝"
+                    result_text = "Tied"
+                    if challenge.get('winner_id'):
+                        if (challenge['winner_id'] == challenge['challenger_id'] and challenge["challenger"] == st.session_state.username) or \
+                           (challenge['winner_id'] == challenge['opponent_id'] and challenge["opponent"] == st.session_state.username):
+                            result_emoji = "🏆"
+                            result_text = "Won"
+                        else:
+                            result_emoji = "😔"
+                            result_text = "Lost"
+                    st.write(f"{result_emoji} **{result_text}** vs {opponent} ({your_score} - {their_score})")
+                    st.markdown("---")
 
     st.markdown("---")
 
     if st.button("🚪 Logout", use_container_width=True):
-        # Save user session before logging out
-        if st.session_state.user_data and not st.session_state.username.startswith("Guest_"):
-            session_data = {
-                "total_questions": st.session_state.total,
-                "correct_answers": st.session_state.score,
-                "score": st.session_state.score,
-                "best_streak": st.session_state.best_streak,
-                "bookmarks": st.session_state.bookmarks
-            }
-            user_manager.save_user_session(st.session_state.username, session_data)
-        
-        # Clear session
-        st.session_state.authenticated = False
-        st.session_state.username = ""
-        st.session_state.user_data = None
-        st.rerun()
+        auth.logout()
 
 # MAIN GAME AREA
 
@@ -1181,7 +1231,7 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
     # Check if challenge is complete
     if st.session_state.challenge_question_num >= challenge["num_questions"]:
         # Complete the challenge
-        challenge_manager.complete_challenge(
+        st.session_state.challenge_manager.complete_challenge(
             challenge["id"],
             st.session_state.username,
             st.session_state.challenge_score
@@ -1200,7 +1250,13 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
         st.stop()
     
     # Use challenge categories
-    challenge_df = df[df["category"].isin(challenge["categories"])]
+    ch_categories = challenge.get("categories", [])
+    if isinstance(ch_categories, str):
+        try:
+            ch_categories = json.loads(ch_categories)
+        except Exception:
+            ch_categories = []
+    challenge_df = df[df["category"].isin(ch_categories)]
     if challenge_df.empty:
         challenge_df = filtered_df  # Fallback to regular filtered df
     
@@ -1339,9 +1395,10 @@ elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not
     if is_correct:
         st.error(f"🤖 {st.session_state.ai_personality} got it right! The answer was: **{clue['correct_response']}**")
         
-        # Award points to AI
-        points = 2 if is_daily_double else 1
-        st.session_state.ai_score += points
+        # Award points to AI using clue value (daily double applies)
+        base_value = parse_clue_value(clue.get("value"))
+        ai_points = base_value * (2 if is_daily_double else 1)
+        st.session_state.ai_score += int(ai_points)
         st.session_state.ai_streak += 1
         
         # Reset for next question
@@ -1432,11 +1489,13 @@ if submitted:
         else:  # Timer is on
             correct = answer_matches and elapsed_time <= st.session_state.time_limit
 
+        base_value = parse_clue_value(clue.get("value"))
+
         if correct:
             st.balloons()
-            points_earned = 1 * points_multiplier
-            st.success(f"🎉 **Correct!** +{points_earned} points")
-            st.session_state.score += points_earned
+            points_earned = base_value * points_multiplier
+            st.success(f"🎉 **Correct!** +${points_earned}")
+            st.session_state.score += int(points_earned)
             st.session_state.streak += 1
             st.session_state.best_streak = max(st.session_state.streak, st.session_state.best_streak)
             
@@ -1463,6 +1522,13 @@ if submitted:
                 st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
             st.session_state.weak_themes[theme]["incorrect"] += 1
 
+            # Suggest similar clues to practice
+            suggestions = find_similar_clues(filtered_df, clue["clue"], top_k=3)
+            if not suggestions.empty:
+                st.markdown("#### You might also practice:")
+                for _, row in suggestions.iterrows():
+                    st.markdown(f"- {row['category']}: {row['clue']}  \n  Answer: *{row['correct_response']}*")
+
         # Update weak theme totals regardless of correct/incorrect
         theme = analyzer.categorize_single(clue["category"])
         if theme not in st.session_state.weak_themes:
@@ -1484,7 +1550,7 @@ if submitted:
         if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
             # Update challenge score
             if correct:
-                st.session_state.challenge_score += 1
+                st.session_state.challenge_score += int(points_earned > 0)
             
             # Move to next question
             st.session_state.challenge_current_clue = None

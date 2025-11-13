@@ -21,7 +21,7 @@ For production use with Google sign-in:
 ### 1. Create Google Cloud Project
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing
-3. Enable Google+ API
+3. Enable the "Google Identity Services" / OAuth API
 
 ### 2. Create OAuth Credentials
 1. Go to APIs & Services > Credentials
@@ -35,7 +35,7 @@ For production use with Google sign-in:
 ### 3. Configure Secrets
 
 #### For Local Development:
-Create `.streamlit/secrets.toml`:
+Create `.streamlit/secrets.toml` with:
 ```toml
 GOOGLE_CLIENT_ID = "your-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "your-client-secret"
@@ -45,7 +45,16 @@ REDIRECT_URI = "http://localhost:8501"
 #### For Streamlit Cloud:
 1. Go to your app settings
 2. Click "Secrets" in the sidebar
-3. Add the same configuration
+3. Add the same configuration. You can optionally set:
+   ```toml
+   REDIRECT_URI = "https://your-app.streamlit.app"
+   ```
+
+### 4. Using Google Sign-In in the App
+- On the login screen, you can use the “🔐 Google Sign-In” tab.
+- Alternatively, a sidebar “Continue with Google” button is available.
+
+If secrets are missing, the app will show a copy-pasteable `.streamlit/secrets.toml` example.
 
 ## User Data Storage
 
