@@ -144,178 +144,213 @@ st.set_page_config(
 
 # Custom CSS for enhanced styling
 st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
-    /* Main container styling */
-    .main {
-        padding: 0rem 1rem;
+    :root {
+        --brand-1: #6366f1;
+        --brand-2: #8b5cf6;
+        --brand-3: #ec4899;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --ring: rgba(99, 102, 241, 0.18);
+        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+        --shadow-md: 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+        --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 24px 48px -12px rgba(15, 23, 42, 0.18);
     }
-    
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        color: var(--ink);
+    }
+
+    .stApp {
+        background:
+            radial-gradient(1200px 600px at 0% -10%, rgba(99,102,241,0.10), transparent 60%),
+            radial-gradient(900px 500px at 100% 0%, rgba(236,72,153,0.10), transparent 55%),
+            var(--bg);
+    }
+
+    h1, h2, h3 { font-family: 'Poppins', 'Inter', sans-serif !important; letter-spacing: -0.01em; }
+    h1 { font-weight: 800 !important; }
+    h2, h3 { font-weight: 700 !important; }
+
+    /* Main container styling */
+    .main { padding: 0rem 1rem; }
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1200px; }
+
     /* Custom header */
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
+        padding: 1.75rem;
+        border-radius: 18px;
+        margin-bottom: 1.75rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
     }
-    
+    .main-header::after {
+        content: "";
+        position: absolute; inset: 0;
+        background: radial-gradient(600px 200px at 20% 0%, rgba(255,255,255,0.18), transparent 60%);
+        pointer-events: none;
+    }
     .main-header h1 {
-        color: white;
-        margin: 0;
-        font-size: 2rem;
-        text-align: center;
+        color: white !important; margin: 0;
+        font-size: 2.1rem; text-align: center;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    
     .main-header p {
-        color: rgba(255, 255, 255, 0.9);
-        text-align: center;
-        margin-top: 0.3rem;
-        font-size: 1rem;
+        color: rgba(255,255,255,0.92);
+        text-align: center; margin-top: 0.4rem; font-size: 1.02rem;
     }
-    
+
     /* Theme card */
     .theme-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 0.8rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        text-align: center;
-        font-weight: bold;
-        font-size: 1.1rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, #db2777 0%, #9d174d 100%);
+        color: #ffffff; padding: 1rem 1.25rem;
+        border-radius: 14px; margin-bottom: 1rem;
+        text-align: center; font-weight: 700; font-size: 1.05rem;
+        box-shadow: var(--shadow-md);
+        letter-spacing: 0.01em;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.18);
     }
-    
+
     /* Clue card */
     .clue-card {
-        background: #f8f9fa;
-        border-left: 4px solid #667eea;
-        padding: 1.5rem;
-        border-radius: 8px;
+        background: var(--card);
+        border: 1px solid rgba(15,23,42,0.06);
+        border-left: 4px solid var(--brand-1);
+        padding: 1.75rem;
+        border-radius: 14px;
         margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        box-shadow: var(--shadow-md);
     }
-    
     .clue-text {
-        font-size: 1.3rem;
-        color: #2c3e50;
-        line-height: 1.6;
+        font-size: 1.35rem; color: var(--ink); line-height: 1.65; font-weight: 500;
     }
-    
+
     /* Score display */
     .score-container {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        padding: 1.1rem; border-radius: 14px;
+        text-align: center; color: white;
+        box-shadow: var(--shadow-md);
     }
-    
-    .score-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-        margin-bottom: 0.3rem;
-    }
-    
-    .score-value {
-        font-size: 1.8rem;
-        font-weight: bold;
-    }
-    
+    .score-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .score-value { font-size: 1.9rem; font-weight: 800; font-family: 'Poppins', sans-serif; }
+
     /* Timer styling */
     .timer-container {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        color: white;
+        background: linear-gradient(135deg, #c2410c 0%, #b45309 100%);
+        padding: 1rem; border-radius: 14px;
+        text-align: center; color: #ffffff;
         margin-bottom: 1rem;
+        box-shadow: var(--shadow-md);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.18);
     }
-    
+
     /* Success and error messages */
-    .stSuccess {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-        color: #155724;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid;
+    .stSuccess, div[data-testid="stAlertContentSuccess"] {
+        background-color: #ecfdf5 !important;
+        border: 1px solid #a7f3d0 !important;
+        color: #065f46 !important;
+        border-radius: 12px !important;
     }
-    
-    .stError {
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
-        color: #721c24;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid;
+    .stError, div[data-testid="stAlertContentError"] {
+        background-color: #fef2f2 !important;
+        border: 1px solid #fecaca !important;
+        color: #991b1b !important;
+        border-radius: 12px !important;
     }
-    
-    /* Button styling */
+
+    /* Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        font-size: 1.1rem;
-        font-weight: bold;
-        border-radius: 8px;
-        transition: transform 0.2s;
+        background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
+        color: white; border: none;
+        padding: 0.7rem 1.6rem;
+        font-size: 1rem; font-weight: 600;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
     }
-    
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        filter: brightness(1.05);
     }
-    
-    /* Sidebar styling */
+    .stButton > button:focus { box-shadow: 0 0 0 4px var(--ring) !important; }
+
+    /* Inputs */
+    .stTextInput > div > div > input,
+    .stTextArea textarea,
+    .stNumberInput input,
+    .stSelectbox div[data-baseweb="select"] > div {
+        border-radius: 10px !important;
+        border: 1px solid rgba(15,23,42,0.12) !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stTextInput > div > div > input:focus,
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus {
+        border-color: var(--brand-1) !important;
+        box-shadow: 0 0 0 4px var(--ring) !important;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; }
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.6rem 1rem; border-radius: 10px 10px 0 0;
+        font-weight: 600; color: var(--muted);
+    }
+    .stTabs [aria-selected="true"] { color: var(--brand-1) !important; }
+
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+        border-right: 1px solid rgba(15,23,42,0.06);
     }
-    
+    section[data-testid="stSidebar"] .stMarkdown { color: var(--ink); }
+
+    /* Metric / stat cards */
+    .stat-card {
+        background: var(--card);
+        border: 1px solid rgba(15,23,42,0.06);
+        padding: 0.85rem; border-radius: 12px;
+        text-align: center; box-shadow: var(--shadow-sm);
+    }
+    .stat-number { font-size: 1.5rem; font-weight: 800; color: var(--brand-1); font-family: 'Poppins', sans-serif; }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
     /* Progress bar */
     .progress-bar {
-        background: #e9ecef;
-        height: 25px;
-        border-radius: 12px;
-        overflow: hidden;
-        margin: 0.5rem 0;
+        background: rgba(15,23,42,0.06);
+        height: 22px; border-radius: 999px;
+        overflow: hidden; margin: 0.5rem 0;
     }
-    
     .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 0.9rem;
-        transition: width 0.3s ease;
+        background: linear-gradient(90deg, #4338ca 0%, #6d28d9 50%, #9d174d 100%);
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff; font-weight: 700; font-size: 0.85rem;
+        transition: width 0.4s ease;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.25);
     }
-    
-    /* Stats cards */
-    .stat-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        margin-bottom: 0.8rem;
+
+    /* Expander polish */
+    .streamlit-expanderHeader, [data-testid="stExpander"] details summary {
+        border-radius: 10px !important;
+        font-weight: 600;
     }
-    
-    .stat-number {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #667eea;
-    }
-    
-    .stat-label {
-        color: #6c757d;
-        font-size: 0.8rem;
-        margin-top: 0.2rem;
-    }
+
+    /* Dataframe rounding */
+    .stDataFrame { border-radius: 12px; overflow: hidden; }
+
+    /* Hide Streamlit default footer for a cleaner look */
+    footer { visibility: hidden; }
     
     /* Compact header stats */
     .header-stats {
@@ -700,7 +735,7 @@ if df.empty:
 # Initialize analyzer and categories
 analyzer = JeopardyCategoryAnalyzer()
 all_categories = df["category"].unique()
-theme_groups = analyzer.group_categories_by_theme(all_categories)
+theme_groups = analyzer.analyze_categories(all_categories)
 
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
