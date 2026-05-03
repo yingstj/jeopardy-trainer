@@ -11,15 +11,12 @@ def get_db_connection():
 
 def initialize_database():
     """Initialize the database with the required tables."""
-    if os.path.exists(DB_FILE):
-        return
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # User table
     cursor.execute("""
-        CREATE TABLE users (
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL
@@ -28,7 +25,7 @@ def initialize_database():
 
     # User stats table
     cursor.execute("""
-        CREATE TABLE user_stats (
+        CREATE TABLE IF NOT EXISTS user_stats (
             user_id INTEGER PRIMARY KEY,
             games_played INTEGER DEFAULT 0,
             total_score INTEGER DEFAULT 0,
@@ -41,7 +38,7 @@ def initialize_database():
 
     # Bookmarks table
     cursor.execute("""
-        CREATE TABLE bookmarks (
+        CREATE TABLE IF NOT EXISTS bookmarks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             category TEXT NOT NULL,
@@ -54,7 +51,7 @@ def initialize_database():
 
     # Challenges table
     cursor.execute("""
-        CREATE TABLE challenges (
+        CREATE TABLE IF NOT EXISTS challenges (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             challenger_id INTEGER NOT NULL,
             opponent_id INTEGER NOT NULL,

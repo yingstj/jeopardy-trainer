@@ -27,3 +27,4 @@ numpy
 scikit-learn
 sentence-transformers
 streamlit
+streamlit-oauth
