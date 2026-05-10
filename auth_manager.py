@@ -330,7 +330,7 @@ REDIRECT_URI = "http://localhost:8501"
             # Add container background for better readability
             st.markdown('<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px;">', unsafe_allow_html=True)
             # Tabs for login options
-            tab1, tab2, tab3 = st.tabs(["🎮 Guest Play", "📧 Email Login", "🔐 Google Sign-In"])
+            tab1, tab2 = st.tabs(["🎮 Guest Play", "📧 Email Login"])
             
             with tab1:
                 st.markdown("""
@@ -417,12 +417,6 @@ REDIRECT_URI = "http://localhost:8501"
                     st.success(f"🎊 Account created! Welcome, {st.session_state.user_name}!")
                     time.sleep(1)
                     st.rerun()
-            
-            with tab3:
-                st.markdown("### 🔐 Sign in with Google")
-                st.caption("Use your Google account to sign in. Configure credentials as described in AUTH_SETUP.md.")
-                self.google_oauth_login()
-            
             
             # Close container div
             st.markdown('</div>', unsafe_allow_html=True)

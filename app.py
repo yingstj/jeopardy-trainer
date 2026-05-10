@@ -1021,7 +1021,6 @@ with st.sidebar:
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
     st.caption("Identity note: challenges use your AuthManager display name (`st.session_state.user_name`). Opponents must use the same username to be recognized in SQLite.")
-    st.caption("To enable Google OAuth for sign-in, add secrets as described in `AUTH_SETUP.md`.")
     
     # Initialize challenge manager
     if "challenge_manager" not in st.session_state:
