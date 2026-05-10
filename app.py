@@ -149,14 +149,15 @@ st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
-        --brand-1: #6366f1;
-        --brand-2: #8b5cf6;
-        --brand-3: #ec4899;
+        --brand-1: #0f172a;
+        --brand-2: #1e293b;
+        --brand-3: #f59e0b;
         --ink: #0f172a;
         --muted: #64748b;
-        --bg: #f8fafc;
+        --bg: #fafaf9;
         --card: #ffffff;
-        --ring: rgba(99, 102, 241, 0.18);
+        --line: #e7e5e4;
+        --ring: rgba(245, 158, 11, 0.25);
         --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
         --shadow-md: 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 12px 24px -8px rgba(15, 23, 42, 0.12);
         --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 24px 48px -12px rgba(15, 23, 42, 0.18);
@@ -168,10 +169,7 @@ st.markdown("""
     }
 
     .stApp {
-        background:
-            radial-gradient(1200px 600px at 0% -10%, rgba(99,102,241,0.10), transparent 60%),
-            radial-gradient(900px 500px at 100% 0%, rgba(236,72,153,0.10), transparent 55%),
-            var(--bg);
+        background: var(--bg);
     }
 
     h1, h2, h3 { font-family: 'Poppins', 'Inter', sans-serif !important; letter-spacing: -0.01em; }
@@ -184,50 +182,44 @@ st.markdown("""
 
     /* Custom header */
     .main-header {
-        background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
+        background: var(--ink);
         padding: 1.75rem;
-        border-radius: 18px;
+        border-radius: 16px;
         margin-bottom: 1.75rem;
-        box-shadow: var(--shadow-lg);
-        position: relative;
-        overflow: hidden;
-    }
-    .main-header::after {
-        content: "";
-        position: absolute; inset: 0;
-        background: radial-gradient(600px 200px at 20% 0%, rgba(255,255,255,0.18), transparent 60%);
-        pointer-events: none;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--ink);
     }
     .main-header h1 {
-        color: white !important; margin: 0;
+        color: #ffffff !important; margin: 0;
         font-size: 2.1rem; text-align: center;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        letter-spacing: -0.02em;
     }
     .main-header p {
-        color: rgba(255,255,255,0.92);
+        color: rgba(255,255,255,0.72);
         text-align: center; margin-top: 0.4rem; font-size: 1.02rem;
     }
 
     /* Theme card */
     .theme-card {
-        background: linear-gradient(135deg, #db2777 0%, #9d174d 100%);
-        color: #ffffff; padding: 1rem 1.25rem;
-        border-radius: 14px; margin-bottom: 1rem;
-        text-align: center; font-weight: 700; font-size: 1.05rem;
-        box-shadow: var(--shadow-md);
-        letter-spacing: 0.01em;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.18);
+        background: var(--card);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand-3);
+        padding: 0.9rem 1.25rem;
+        border-radius: 12px; margin-bottom: 1rem;
+        text-align: left; font-weight: 600; font-size: 1.02rem;
+        box-shadow: var(--shadow-sm);
     }
 
     /* Clue card */
     .clue-card {
         background: var(--card);
-        border: 1px solid rgba(15,23,42,0.06);
-        border-left: 4px solid var(--brand-1);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brand-3);
         padding: 1.75rem;
         border-radius: 14px;
         margin: 1rem 0;
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-sm);
     }
     .clue-text {
         font-size: 1.35rem; color: var(--ink); line-height: 1.65; font-weight: 500;
@@ -235,22 +227,25 @@ st.markdown("""
 
     /* Score display */
     .score-container {
-        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
         padding: 1.1rem; border-radius: 14px;
-        text-align: center; color: white;
-        box-shadow: var(--shadow-md);
+        text-align: center; color: var(--ink);
+        box-shadow: var(--shadow-sm);
     }
-    .score-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem; letter-spacing: 0.08em; text-transform: uppercase; }
-    .score-value { font-size: 1.9rem; font-weight: 800; font-family: 'Poppins', sans-serif; }
+    .score-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.3rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+    .score-value { font-size: 1.9rem; font-weight: 800; font-family: 'Poppins', sans-serif; color: var(--ink); }
 
     /* Timer styling */
     .timer-container {
-        background: linear-gradient(135deg, #c2410c 0%, #b45309 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-top: 3px solid #ef4444;
         padding: 1rem; border-radius: 14px;
-        text-align: center; color: #ffffff;
+        text-align: center; color: var(--ink);
         margin-bottom: 1rem;
-        box-shadow: var(--shadow-md);
-        text-shadow: 0 1px 2px rgba(0,0,0,0.18);
+        box-shadow: var(--shadow-sm);
+        font-weight: 600;
     }
 
     /* Success and error messages */
@@ -269,18 +264,18 @@ st.markdown("""
 
     /* Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
-        color: white; border: none;
-        padding: 0.7rem 1.6rem;
-        font-size: 1rem; font-weight: 600;
-        border-radius: 12px;
+        background: var(--ink);
+        color: #ffffff; border: 1px solid var(--ink);
+        padding: 0.65rem 1.5rem;
+        font-size: 0.98rem; font-weight: 600;
+        border-radius: 10px;
         box-shadow: var(--shadow-sm);
-        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        transition: transform 0.12s ease, box-shadow 0.18s ease, background-color 0.18s ease;
     }
     .stButton > button:hover {
         transform: translateY(-1px);
+        background: #1e293b;
         box-shadow: var(--shadow-md);
-        filter: brightness(1.05);
     }
     .stButton > button:focus { box-shadow: 0 0 0 4px var(--ring) !important; }
 
@@ -290,54 +285,55 @@ st.markdown("""
     .stNumberInput input,
     .stSelectbox div[data-baseweb="select"] > div {
         border-radius: 10px !important;
-        border: 1px solid rgba(15,23,42,0.12) !important;
+        border: 1px solid var(--line) !important;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .stTextInput > div > div > input:focus,
     .stTextArea textarea:focus,
     .stNumberInput input:focus {
-        border-color: var(--brand-1) !important;
+        border-color: var(--brand-3) !important;
         box-shadow: 0 0 0 4px var(--ring) !important;
     }
 
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; }
+    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; border-bottom: 1px solid var(--line); }
     .stTabs [data-baseweb="tab"] {
-        padding: 0.6rem 1rem; border-radius: 10px 10px 0 0;
+        padding: 0.6rem 1rem;
         font-weight: 600; color: var(--muted);
     }
-    .stTabs [aria-selected="true"] { color: var(--brand-1) !important; }
+    .stTabs [aria-selected="true"] { color: var(--ink) !important; }
+    .stTabs [data-baseweb="tab-highlight"] { background: var(--brand-3) !important; height: 2px !important; }
 
     /* Sidebar */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-        border-right: 1px solid rgba(15,23,42,0.06);
+        background: #ffffff;
+        border-right: 1px solid var(--line);
     }
     section[data-testid="stSidebar"] .stMarkdown { color: var(--ink); }
 
     /* Metric / stat cards */
     .stat-card {
         background: var(--card);
-        border: 1px solid rgba(15,23,42,0.06);
+        border: 1px solid var(--line);
         padding: 0.85rem; border-radius: 12px;
         text-align: center; box-shadow: var(--shadow-sm);
     }
-    .stat-number { font-size: 1.5rem; font-weight: 800; color: var(--brand-1); font-family: 'Poppins', sans-serif; }
-    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-number { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-family: 'Poppins', sans-serif; }
+    .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 
     /* Progress bar */
     .progress-bar {
-        background: rgba(15,23,42,0.06);
+        background: #f1f5f9;
+        border: 1px solid var(--line);
         height: 22px; border-radius: 999px;
         overflow: hidden; margin: 0.5rem 0;
     }
     .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #4338ca 0%, #6d28d9 50%, #9d174d 100%);
+        background: var(--brand-3);
         display: flex; align-items: center; justify-content: center;
-        color: #ffffff; font-weight: 700; font-size: 0.85rem;
+        color: #0f172a; font-weight: 700; font-size: 0.85rem;
         transition: width 0.4s ease;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.25);
     }
 
     /* Expander polish */
@@ -358,22 +354,22 @@ st.markdown("""
         justify-content: space-around;
         margin-top: 1rem;
         padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
     }
     
-    .header-stat {
-        text-align: center;
-    }
+    .header-stat { text-align: center; }
     
     .header-stat-value {
         font-size: 1.5rem;
-        font-weight: bold;
-        color: white;
+        font-weight: 700;
+        color: #ffffff;
     }
     
     .header-stat-label {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.65);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1173,11 +1169,11 @@ if st.session_state.ai_mode:
     with col_player:
         player_color = "#667eea" if st.session_state.score >= st.session_state.ai_score else "#6c757d"
         st.markdown(f"""
-        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, {player_color} 0%, #764ba2 100%); 
-                    border-radius: 10px; color: white;">
-            <div style="font-size: 0.9rem; opacity: 0.9;">👤 {st.session_state.username}</div>
-            <div style="font-size: 2.5rem; font-weight: bold;">${st.session_state.score}</div>
-            <div style="font-size: 0.8rem; opacity: 0.8;">Streak: {st.session_state.streak}</div>
+        <div style="text-align: center; padding: 1rem; background: #ffffff; border: 1px solid #e7e5e4;
+                    border-top: 3px solid {player_color}; border-radius: 12px; color: #0f172a;">
+            <div style="font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">👤 {st.session_state.username}</div>
+            <div style="font-size: 2.5rem; font-weight: 800;">${st.session_state.score}</div>
+            <div style="font-size: 0.8rem; color: #64748b;">Streak: {st.session_state.streak}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1191,11 +1187,11 @@ if st.session_state.ai_mode:
     with col_ai:
         ai_color = "#dc3545" if st.session_state.ai_score > st.session_state.score else "#6c757d"
         st.markdown(f"""
-        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, {ai_color} 0%, #495057 100%); 
-                    border-radius: 10px; color: white;">
-            <div style="font-size: 0.9rem; opacity: 0.9;">🤖 {st.session_state.ai_personality}</div>
-            <div style="font-size: 2.5rem; font-weight: bold;">${st.session_state.ai_score}</div>
-            <div style="font-size: 0.8rem; opacity: 0.8;">Streak: {st.session_state.ai_streak}</div>
+        <div style="text-align: center; padding: 1rem; background: #ffffff; border: 1px solid #e7e5e4;
+                    border-top: 3px solid {ai_color}; border-radius: 12px; color: #0f172a;">
+            <div style="font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">🤖 {st.session_state.ai_personality}</div>
+            <div style="font-size: 2.5rem; font-weight: 800;">${st.session_state.ai_score}</div>
+            <div style="font-size: 0.8rem; color: #64748b;">Streak: {st.session_state.ai_streak}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1253,14 +1249,14 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
     
     # Display challenge header
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%); 
-                color: white; padding: 1.5rem; border-radius: 16px; 
+    <div style="background: #0f172a; color: #ffffff; padding: 1.5rem; border-radius: 14px;
+                border-left: 4px solid #f59e0b;
                 text-align: center; margin-bottom: 1rem;
-                box-shadow: 0 18px 40px rgba(79,70,229,0.25); text-shadow: 0 1px 2px rgba(0,0,0,0.18);">
-        <h2 style="margin: 0;">⚔️ Challenge Mode</h2>
-        <p style="margin: 0.5rem 0;">You vs {opponent}</p>
-        <p style="margin: 0;">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']}</p>
-        <p style="margin: 0; font-size: 1.2rem;">Your Score: {st.session_state.challenge_score}</p>
+                box-shadow: 0 10px 24px -12px rgba(15,23,42,0.35);">
+        <h2 style="margin: 0; color: #ffffff;">⚔️ Challenge Mode</h2>
+        <p style="margin: 0.5rem 0; color: rgba(255,255,255,0.78);">You vs {opponent}</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.78);">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']}</p>
+        <p style="margin: 0.4rem 0 0; font-size: 1.2rem; color: #f59e0b; font-weight: 700;">Your Score: {st.session_state.challenge_score}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1321,12 +1317,12 @@ if not st.session_state.daily_double_used and random.random() < 0.05:
 # Display Daily Double if applicable
 if is_daily_double:
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                color: #1a1a1a; padding: 1.5rem; border-radius: 15px; 
-                text-align: center; margin-bottom: 1rem; 
-                box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);">
-        <h2 style="margin: 0; font-size: 1.8rem;">⭐ DAILY DOUBLE! ⭐</h2>
-        <p style="margin-top: 0.3rem;">Double points for this question!</p>
+    <div style="background: #fef3c7; color: #0f172a; padding: 1.25rem 1.5rem; border-radius: 14px;
+                border: 1px solid #fde68a; border-left: 4px solid #f59e0b;
+                text-align: center; margin-bottom: 1rem;
+                box-shadow: 0 4px 12px -6px rgba(245, 158, 11, 0.35);">
+        <h2 style="margin: 0; font-size: 1.6rem; color: #92400e;">⭐ DAILY DOUBLE</h2>
+        <p style="margin: 0.3rem 0 0; color: #78350f;">Double points for this question</p>
     </div>
     """, unsafe_allow_html=True)
 

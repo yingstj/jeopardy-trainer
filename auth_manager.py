@@ -234,76 +234,73 @@ REDIRECT_URI = "http://localhost:8501"
         .logo-container { text-align: center; margin-bottom: 1.25rem; }
         .logo {
             width: 88px; height: 88px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6 50%, #ec4899);
-            border-radius: 22px;
+            background: #0f172a;
+            border-radius: 20px;
             display: inline-flex; align-items: center; justify-content: center;
-            font-size: 38px; color: white; margin: 0 auto 14px;
-            box-shadow: 0 18px 40px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+            font-size: 38px; color: #f59e0b; margin: 0 auto 14px;
+            box-shadow: 0 10px 24px -8px rgba(15, 23, 42, 0.35);
             font-weight: 800; font-family: 'Poppins', sans-serif;
             letter-spacing: -0.02em;
         }
 
         /* Guest play hero card */
         .guest-card {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #db2777 100%);
+            background: #0f172a;
             color: #ffffff;
-            padding: 1.4rem 1.5rem;
-            border-radius: 16px;
+            padding: 1.5rem 1.6rem;
+            border-radius: 14px;
             margin-bottom: 1rem;
-            box-shadow: 0 18px 40px rgba(79, 70, 229, 0.25);
-            position: relative; overflow: hidden;
+            border: 1px solid #0f172a;
+            border-left: 4px solid #f59e0b;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.35);
         }
-        .guest-card::after {
-            content: ""; position: absolute; inset: 0;
-            background: radial-gradient(420px 140px at 0% 0%, rgba(255,255,255,0.10), transparent 60%);
-            pointer-events: none;
-        }
-        .guest-card > * { position: relative; z-index: 1; }
-        .guest-card h3 { color: #ffffff !important; margin-top: 0; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.22); }
-        .guest-card p { color: #ffffff; margin-bottom: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.22); }
+        .guest-card h3 { color: #ffffff !important; margin-top: 0; font-weight: 700; }
+        .guest-card p { color: rgba(255,255,255,0.78); margin-bottom: 0; }
 
         /* Soft info / warn boxes inside guest tab */
         .info-box {
             background: #ffffff;
-            border: 1px solid rgba(15,23,42,0.06);
-            border-left: 4px solid #10b981;
+            border: 1px solid #e7e5e4;
+            border-left: 4px solid #0f172a;
             border-radius: 12px;
             padding: 0.9rem 1rem;
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 20px -12px rgba(15,23,42,0.15);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
             color: #0f172a;
             margin-bottom: 0.5rem;
         }
         .info-box.warn { border-left-color: #f59e0b; }
         .info-box .ib-title {
             font-weight: 700; margin-bottom: 0.35rem;
-            color: #065f46; letter-spacing: 0.01em;
+            color: #0f172a; letter-spacing: 0.01em;
         }
         .info-box.warn .ib-title { color: #92400e; }
-        .info-box ul { margin: 0; padding-left: 1.1rem; color: #334155; line-height: 1.55; }
+        .info-box ul { margin: 0; padding-left: 1.1rem; color: #475569; line-height: 1.55; }
 
         /* Benefit cards */
         .benefit-card {
             background: #ffffff;
-            border: 1px solid rgba(15,23,42,0.06);
+            border: 1px solid #e7e5e4;
             padding: 1.25rem;
             border-radius: 14px;
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 24px -12px rgba(15,23,42,0.18);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
             text-align: center;
             margin-bottom: 1rem;
-            transition: transform 0.18s ease, box-shadow 0.2s ease;
+            transition: transform 0.16s ease, box-shadow 0.18s ease, border-color 0.18s ease;
         }
         .benefit-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 18px 36px -12px rgba(99,102,241,0.25);
+            transform: translateY(-2px);
+            border-color: #d6d3d1;
+            box-shadow: 0 8px 20px -12px rgba(15,23,42,0.18);
         }
         .benefit-card h3 { color: #0f172a !important; margin: 0 0 0.35rem 0; font-size: 1.05rem; font-weight: 700; }
-        .benefit-card p { color: #475569 !important; margin: 0; font-size: 0.92rem; }
+        .benefit-card p { color: #64748b !important; margin: 0; font-size: 0.92rem; }
         .benefit-icon {
             width: 44px; height: 44px; border-radius: 12px;
             margin: 0 auto 0.6rem;
             display: inline-flex; align-items: center; justify-content: center;
             font-size: 22px;
-            background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(236,72,153,0.12));
+            background: #fef3c7;
+            color: #92400e;
         }
 
         /* Why-account heading */
