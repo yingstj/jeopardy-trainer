@@ -1253,9 +1253,10 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
     
     # Display challenge header
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); 
-                color: white; padding: 1.5rem; border-radius: 15px; 
-                text-align: center; margin-bottom: 1rem;">
+    <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%); 
+                color: white; padding: 1.5rem; border-radius: 16px; 
+                text-align: center; margin-bottom: 1rem;
+                box-shadow: 0 18px 40px rgba(79,70,229,0.25); text-shadow: 0 1px 2px rgba(0,0,0,0.18);">
         <h2 style="margin: 0;">⚔️ Challenge Mode</h2>
         <p style="margin: 0.5rem 0;">You vs {opponent}</p>
         <p style="margin: 0;">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']}</p>
