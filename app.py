@@ -146,230 +146,305 @@ st.set_page_config(
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..600,0..100&display=swap" rel="stylesheet">
 <style>
     :root {
-        --brand-1: #0f172a;
-        --brand-2: #1e293b;
-        --brand-3: #f59e0b;
-        --ink: #0f172a;
-        --muted: #64748b;
-        --bg: #fafaf9;
+        --ink: #1c1917;
+        --ink-soft: #292524;
+        --muted: #78716c;
+        --muted-2: #a8a29e;
+        --bg: #faf8f3;
         --card: #ffffff;
-        --line: #e7e5e4;
-        --ring: rgba(245, 158, 11, 0.25);
-        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-        --shadow-md: 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 12px 24px -8px rgba(15, 23, 42, 0.12);
-        --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+        --line: #ece9e2;
+        --line-soft: #f3f0e9;
+        --accent: #9a3412;
+        --accent-soft: #fef3e7;
+        --ring: rgba(154, 52, 18, 0.18);
+        --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+        --shadow-md: 0 4px 16px -8px rgba(28, 25, 23, 0.10);
     }
 
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         color: var(--ink);
+        font-feature-settings: "ss01", "cv11";
     }
 
-    .stApp {
-        background: var(--bg);
+    .stApp { background: var(--bg); }
+
+    h1, h2, h3 {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 400 !important;
+        letter-spacing: -0.015em;
+        font-variation-settings: "opsz" 96, "SOFT" 50;
+    }
+    h1 { font-weight: 400 !important; }
+    h2, h3 { font-weight: 500 !important; }
+
+    /* Overline (small caps style label) */
+    .overline {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-weight: 600;
+        color: var(--muted);
     }
 
-    h1, h2, h3 { font-family: 'Poppins', 'Inter', sans-serif !important; letter-spacing: -0.01em; }
-    h1 { font-weight: 800 !important; }
-    h2, h3 { font-weight: 700 !important; }
-
-    /* Main container styling */
+    /* Main container */
     .main { padding: 0rem 1rem; }
-    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1200px; }
+    .block-container { padding-top: 2.5rem; padding-bottom: 4rem; max-width: 980px; }
 
-    /* Custom header */
+    /* Custom header — refined editorial masthead */
     .main-header {
-        background: var(--ink);
-        padding: 1.75rem;
-        border-radius: 16px;
-        margin-bottom: 1.75rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--ink);
+        background: transparent;
+        padding: 1.5rem 0 1.75rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
     }
     .main-header h1 {
-        color: #ffffff !important; margin: 0;
-        font-size: 2.1rem; text-align: center;
+        color: var(--ink) !important; margin: 0;
+        font-size: 2.6rem;
+        font-style: italic;
         letter-spacing: -0.02em;
     }
     .main-header p {
-        color: rgba(255,255,255,0.72);
-        text-align: center; margin-top: 0.4rem; font-size: 1.02rem;
+        color: var(--muted);
+        text-align: center; margin-top: 0.35rem; font-size: 0.95rem;
     }
 
-    /* Theme card */
+    /* Theme card — quiet category label */
     .theme-card {
-        background: var(--card);
-        color: var(--ink);
-        border: 1px solid var(--line);
-        border-left: 4px solid var(--brand-3);
-        padding: 0.9rem 1.25rem;
-        border-radius: 12px; margin-bottom: 1rem;
-        text-align: left; font-weight: 600; font-size: 1.02rem;
-        box-shadow: var(--shadow-sm);
+        background: transparent;
+        color: var(--muted);
+        border: none;
+        padding: 0.5rem 0 0.85rem;
+        margin-bottom: 0.75rem;
+        text-align: left;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.78rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--line);
     }
 
-    /* Clue card */
+    /* Clue card — editorial reading surface */
     .clue-card {
         background: var(--card);
         border: 1px solid var(--line);
-        border-left: 4px solid var(--brand-3);
-        padding: 1.75rem;
-        border-radius: 14px;
-        margin: 1rem 0;
+        padding: 2.25rem 2rem;
+        border-radius: 6px;
+        margin: 1.25rem 0;
         box-shadow: var(--shadow-sm);
+        position: relative;
+    }
+    .clue-card::before {
+        content: "";
+        position: absolute; left: 2rem; top: -1px;
+        width: 32px; height: 2px;
+        background: var(--accent);
     }
     .clue-text {
-        font-size: 1.35rem; color: var(--ink); line-height: 1.65; font-weight: 500;
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 400;
+        font-size: 1.45rem;
+        color: var(--ink);
+        line-height: 1.55;
+        letter-spacing: -0.005em;
     }
 
     /* Score display */
     .score-container {
         background: var(--card);
         border: 1px solid var(--line);
-        padding: 1.1rem; border-radius: 14px;
+        padding: 1.1rem 1rem;
+        border-radius: 6px;
         text-align: center; color: var(--ink);
-        box-shadow: var(--shadow-sm);
     }
-    .score-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.3rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
-    .score-value { font-size: 1.9rem; font-weight: 800; font-family: 'Poppins', sans-serif; color: var(--ink); }
+    .score-label {
+        font-size: 0.7rem; color: var(--muted);
+        margin-bottom: 0.35rem; letter-spacing: 0.18em;
+        text-transform: uppercase; font-weight: 600;
+    }
+    .score-value {
+        font-size: 2rem; font-weight: 400;
+        font-family: 'Fraunces', Georgia, serif;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+    }
 
-    /* Timer styling */
+    /* Timer */
     .timer-container {
         background: var(--card);
         border: 1px solid var(--line);
-        border-top: 3px solid #ef4444;
-        padding: 1rem; border-radius: 14px;
+        padding: 0.85rem 1rem; border-radius: 6px;
         text-align: center; color: var(--ink);
         margin-bottom: 1rem;
-        box-shadow: var(--shadow-sm);
-        font-weight: 600;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.1rem;
+        font-weight: 500;
     }
 
-    /* Success and error messages */
+    /* Alerts */
     .stSuccess, div[data-testid="stAlertContentSuccess"] {
-        background-color: #ecfdf5 !important;
-        border: 1px solid #a7f3d0 !important;
-        color: #065f46 !important;
-        border-radius: 12px !important;
+        background-color: #f5f9f3 !important;
+        border: 1px solid #d8e3d2 !important;
+        color: #2d4226 !important;
+        border-radius: 6px !important;
     }
     .stError, div[data-testid="stAlertContentError"] {
-        background-color: #fef2f2 !important;
-        border: 1px solid #fecaca !important;
-        color: #991b1b !important;
-        border-radius: 12px !important;
+        background-color: #faf2f0 !important;
+        border: 1px solid #e9cdc6 !important;
+        color: #6b2417 !important;
+        border-radius: 6px !important;
     }
 
-    /* Buttons */
+    /* Buttons — refined, restrained */
     .stButton > button {
         background: var(--ink);
-        color: #ffffff; border: 1px solid var(--ink);
-        padding: 0.65rem 1.5rem;
-        font-size: 0.98rem; font-weight: 600;
-        border-radius: 10px;
-        box-shadow: var(--shadow-sm);
-        transition: transform 0.12s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+        color: #ffffff;
+        border: 1px solid var(--ink);
+        padding: 0.6rem 1.5rem;
+        font-size: 0.92rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        border-radius: 4px;
+        box-shadow: none;
+        transition: background-color 0.18s ease, transform 0.12s ease;
     }
     .stButton > button:hover {
+        background: var(--accent);
+        border-color: var(--accent);
         transform: translateY(-1px);
-        background: #1e293b;
-        box-shadow: var(--shadow-md);
     }
-    .stButton > button:focus { box-shadow: 0 0 0 4px var(--ring) !important; }
+    .stButton > button:focus { box-shadow: 0 0 0 3px var(--ring) !important; }
 
     /* Inputs */
     .stTextInput > div > div > input,
     .stTextArea textarea,
     .stNumberInput input,
     .stSelectbox div[data-baseweb="select"] > div {
-        border-radius: 10px !important;
+        border-radius: 4px !important;
         border: 1px solid var(--line) !important;
+        background: var(--card) !important;
+        font-size: 0.95rem !important;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .stTextInput > div > div > input:focus,
     .stTextArea textarea:focus,
     .stNumberInput input:focus {
-        border-color: var(--brand-3) !important;
-        box-shadow: 0 0 0 4px var(--ring) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px var(--ring) !important;
     }
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; border-bottom: 1px solid var(--line); }
+    /* Tabs — minimal */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--line);
+    }
     .stTabs [data-baseweb="tab"] {
-        padding: 0.6rem 1rem;
-        font-weight: 600; color: var(--muted);
+        padding: 0.65rem 0;
+        font-weight: 500; color: var(--muted);
+        font-size: 0.92rem;
+        letter-spacing: 0.01em;
     }
     .stTabs [aria-selected="true"] { color: var(--ink) !important; }
-    .stTabs [data-baseweb="tab-highlight"] { background: var(--brand-3) !important; height: 2px !important; }
+    .stTabs [data-baseweb="tab-highlight"] {
+        background: var(--ink) !important; height: 1px !important;
+    }
 
     /* Sidebar */
     section[data-testid="stSidebar"] {
-        background: #ffffff;
+        background: var(--bg);
         border-right: 1px solid var(--line);
     }
     section[data-testid="stSidebar"] .stMarkdown { color: var(--ink); }
 
-    /* Metric / stat cards */
+    /* Stat card */
     .stat-card {
         background: var(--card);
         border: 1px solid var(--line);
-        padding: 0.85rem; border-radius: 12px;
-        text-align: center; box-shadow: var(--shadow-sm);
+        padding: 1rem 0.85rem;
+        border-radius: 6px;
+        text-align: center;
     }
-    .stat-number { font-size: 1.5rem; font-weight: 800; color: var(--ink); font-family: 'Poppins', sans-serif; }
-    .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .stat-number {
+        font-size: 1.7rem; font-weight: 400;
+        color: var(--ink);
+        font-family: 'Fraunces', Georgia, serif;
+        letter-spacing: -0.02em;
+    }
+    .stat-label {
+        font-size: 0.68rem; color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.18em;
+        font-weight: 600;
+        margin-top: 0.2rem;
+    }
 
-    /* Progress bar */
+    /* Progress bar — hairline */
     .progress-bar {
-        background: #f1f5f9;
-        border: 1px solid var(--line);
-        height: 22px; border-radius: 999px;
-        overflow: hidden; margin: 0.5rem 0;
+        background: var(--line-soft);
+        border: none;
+        height: 4px; border-radius: 999px;
+        overflow: hidden; margin: 0.75rem 0;
     }
     .progress-fill {
         height: 100%;
-        background: var(--brand-3);
-        display: flex; align-items: center; justify-content: center;
-        color: #0f172a; font-weight: 700; font-size: 0.85rem;
+        background: var(--accent);
+        font-size: 0; /* hide percentage label for cleaner look */
         transition: width 0.4s ease;
     }
 
-    /* Expander polish */
+    /* Expander */
     .streamlit-expanderHeader, [data-testid="stExpander"] details summary {
-        border-radius: 10px !important;
-        font-weight: 600;
+        border-radius: 4px !important;
+        font-weight: 500;
+    }
+    [data-testid="stExpander"] {
+        border: 1px solid var(--line) !important;
+        border-radius: 6px !important;
     }
 
-    /* Dataframe rounding */
-    .stDataFrame { border-radius: 12px; overflow: hidden; }
+    /* Dataframe */
+    .stDataFrame { border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
 
-    /* Hide Streamlit default footer for a cleaner look */
+    /* Caption refinement */
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: var(--muted) !important;
+        font-style: italic;
+        font-size: 0.85rem !important;
+    }
+
+    /* Hide Streamlit default footer */
     footer { visibility: hidden; }
-    
-    /* Compact header stats */
+    #MainMenu { visibility: hidden; }
+
+    /* Header stats — elegant masthead style */
     .header-stats {
         display: flex;
-        justify-content: space-around;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        justify-content: center;
+        gap: 3rem;
+        margin-top: 1.25rem;
+        padding-top: 0;
     }
-    
     .header-stat { text-align: center; }
-    
     .header-stat-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #ffffff;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.6rem;
+        font-weight: 400;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+        line-height: 1;
     }
-    
     .header-stat-label {
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.65);
+        font-size: 0.68rem;
+        color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.2em;
+        font-weight: 600;
+        margin-top: 0.35rem;
     }
 </style>
 """, unsafe_allow_html=True)

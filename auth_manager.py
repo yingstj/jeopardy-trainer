@@ -230,84 +230,146 @@ REDIRECT_URI = "http://localhost:8501"
         # Custom CSS for beautiful login page
         st.markdown("""
         <style>
-        /* Logo */
-        .logo-container { text-align: center; margin-bottom: 1.25rem; }
+        /* Login page — editorial masthead */
+        .logo-container { text-align: center; margin-bottom: 2rem; padding-top: 1.5rem; }
         .logo {
-            width: 88px; height: 88px;
-            background: #0f172a;
-            border-radius: 20px;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 38px; color: #f59e0b; margin: 0 auto 14px;
-            box-shadow: 0 10px 24px -8px rgba(15, 23, 42, 0.35);
-            font-weight: 800; font-family: 'Poppins', sans-serif;
+            display: inline-block;
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 44px;
+            font-style: italic;
+            font-weight: 400;
+            color: #1c1917;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.4rem;
+            line-height: 1;
+        }
+        .logo-rule {
+            width: 36px; height: 1px;
+            background: #9a3412;
+            margin: 0.85rem auto 1rem;
+        }
+        .login-title {
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-size: 2.6rem !important;
+            font-weight: 400 !important;
+            font-style: italic;
+            color: #1c1917 !important;
+            margin: 0 !important;
             letter-spacing: -0.02em;
         }
-
-        /* Guest play hero card */
-        .guest-card {
-            background: #0f172a;
-            color: #ffffff;
-            padding: 1.5rem 1.6rem;
-            border-radius: 14px;
-            margin-bottom: 1rem;
-            border: 1px solid #0f172a;
-            border-left: 4px solid #f59e0b;
-            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.35);
+        .login-subtitle {
+            color: #78716c !important;
+            font-size: 0.92rem !important;
+            margin-top: 0.4rem !important;
+            font-style: italic;
         }
-        .guest-card h3 { color: #ffffff !important; margin-top: 0; font-weight: 700; }
-        .guest-card p { color: rgba(255,255,255,0.78); margin-bottom: 0; }
 
-        /* Soft info / warn boxes inside guest tab */
-        .info-box {
+        /* Guest play hero — quiet card */
+        .guest-card {
             background: #ffffff;
-            border: 1px solid #e7e5e4;
-            border-left: 4px solid #0f172a;
-            border-radius: 12px;
-            padding: 0.9rem 1rem;
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-            color: #0f172a;
+            color: #1c1917;
+            padding: 1.6rem 1.8rem;
+            border-radius: 6px;
+            margin: 1.25rem 0 1rem;
+            border: 1px solid #ece9e2;
+            position: relative;
+        }
+        .guest-card::before {
+            content: ""; position: absolute;
+            left: 1.8rem; top: -1px;
+            width: 32px; height: 2px;
+            background: #9a3412;
+        }
+        .guest-card h3 {
+            color: #1c1917 !important;
+            margin-top: 0; margin-bottom: 0.4rem;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-weight: 400 !important;
+            font-style: italic;
+            font-size: 1.5rem;
+            letter-spacing: -0.01em;
+        }
+        .guest-card p {
+            color: #78716c;
+            margin-bottom: 0;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        /* Info / warn boxes */
+        .info-box {
+            background: transparent;
+            border: none;
+            border-top: 1px solid #ece9e2;
+            border-radius: 0;
+            padding: 1rem 0.25rem 0.5rem;
+            color: #1c1917;
             margin-bottom: 0.5rem;
         }
-        .info-box.warn { border-left-color: #f59e0b; }
+        .info-box.warn { }
         .info-box .ib-title {
-            font-weight: 700; margin-bottom: 0.35rem;
-            color: #0f172a; letter-spacing: 0.01em;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.6rem;
+            color: #78716c;
         }
-        .info-box.warn .ib-title { color: #92400e; }
-        .info-box ul { margin: 0; padding-left: 1.1rem; color: #475569; line-height: 1.55; }
+        .info-box.warn .ib-title { color: #9a3412; }
+        .info-box ul {
+            margin: 0; padding-left: 1.1rem;
+            color: #44403c; line-height: 1.7;
+            font-size: 0.92rem;
+        }
+        .info-box ul li::marker { color: #a8a29e; }
 
         /* Benefit cards */
         .benefit-card {
-            background: #ffffff;
-            border: 1px solid #e7e5e4;
-            padding: 1.25rem;
-            border-radius: 14px;
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+            background: transparent;
+            border: none;
+            border-top: 1px solid #ece9e2;
+            padding: 1.5rem 0.5rem 0.5rem;
             text-align: center;
             margin-bottom: 1rem;
-            transition: transform 0.16s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            position: relative;
+            transition: opacity 0.18s ease;
         }
-        .benefit-card:hover {
-            transform: translateY(-2px);
-            border-color: #d6d3d1;
-            box-shadow: 0 8px 20px -12px rgba(15,23,42,0.18);
+        .benefit-card:hover { opacity: 0.7; }
+        .benefit-card h3 {
+            color: #1c1917 !important;
+            margin: 0.5rem 0 0.4rem;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-size: 1.15rem;
+            font-style: italic;
+            font-weight: 400;
         }
-        .benefit-card h3 { color: #0f172a !important; margin: 0 0 0.35rem 0; font-size: 1.05rem; font-weight: 700; }
-        .benefit-card p { color: #64748b !important; margin: 0; font-size: 0.92rem; }
+        .benefit-card p {
+            color: #78716c !important;
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
         .benefit-icon {
-            width: 44px; height: 44px; border-radius: 12px;
-            margin: 0 auto 0.6rem;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 22px;
-            background: #fef3c7;
-            color: #92400e;
+            display: inline-block;
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 0.72rem;
+            color: #9a3412;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            font-weight: 600;
         }
 
         /* Why-account heading */
         .why-heading {
-            color: #0f172a; text-align: center;
-            font-family: 'Poppins', sans-serif; font-weight: 700;
-            margin: 1.5rem 0 1rem;
+            color: #1c1917;
+            text-align: center;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-style: italic;
+            font-weight: 400 !important;
+            font-size: 1.4rem;
+            margin: 2.5rem 0 1.25rem;
+            letter-spacing: -0.01em;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -318,8 +380,9 @@ REDIRECT_URI = "http://localhost:8501"
             st.markdown("""
             <div class="logo-container">
                 <div class="logo">J!</div>
-                <h1 style='color: #333; font-size: 32px; margin: 0;'>Jayopardy!</h1>
-                <p style='color: #666; font-size: 16px; margin-top: 0.5rem;'>Test your knowledge, track your progress</p>
+                <div class="logo-rule"></div>
+                <h1 class="login-title">Jayopardy</h1>
+                <p class="login-subtitle">A quiz, considered.</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -327,16 +390,13 @@ REDIRECT_URI = "http://localhost:8501"
         col1, col2, col3 = st.columns([1, 3, 1])
         
         with col2:
-            # Add container background for better readability
-            st.markdown('<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px;">', unsafe_allow_html=True)
-            # Tabs for login options
-            tab1, tab2 = st.tabs(["🎮 Guest Play", "📧 Email Login"])
+            tab1, tab2 = st.tabs(["Guest Play", "Email Login"])
             
             with tab1:
                 st.markdown("""
                 <div class="guest-card">
-                    <h3 style='margin-top: 0;'>🎮 Quick Play - No Account Needed!</h3>
-                    <p>Jump right into the game without signing up. Perfect for trying out Jayopardy!</p>
+                    <h3>Quick play, no account needed.</h3>
+                    <p>Jump straight into the game. Perfect for trying out Jayopardy.</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -344,7 +404,7 @@ REDIRECT_URI = "http://localhost:8501"
                 with col_a:
                     st.markdown("""
                     <div class="info-box">
-                        <div class="ib-title">✅ Includes</div>
+                        <div class="ib-title">Included</div>
                         <ul>
                             <li>All 577,000+ questions</li>
                             <li>Timer &amp; adaptive mode</li>
@@ -356,7 +416,7 @@ REDIRECT_URI = "http://localhost:8501"
                 with col_b:
                     st.markdown("""
                     <div class="info-box warn">
-                        <div class="ib-title">⚠️ Note</div>
+                        <div class="ib-title">Note</div>
                         <ul>
                             <li>Progress not saved</li>
                             <li>No lifetime stats</li>
@@ -364,8 +424,9 @@ REDIRECT_URI = "http://localhost:8501"
                         </ul>
                     </div>
                     """, unsafe_allow_html=True)
-                
-                if st.button("🎮 Play as Guest", type="primary", use_container_width=True, key="guest_play"):
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Play as Guest", type="primary", use_container_width=True, key="guest_play"):
                     st.session_state.authenticated = True
                     st.session_state.is_guest = True
                     st.session_state.user_email = "guest@jayopardy.app"
@@ -377,23 +438,23 @@ REDIRECT_URI = "http://localhost:8501"
             
             with tab2:
                 with st.form("email_login_form", clear_on_submit=False):
-                    st.markdown("### 📧 Sign in with Email")
-                    email = st.text_input("Email Address", placeholder="your@email.com", key="email_input")
-                    password = st.text_input("Password", type="password", placeholder="Enter your password", key="password_input")
-                    
+                    st.markdown("<div style='margin: 1.25rem 0 0.5rem;'></div>", unsafe_allow_html=True)
+                    email = st.text_input("Email", placeholder="your@email.com", key="email_input")
+                    password = st.text_input("Password", type="password", placeholder="••••••••", key="password_input")
+
                     col_a, col_b = st.columns(2)
                     with col_a:
                         remember = st.checkbox("Remember me")
                     with col_b:
-                        st.markdown("<a href='#' style='float: right; color: #667eea;'>Forgot password?</a>", unsafe_allow_html=True)
-                    
+                        st.markdown("<a href='#' style='float: right; color: #9a3412; font-size: 0.88rem; text-decoration: none;'>Forgot password?</a>", unsafe_allow_html=True)
+
                     st.markdown("<br>", unsafe_allow_html=True)
-                    
+
                     col_1, col_2 = st.columns(2)
                     with col_1:
-                        submit = st.form_submit_button("🔐 Sign In", use_container_width=True, type="primary")
+                        submit = st.form_submit_button("Sign In", use_container_width=True, type="primary")
                     with col_2:
-                        register = st.form_submit_button("✨ Sign Up", use_container_width=True)
+                        register = st.form_submit_button("Sign Up", use_container_width=True)
                 
                 if submit and email:
                     st.session_state.authenticated = True
@@ -418,35 +479,32 @@ REDIRECT_URI = "http://localhost:8501"
                     time.sleep(1)
                     st.rerun()
             
-            # Close container div
-            st.markdown('</div>', unsafe_allow_html=True)
-        
         # Benefits section
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h3 class='why-heading'>🌟 Why Create an Account?</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class='why-heading'>Why create an account</h3>", unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown("""
             <div class="benefit-card">
-                <div class="benefit-icon">💾</div>
-                <h3>Save Progress</h3>
+                <div class="benefit-icon">I.</div>
+                <h3>Saved progress</h3>
                 <p>Your scores and history are saved automatically.</p>
             </div>
             """, unsafe_allow_html=True)
         with col2:
             st.markdown("""
             <div class="benefit-card">
-                <div class="benefit-icon">📊</div>
-                <h3>Track Stats</h3>
+                <div class="benefit-icon">II.</div>
+                <h3>Tracked stats</h3>
                 <p>See your improvement over time with detailed analytics.</p>
             </div>
             """, unsafe_allow_html=True)
         with col3:
             st.markdown("""
             <div class="benefit-card">
-                <div class="benefit-icon">🎯</div>
-                <h3>Smart Training</h3>
+                <div class="benefit-icon">III.</div>
+                <h3>Smart training</h3>
                 <p>Adaptive mode learns and focuses on your weak areas.</p>
             </div>
             """, unsafe_allow_html=True)
