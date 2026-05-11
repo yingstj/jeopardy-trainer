@@ -136,7 +136,7 @@ class ChallengeManager:
 
 # Page configuration with custom icon
 st.set_page_config(
-    page_title="Jaypardy!",
+    page_title="Jayopardy!",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -811,7 +811,7 @@ theme_groups = analyzer.analyze_categories(all_categories)
 
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
-    st.markdown("## 🎯 Jaypardy!")
+    st.markdown("## 🎯 Jayopardy!")
     # Derive username from AuthManager
     current_username = st.session_state.get("user_name") or st.session_state.get("username") or "Player"
     st.session_state.username = current_username
@@ -1237,7 +1237,7 @@ if st.session_state.viewing_bookmark:
 # Show different header for AI mode vs regular mode
 if st.session_state.ai_mode:
     # AI Mode - Show both player and AI scores
-    st.markdown("""<div class="main-header"><h1>🎯 Jaypardy!</h1></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="main-header"><h1>🎯 Jayopardy!</h1></div>""", unsafe_allow_html=True)
     
     col_player, col_vs, col_ai = st.columns([2, 1, 2])
     
@@ -1280,7 +1280,7 @@ else:
     # Regular mode header
     st.markdown(f"""
     <div class="main-header">
-        <h1>🎯 Jaypardy!</h1>
+        <h1>🎯 Jayopardy!</h1>
         <div class="header-stats">
             <div class="header-stat">
                 <div class="header-stat-value">{st.session_state.score}</div>
