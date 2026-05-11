@@ -708,7 +708,8 @@ def simulate_ai_response(clue, category, difficulty, personality):
     base_accuracy = personality_data["base_accuracy"]
     
     # Adjust for category strengths/weaknesses
-    theme = analyzer.categorize_single(category)
+    themes = analyzer.categorize_single(category)
+    theme = themes[0] if isinstance(themes, list) and themes else (themes if isinstance(themes, str) else "MISCELLANEOUS")
     if theme in personality_data["strengths"]:
         base_accuracy += 0.15
     elif theme in personality_data["weaknesses"]:
@@ -1623,7 +1624,8 @@ if submitted:
             points_earned = 0
             
             # Track weak themes
-            theme = analyzer.categorize_single(clue["category"])
+            themes = analyzer.categorize_single(clue["category"])
+            theme = themes[0] if isinstance(themes, list) and themes else (themes if isinstance(themes, str) else "MISCELLANEOUS")
             if theme not in st.session_state.weak_themes:
                 st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
             st.session_state.weak_themes[theme]["incorrect"] += 1
@@ -1636,7 +1638,8 @@ if submitted:
                     st.markdown(f"- {row['category']}: {row['clue']}  \n  Answer: *{row['correct_response']}*")
 
         # Update weak theme totals regardless of correct/incorrect
-        theme = analyzer.categorize_single(clue["category"])
+        themes = analyzer.categorize_single(clue["category"])
+        theme = themes[0] if isinstance(themes, list) and themes else (themes if isinstance(themes, str) else "MISCELLANEOUS")
         if theme not in st.session_state.weak_themes:
             st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
         st.session_state.weak_themes[theme]["total"] += 1
