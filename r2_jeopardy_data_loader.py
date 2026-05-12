@@ -1,31 +1,48 @@
 """
 R2 Jeopardy Data Loader
-Loads Jeopardy data from Cloudflare R2 storage
+Loads Jeopardy data from Cloudflare R2 storage, with a local Parquet cache
+on disk so subsequent server restarts are near-instant.
 """
 import os
 from io import BytesIO
+from pathlib import Path
 from typing import Optional
 
-import boto3
 import pandas as pd
 import streamlit as st
-from botocore.config import Config
-from botocore.exceptions import BotoCoreError, ClientError
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+LOCAL_CACHE_PATH = Path("/tmp/jeopardy_clues.parquet")
+
+
+@st.cache_resource(ttl=86400)
 def load_jeopardy_data_from_r2() -> pd.DataFrame:
     """
-    Load Jeopardy data from Cloudflare R2 storage or fallback sources.
+    Load Jeopardy data with three tiers of caching:
+      1. In-memory (Streamlit cache_resource — same process, no serialization)
+      2. Local disk Parquet (survives server restarts, ~0.3s read)
+      3. R2 / GitHub network fetch (slow, ~5s)
     """
+    if LOCAL_CACHE_PATH.exists():
+        try:
+            return pd.read_parquet(LOCAL_CACHE_PATH)
+        except Exception:
+            try:
+                LOCAL_CACHE_PATH.unlink()
+            except Exception:
+                pass
+
     df = _load_from_r2()
-    if df is not None and not df.empty:
-        return df
+    if df is None or df.empty:
+        df = _load_from_github()
+    if df is None or df.empty:
+        df = _load_sample_data()
 
-    df = _load_from_github()
-    if df is not None and not df.empty:
-        return df
+    try:
+        df.to_parquet(LOCAL_CACHE_PATH, index=False)
+    except Exception:
+        pass
 
-    return _load_sample_data()
+    return df
 
 
 def _load_from_r2() -> Optional[pd.DataFrame]:
@@ -41,6 +58,10 @@ def _load_from_r2() -> Optional[pd.DataFrame]:
         return None
 
     try:
+        import boto3
+        from botocore.config import Config
+        from botocore.exceptions import BotoCoreError, ClientError
+
         session = boto3.session.Session()
         client = session.client(
             "s3",
@@ -54,7 +75,7 @@ def _load_from_r2() -> Optional[pd.DataFrame]:
         response = client.get_object(Bucket=bucket_name, Key=object_key)
         payload = response["Body"].read()
         return pd.read_csv(BytesIO(payload))
-    except (ClientError, BotoCoreError, ValueError, pd.errors.ParserError):
+    except Exception:
         st.warning("Unable to load dataset from Cloudflare R2; falling back to public dataset.")
         return None
 
