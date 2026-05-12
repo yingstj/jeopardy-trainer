@@ -49,6 +49,18 @@ def initialize_database():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS premium_status (
+            user_email TEXT PRIMARY KEY,
+            is_premium INTEGER DEFAULT 0,
+            stripe_customer_id TEXT,
+            stripe_subscription_id TEXT,
+            plan_interval TEXT,
+            subscription_end INTEGER,
+            last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Challenges table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS challenges (

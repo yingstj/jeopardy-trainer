@@ -532,6 +532,61 @@ if "weak_themes" not in st.session_state:
 if "viewing_bookmark" not in st.session_state:
     st.session_state.viewing_bookmark = None
 
+if "is_premium" not in st.session_state:
+    st.session_state.is_premium = False
+    st.session_state.premium_checked = False
+
+def check_premium_status():
+    if st.session_state.get("is_guest", True):
+        st.session_state.is_premium = False
+        st.session_state.premium_checked = True
+        return
+    if st.session_state.get("premium_checked", False):
+        return
+    email = st.session_state.get("user_email", "")
+    if not email or email == "guest@jayopardy.app":
+        st.session_state.is_premium = False
+        st.session_state.premium_checked = True
+        return
+    try:
+        from stripe_manager import check_subscription_status
+        is_active, sub_info = check_subscription_status(email)
+        st.session_state.is_premium = is_active
+        if sub_info:
+            st.session_state.premium_info = sub_info
+        from database import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO premium_status (user_email, is_premium, stripe_subscription_id, plan_interval, last_checked)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_email) DO UPDATE SET
+                is_premium = excluded.is_premium,
+                stripe_subscription_id = excluded.stripe_subscription_id,
+                plan_interval = excluded.plan_interval,
+                last_checked = CURRENT_TIMESTAMP
+        """, (
+            email,
+            1 if is_active else 0,
+            sub_info["id"] if sub_info else None,
+            sub_info["plan_interval"] if sub_info else None,
+        ))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+    st.session_state.premium_checked = True
+
+def handle_checkout_return():
+    params = st.query_params
+    if params.get("checkout") == "success":
+        st.session_state.premium_checked = False
+        check_premium_status()
+        st.query_params.clear()
+        st.rerun()
+    elif params.get("checkout") == "cancelled":
+        st.query_params.clear()
+
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
     st.session_state.ai_difficulty = "Medium"
@@ -815,6 +870,13 @@ with st.sidebar:
     current_username = st.session_state.get("user_name") or st.session_state.get("username") or "Player"
     st.session_state.username = current_username
     st.markdown(f"👤 **Player:** {current_username}")
+
+    check_premium_status()
+    handle_checkout_return()
+
+    if st.session_state.is_premium:
+        st.markdown('<span style="font-size:0.75rem;color:#9a3412;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Premium</span>', unsafe_allow_html=True)
+
     st.markdown("---")
     
     # Score display in sidebar
@@ -1043,42 +1105,36 @@ with st.sidebar:
         st.session_state.current_clue = None
         st.rerun()
     
-    if st.button("🔁 Adaptive Mode", use_container_width=True, help="Focus on weak themes & missed questions"):
-        if st.session_state.history:
-            # Calculate performance by category
-            history_df = pd.DataFrame(st.session_state.history)
-            category_stats = history_df.groupby("category").agg({
-                "was_correct": ["sum", "count"]
-            })
-            category_stats.columns = ["correct", "total"]
-            category_stats["accuracy"] = category_stats["correct"] / category_stats["total"]
-            
-            # Find weak categories (accuracy < 50% or all wrong)
-            weak_categories = category_stats[category_stats["accuracy"] < 0.5].index.tolist()
-            
-            # Get missed questions from weak categories first, then any missed
-            missed = [h for h in st.session_state.history if not h["was_correct"]]
-            weak_missed = [h for h in missed if h["category"] in weak_categories]
-            
-            # Prioritize weak category misses, then regular misses
-            retry_pool = weak_missed if weak_missed else missed
-            
-            if retry_pool:
-                # Weight selection towards more recent misses
-                weights = [0.5 + 0.5 * (i / len(retry_pool)) for i in range(len(retry_pool))]
-                retry = random.choices(retry_pool, weights=weights, k=1)[0]
-                
-                st.session_state.current_clue = {
-                    "category": retry["category"],
-                    "clue": retry["clue"],
-                    "correct_response": retry["correct_response"]
-                }
-                st.info(f"📚 Focusing on weak theme: {retry['category']}")
-                st.rerun()
+    if st.session_state.is_premium:
+        if st.button("🔁 Adaptive Mode", use_container_width=True, help="Focus on weak themes & missed questions"):
+            if st.session_state.history:
+                history_df = pd.DataFrame(st.session_state.history)
+                category_stats = history_df.groupby("category").agg({
+                    "was_correct": ["sum", "count"]
+                })
+                category_stats.columns = ["correct", "total"]
+                category_stats["accuracy"] = category_stats["correct"] / category_stats["total"]
+                weak_categories = category_stats[category_stats["accuracy"] < 0.5].index.tolist()
+                missed = [h for h in st.session_state.history if not h["was_correct"]]
+                weak_missed = [h for h in missed if h["category"] in weak_categories]
+                retry_pool = weak_missed if weak_missed else missed
+                if retry_pool:
+                    weights = [0.5 + 0.5 * (i / len(retry_pool)) for i in range(len(retry_pool))]
+                    retry = random.choices(retry_pool, weights=weights, k=1)[0]
+                    st.session_state.current_clue = {
+                        "category": retry["category"],
+                        "clue": retry["clue"],
+                        "correct_response": retry["correct_response"]
+                    }
+                    st.info(f"📚 Focusing on weak theme: {retry['category']}")
+                    st.rerun()
+                else:
+                    st.success("🎉 Great job! No missed questions to retry!")
             else:
-                st.success("🎉 Great job! No missed questions to retry!")
-        else:
-            st.info("Play some questions first to enable adaptive mode!")
+                st.info("Play some questions first to enable adaptive mode!")
+    else:
+        st.button("🔁 Adaptive Mode", use_container_width=True, disabled=True, help="Premium feature")
+        st.caption("🔒 Premium")
     
     if st.button("🔄 Reset Game", use_container_width=True):
         for key in ["score", "total", "streak", "history", "daily_double_used"]:
@@ -1092,17 +1148,23 @@ with st.sidebar:
         st.rerun()
     
     st.markdown("---")
-    
+
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
-    st.caption("Identity note: challenges use your AuthManager display name (`st.session_state.user_name`). Opponents must use the same username to be recognized in SQLite.")
+    if not st.session_state.is_premium:
+        st.caption("🔒 Upgrade to Premium to challenge friends.")
+        if st.button("Upgrade to Premium", key="upgrade_challenge", use_container_width=True):
+            st.session_state.show_upgrade = True
+            st.rerun()
+    else:
+        st.caption("Challenge friends and track your wins.")
     
-    # Initialize challenge manager
     if "challenge_manager" not in st.session_state:
         st.session_state.challenge_manager = ChallengeManager()
     challenge_manager = st.session_state.challenge_manager
 
-    with st.expander("➕ Create Challenge", expanded=False):
+    if st.session_state.is_premium:
+      with st.expander("➕ Create Challenge", expanded=False):
         opponent_name = st.text_input("Opponent username or email", key="challenge_opponent")
         num_q = st.number_input("Number of questions", min_value=5, max_value=20, value=10, step=1)
         if st.button("Send Challenge", use_container_width=True):
