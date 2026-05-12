@@ -8,8 +8,6 @@ import json
 from collections import defaultdict
 from typing import Dict, List
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
 # Import the R2 data loader
 from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
@@ -605,9 +603,8 @@ AI_DIFFICULTY = {
 
 @st.cache_resource
 def load_model():
+    from sentence_transformers import SentenceTransformer
     return SentenceTransformer("all-MiniLM-L6-v2")
-
-model = load_model()
 
 def normalize(text: str) -> str:
     text = (text or "").lower()
@@ -670,7 +667,8 @@ def find_similar_clues(df: pd.DataFrame, target_clue: str, top_k: int = 3) -> pd
             working_df = working_df.sample(n=1000, random_state=42)
         texts = working_df["clue"].astype(str).tolist()
         embeddings = compute_embeddings_for_texts(texts)
-        target_vec = model.encode(target_clue).reshape(1, -1)
+        target_vec = load_model().encode(target_clue).reshape(1, -1)
+        from sklearn.metrics.pairwise import cosine_similarity
         sims = cosine_similarity(target_vec, embeddings)[0]
         working_df = working_df.assign(_sim=sims)
         results = working_df[working_df["clue"] != target_clue].sort_values("_sim", ascending=False).head(top_k)
@@ -680,7 +678,8 @@ def find_similar_clues(df: pd.DataFrame, target_clue: str, top_k: int = 3) -> pd
 
 @st.cache_data
 def compute_embeddings_for_texts(texts: List[str]) -> np.ndarray:
-    return np.vstack([model.encode(t) for t in texts])
+    m = load_model()
+    return np.vstack([m.encode(t) for t in texts])
 
 def parse_clue_value(value) -> int:
     """Parse clue value like 200 or '$1,000' to an int. Fallback to 200."""
