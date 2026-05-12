@@ -1153,9 +1153,12 @@ with st.sidebar:
     st.markdown("### 🏆 Challenge Mode")
     if not st.session_state.is_premium:
         st.caption("🔒 Upgrade to Premium to challenge friends.")
-        if st.button("Upgrade to Premium", key="upgrade_challenge", use_container_width=True):
-            st.session_state.show_upgrade = True
-            st.rerun()
+        if not st.session_state.get("is_guest", False):
+            if st.button("Upgrade to Premium", key="upgrade_challenge", use_container_width=True):
+                st.session_state.show_upgrade = True
+                st.rerun()
+        else:
+            st.caption("Sign in with an account to upgrade.")
     else:
         st.caption("Challenge friends and track your wins.")
     
@@ -1253,10 +1256,113 @@ with st.sidebar:
 
     st.markdown("---")
 
+    if st.session_state.is_premium:
+        if st.button("⚙️ Manage Subscription", use_container_width=True, key="manage_sub"):
+            try:
+                from stripe_manager import create_customer_portal_session
+                return_domain = os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", "")
+                if return_domain and not return_domain.startswith("http"):
+                    return_domain = f"https://{return_domain}"
+                portal_url = create_customer_portal_session(
+                    st.session_state.user_email,
+                    return_domain
+                )
+                if portal_url:
+                    st.markdown(f'<a href="{portal_url}" target="_blank" style="color:#9a3412;">Open billing portal →</a>', unsafe_allow_html=True)
+            except Exception:
+                st.error("Could not open billing portal.")
+    elif not st.session_state.get("is_guest", True):
+        if st.button("⭐ Upgrade to Premium", use_container_width=True, key="upgrade_sidebar"):
+            st.session_state.show_upgrade = True
+            st.rerun()
+
     if st.button("🚪 Logout", use_container_width=True):
         auth.logout()
 
 # MAIN GAME AREA
+
+# Upgrade page
+if "show_upgrade" not in st.session_state:
+    st.session_state.show_upgrade = False
+
+if st.session_state.show_upgrade and not st.session_state.is_premium:
+    st.markdown("""
+    <div style="text-align:center;padding:2rem 0 1rem;">
+        <h1 style="font-family:'Fraunces',Georgia,serif;font-weight:400;font-style:italic;color:#1c1917;font-size:2.2rem;margin:0;">Upgrade to Premium</h1>
+        <p style="color:#78716c;margin-top:0.4rem;font-style:italic;">Unlock the full Jayopardy experience.</p>
+        <div style="width:36px;height:1px;background:#9a3412;margin:1.25rem auto;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_free, col_spacer, col_premium = st.columns([5, 1, 5])
+
+    with col_free:
+        st.markdown("""
+        <div style="background:#fff;border:1px solid #ece9e2;border-radius:6px;padding:1.5rem 1.5rem 1.25rem;position:relative;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:#78716c;font-weight:600;margin-bottom:0.75rem;">Current Plan</div>
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.4rem;font-style:italic;color:#1c1917;margin-bottom:1rem;">Free</div>
+            <ul style="color:#44403c;font-size:0.92rem;line-height:2;padding-left:1.1rem;">
+                <li>All 577,000+ questions</li>
+                <li>Timer &amp; game modes</li>
+                <li>Session statistics</li>
+                <li style="color:#a8a29e;">No saved progress</li>
+                <li style="color:#a8a29e;">No adaptive training</li>
+                <li style="color:#a8a29e;">No bookmarks</li>
+                <li style="color:#a8a29e;">No challenge mode</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_premium:
+        st.markdown("""
+        <div style="background:#fff;border:1px solid #9a3412;border-radius:6px;padding:1.5rem 1.5rem 1.25rem;position:relative;">
+            <div style="position:absolute;top:-1px;left:1.5rem;width:48px;height:2px;background:#9a3412;"></div>
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:#9a3412;font-weight:600;margin-bottom:0.75rem;">Premium</div>
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.4rem;font-style:italic;color:#1c1917;margin-bottom:1rem;">Everything, unlocked.</div>
+            <ul style="color:#1c1917;font-size:0.92rem;line-height:2;padding-left:1.1rem;">
+                <li><strong>Saved progress</strong> &amp; lifetime stats</li>
+                <li><strong>Adaptive training</strong> — focuses on weak areas</li>
+                <li><strong>Bookmarks</strong> — save &amp; revisit questions</li>
+                <li><strong>Challenge mode</strong> — compete with friends</li>
+                <li><strong>Category analytics</strong> — detailed breakdown</li>
+                <li>Everything in Free</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    col_m, col_s2, col_a = st.columns([5, 1, 5])
+    with col_m:
+        if st.button("$4 / month", use_container_width=True, key="checkout_monthly"):
+            try:
+                from stripe_manager import get_product_and_prices, create_checkout_session
+                _, monthly_id, _ = get_product_and_prices()
+                base_url = st.context.headers.get("Origin", os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", ""))
+                if not base_url.startswith("http"):
+                    base_url = f"https://{base_url}"
+                url = create_checkout_session(st.session_state.user_email, monthly_id, base_url, base_url)
+                st.markdown(f'<meta http-equiv="refresh" content="0;url={url}">', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Could not start checkout: {e}")
+    with col_a:
+        if st.button("$25 / year — save 48%", use_container_width=True, key="checkout_annual"):
+            try:
+                from stripe_manager import get_product_and_prices, create_checkout_session
+                _, _, annual_id = get_product_and_prices()
+                base_url = st.context.headers.get("Origin", os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", ""))
+                if not base_url.startswith("http"):
+                    base_url = f"https://{base_url}"
+                url = create_checkout_session(st.session_state.user_email, annual_id, base_url, base_url)
+                st.markdown(f'<meta http-equiv="refresh" content="0;url={url}">', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Could not start checkout: {e}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Back to game", key="back_from_upgrade"):
+        st.session_state.show_upgrade = False
+        st.rerun()
+    st.stop()
 
 # Check if viewing a bookmark
 if st.session_state.viewing_bookmark:
@@ -1617,15 +1723,18 @@ if show_answer_form:
             bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark")
 
 if bookmark_btn:
-    bookmark_entry = {
-        "category": clue["category"],
-        "clue": clue["clue"],
-        "correct_response": clue["correct_response"],
-        "bookmarked_at": datetime.datetime.now().isoformat()
-    }
-    if bookmark_entry not in st.session_state.bookmarks:
-        st.session_state.bookmarks.append(bookmark_entry)
-        st.success("🔖 Bookmarked!")
+    if st.session_state.is_premium:
+        bookmark_entry = {
+            "category": clue["category"],
+            "clue": clue["clue"],
+            "correct_response": clue["correct_response"],
+            "bookmarked_at": datetime.datetime.now().isoformat()
+        }
+        if bookmark_entry not in st.session_state.bookmarks:
+            st.session_state.bookmarks.append(bookmark_entry)
+            st.success("🔖 Bookmarked!")
+    else:
+        st.info("🔒 Bookmarks are a Premium feature. Upgrade to save questions.")
 
 if submitted:
     if st.session_state.study_mode:
@@ -1767,62 +1876,56 @@ with col_exp1:
             st.dataframe(recent, use_container_width=True, height=200)
 
 with col_exp2:
-    # Bookmarks viewer
-    if st.session_state.bookmarks:
-        with st.expander(f"🔖 Bookmarks ({len(st.session_state.bookmarks)})", expanded=False):
-            st.markdown("#### Your Bookmarked Questions")
-            
-            for i, bookmark in enumerate(st.session_state.bookmarks[-5:], 1):  # Show last 5
-                st.markdown(f"**{i}. {bookmark['category']}**")
-                st.markdown(f"Q: {bookmark['clue']}")
-                st.markdown(f"A: *{bookmark['correct_response']}*")
-                
-                # Option to practice this question
-                if st.button(f"Practice #{i}", key=f"practice_bookmark_{i}"):
-                    st.session_state.current_clue = {
-                        "category": bookmark["category"],
-                        "clue": bookmark["clue"],
-                        "correct_response": bookmark["correct_response"]
-                    }
-                    st.rerun()
-                st.markdown("---")
-            
-            if len(st.session_state.bookmarks) > 5:
-                st.info(f"Showing 5 of {len(st.session_state.bookmarks)} bookmarks")
+    if st.session_state.is_premium:
+        if st.session_state.bookmarks:
+            with st.expander(f"🔖 Bookmarks ({len(st.session_state.bookmarks)})", expanded=False):
+                st.markdown("#### Your Bookmarked Questions")
+                for i, bookmark in enumerate(st.session_state.bookmarks[-5:], 1):
+                    st.markdown(f"**{i}. {bookmark['category']}**")
+                    st.markdown(f"Q: {bookmark['clue']}")
+                    st.markdown(f"A: *{bookmark['correct_response']}*")
+                    if st.button(f"Practice #{i}", key=f"practice_bookmark_{i}"):
+                        st.session_state.current_clue = {
+                            "category": bookmark["category"],
+                            "clue": bookmark["clue"],
+                            "correct_response": bookmark["correct_response"]
+                        }
+                        st.rerun()
+                    st.markdown("---")
+                if len(st.session_state.bookmarks) > 5:
+                    st.info(f"Showing 5 of {len(st.session_state.bookmarks)} bookmarks")
+        else:
+            with st.expander("🔖 Bookmarks (0)", expanded=False):
+                st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
     else:
-        with st.expander("🔖 Bookmarks (0)", expanded=False):
-            st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
+        with st.expander("🔖 Bookmarks", expanded=False):
+            st.info("🔒 Bookmarks are a Premium feature.")
 
 with col_exp3:
-    # Weak themes analysis
-    if st.session_state.weak_themes:
-        with st.expander("📈 Theme Performance", expanded=False):
-            st.markdown("#### Your Performance by Theme")
-            
-            # Calculate accuracy per theme
-            theme_data = []
-            for theme, stats in st.session_state.weak_themes.items():
-                if stats["total"] > 0:
-                    accuracy = ((stats["total"] - stats["incorrect"]) / stats["total"]) * 100
-                    theme_data.append({
-                        "Theme": theme,
-                        "Accuracy": f"{accuracy:.0f}%",
-                        "Questions": stats["total"],
-                        "Missed": stats["incorrect"]
-                    })
-            
-            if theme_data:
-                # Sort by accuracy (lowest first - these are weak areas)
-                theme_data.sort(key=lambda x: float(x["Accuracy"].rstrip("%")))
-                
-                # Show weak themes
-                weak_themes = [t for t in theme_data if float(t["Accuracy"].rstrip("%")) < 50]
-                if weak_themes:
-                    st.warning(f"🎯 Focus areas: {', '.join([t['Theme'] for t in weak_themes[:3]])}")
-                
-                # Display as dataframe
-                theme_df = pd.DataFrame(theme_data)
-                st.dataframe(theme_df, use_container_width=True, height=200)
+    if st.session_state.is_premium:
+        if st.session_state.weak_themes:
+            with st.expander("📈 Theme Performance", expanded=False):
+                st.markdown("#### Your Performance by Theme")
+                theme_data = []
+                for theme, stats in st.session_state.weak_themes.items():
+                    if stats["total"] > 0:
+                        accuracy = ((stats["total"] - stats["incorrect"]) / stats["total"]) * 100
+                        theme_data.append({
+                            "Theme": theme,
+                            "Accuracy": f"{accuracy:.0f}%",
+                            "Questions": stats["total"],
+                            "Missed": stats["incorrect"]
+                        })
+                if theme_data:
+                    theme_data.sort(key=lambda x: float(x["Accuracy"].rstrip("%")))
+                    weak_themes = [t for t in theme_data if float(t["Accuracy"].rstrip("%")) < 50]
+                    if weak_themes:
+                        st.warning(f"🎯 Focus areas: {', '.join([t['Theme'] for t in weak_themes[:3]])}")
+                    theme_df = pd.DataFrame(theme_data)
+                    st.dataframe(theme_df, use_container_width=True, height=200)
+        else:
+            with st.expander("📈 Theme Performance", expanded=False):
+                st.info("Play some questions to see your performance by theme!")
     else:
         with st.expander("📈 Theme Performance", expanded=False):
-            st.info("Play some questions to see your performance by theme!")
+            st.info("🔒 Detailed analytics are a Premium feature.")
