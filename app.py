@@ -536,7 +536,13 @@ if "is_premium" not in st.session_state:
     st.session_state.is_premium = False
     st.session_state.premium_checked = False
 
+STRIPE_ENABLED = False
+
 def check_premium_status():
+    if not STRIPE_ENABLED:
+        st.session_state.is_premium = not st.session_state.get("is_guest", True)
+        st.session_state.premium_checked = True
+        return
     if st.session_state.get("is_guest", True):
         st.session_state.is_premium = False
         st.session_state.premium_checked = True
@@ -578,6 +584,8 @@ def check_premium_status():
     st.session_state.premium_checked = True
 
 def handle_checkout_return():
+    if not STRIPE_ENABLED:
+        return
     params = st.query_params
     if params.get("checkout") == "success":
         st.session_state.premium_checked = False
@@ -1256,25 +1264,26 @@ with st.sidebar:
 
     st.markdown("---")
 
-    if st.session_state.is_premium:
-        if st.button("⚙️ Manage Subscription", use_container_width=True, key="manage_sub"):
-            try:
-                from stripe_manager import create_customer_portal_session
-                return_domain = os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", "")
-                if return_domain and not return_domain.startswith("http"):
-                    return_domain = f"https://{return_domain}"
-                portal_url = create_customer_portal_session(
-                    st.session_state.user_email,
-                    return_domain
-                )
-                if portal_url:
-                    st.markdown(f'<a href="{portal_url}" target="_blank" style="color:#9a3412;">Open billing portal →</a>', unsafe_allow_html=True)
-            except Exception:
-                st.error("Could not open billing portal.")
-    elif not st.session_state.get("is_guest", True):
-        if st.button("⭐ Upgrade to Premium", use_container_width=True, key="upgrade_sidebar"):
-            st.session_state.show_upgrade = True
-            st.rerun()
+    if STRIPE_ENABLED:
+        if st.session_state.is_premium:
+            if st.button("⚙️ Manage Subscription", use_container_width=True, key="manage_sub"):
+                try:
+                    from stripe_manager import create_customer_portal_session
+                    return_domain = os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", "")
+                    if return_domain and not return_domain.startswith("http"):
+                        return_domain = f"https://{return_domain}"
+                    portal_url = create_customer_portal_session(
+                        st.session_state.user_email,
+                        return_domain
+                    )
+                    if portal_url:
+                        st.markdown(f'<a href="{portal_url}" target="_blank" style="color:#9a3412;">Open billing portal →</a>', unsafe_allow_html=True)
+                except Exception:
+                    st.error("Could not open billing portal.")
+        elif not st.session_state.get("is_guest", True):
+            if st.button("⭐ Upgrade to Premium", use_container_width=True, key="upgrade_sidebar"):
+                st.session_state.show_upgrade = True
+                st.rerun()
 
     if st.button("🚪 Logout", use_container_width=True):
         auth.logout()
