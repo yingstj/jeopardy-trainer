@@ -163,10 +163,14 @@ class JeopardyCategoryAnalyzer:
         }
     
     def categorize_single(self, category: str) -> List[str]:
-        """Categorize a single category string into themes"""
+        """Categorize a single category string into themes (cached)"""
         if not category:
             return ["MISCELLANEOUS"]
-            
+        if not hasattr(self, "_single_cache"):
+            self._single_cache = {}
+        if category in self._single_cache:
+            return self._single_cache[category]
+
         category_lower = str(category).lower()
         matched_themes = []
         
@@ -210,6 +214,7 @@ class JeopardyCategoryAnalyzer:
             else:
                 matched_themes.append("MISCELLANEOUS")
         
+        self._single_cache[category] = matched_themes
         return matched_themes
     
     def analyze_categories(self, categories: List[str]) -> Dict[str, List[str]]:

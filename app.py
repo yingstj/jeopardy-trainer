@@ -866,10 +866,23 @@ if df.empty:
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
 
-# Initialize analyzer and categories
-analyzer = JeopardyCategoryAnalyzer()
-all_categories = df["category"].unique()
-theme_groups = analyzer.analyze_categories(all_categories)
+# Initialize analyzer and categories (cached so this only runs once per server lifetime)
+@st.cache_resource
+def get_analyzer():
+    return JeopardyCategoryAnalyzer()
+
+@st.cache_data
+def get_all_categories(_df_id: int):
+    return df["category"].unique()
+
+@st.cache_data
+def get_theme_groups(_df_id: int):
+    return get_analyzer().analyze_categories(get_all_categories(_df_id))
+
+analyzer = get_analyzer()
+_df_signature = len(df)
+all_categories = get_all_categories(_df_signature)
+theme_groups = get_theme_groups(_df_signature)
 
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
@@ -1483,11 +1496,18 @@ if not st.session_state.selected_categories:
     st.warning("⚠️ Please select themes from the sidebar to start playing!")
     st.stop()
 
-filtered_df = df[df["category"].isin(st.session_state.selected_categories)]
+@st.cache_data
+def get_filtered_df(selected_cats_tuple: tuple, selected_round: str, _df_sig: int):
+    fdf = df[df["category"].isin(selected_cats_tuple)]
+    if selected_round and selected_round != 'All Rounds':
+        fdf = fdf[fdf['round'] == selected_round]
+    return fdf
 
-# Apply round filter if selected
-if 'selected_round' in st.session_state and st.session_state.selected_round != 'All Rounds':
-    filtered_df = filtered_df[filtered_df['round'] == st.session_state.selected_round]
+filtered_df = get_filtered_df(
+    tuple(st.session_state.selected_categories),
+    st.session_state.get('selected_round', 'All Rounds'),
+    _df_signature,
+)
 
 if filtered_df.empty:
     st.warning("No clues found for selected themes/round. Please adjust your selection.")
