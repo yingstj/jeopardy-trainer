@@ -1809,12 +1809,18 @@ if submitted:
                 st.session_state.weak_themes[theme] = {"incorrect": 0, "total": 0}
             st.session_state.weak_themes[theme]["incorrect"] += 1
 
-            # Suggest similar clues to practice
-            suggestions = find_similar_clues(filtered_df, clue["clue"], top_k=3)
-            if not suggestions.empty:
-                st.markdown("#### You might also practice:")
-                for _, row in suggestions.iterrows():
-                    st.markdown(f"- {row['category']}: {row['clue']}  \n  Answer: *{row['correct_response']}*")
+            # Suggest more clues from the same category to practice (fast keyword match)
+            try:
+                same_cat = filtered_df[
+                    (filtered_df["category"] == clue["category"]) &
+                    (filtered_df["clue"] != clue["clue"])
+                ].head(3)
+                if not same_cat.empty:
+                    st.markdown("#### More from this category:")
+                    for _, row in same_cat.iterrows():
+                        st.markdown(f"- {row['clue']}  \n  Answer: *{row['correct_response']}*")
+            except Exception:
+                pass
 
         # Update weak theme totals regardless of correct/incorrect
         themes = analyzer.categorize_single(clue["category"])
