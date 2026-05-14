@@ -10,13 +10,21 @@ import hashlib
 import pickle
 from pathlib import Path
 
-# For Google OAuth
-try:
-    from streamlit_oauth import OAuth2Component
-    OAUTH_AVAILABLE = True
-except ImportError:
-    OAUTH_AVAILABLE = False
-    st.warning("OAuth not installed. Run: pip install streamlit-oauth")
+# For Google OAuth — lazy import to keep server cold-start fast
+OAUTH_AVAILABLE = True
+OAuth2Component = None
+
+def _ensure_oauth():
+    global OAuth2Component, OAUTH_AVAILABLE
+    if OAuth2Component is not None:
+        return True
+    try:
+        from streamlit_oauth import OAuth2Component as _OAuth2
+        OAuth2Component = _OAuth2
+        return True
+    except ImportError:
+        OAUTH_AVAILABLE = False
+        return False
 
 class AuthManager:
     def __init__(self):
@@ -143,7 +151,7 @@ class AuthManager:
     
     def google_oauth_login(self):
         """Google OAuth login"""
-        if not OAUTH_AVAILABLE:
+        if not _ensure_oauth():
             st.error("OAuth component not installed. Contact app administrator.")
             return
         
