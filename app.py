@@ -10,7 +10,11 @@ from typing import Dict, List
 import numpy as np
 
 # Import the R2 data loader
-from r2_jeopardy_data_loader import load_jeopardy_data_from_r2
+from r2_jeopardy_data_loader import load_jeopardy_data_from_r2, start_prewarm
+
+# Kick off background dataset download at server startup so the first user
+# (often a guest) doesn't wait 20s for the R2 fetch.
+start_prewarm()
 from auth_manager import AuthManager
 from category_analyzer import JeopardyCategoryAnalyzer
 from database import initialize_database, get_db_connection

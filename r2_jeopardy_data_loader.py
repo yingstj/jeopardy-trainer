@@ -4,6 +4,8 @@ Loads Jeopardy data from Cloudflare R2 storage, with a local Parquet cache
 on disk so subsequent server restarts are near-instant.
 """
 import os
+import threading
+import uuid
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -12,6 +14,72 @@ import pandas as pd
 import streamlit as st
 
 LOCAL_CACHE_PATH = Path("/tmp/jeopardy_clues.parquet")
+
+# Coordinates the background prewarm thread with the foreground loader so
+# they don't race on the parquet file or do duplicate network fetches.
+_load_lock = threading.Lock()
+_prewarm_started = False
+_prewarm_done = threading.Event()
+_warned_r2 = False  # one-shot flag for surfacing the R2 fallback warning safely
+
+
+def _atomic_write_parquet(df: pd.DataFrame) -> bool:
+    """Write parquet to a unique temp file then atomically rename into place."""
+    try:
+        LOCAL_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = LOCAL_CACHE_PATH.with_name(
+            f".{LOCAL_CACHE_PATH.name}.{uuid.uuid4().hex}.tmp"
+        )
+        df.to_parquet(tmp, index=False)
+        os.replace(tmp, LOCAL_CACHE_PATH)
+        return True
+    except Exception:
+        try:
+            if 'tmp' in locals() and tmp.exists():
+                tmp.unlink()
+        except Exception:
+            pass
+        return False
+
+
+def _fetch_dataset() -> Optional[pd.DataFrame]:
+    """Network fetch with R2 → GitHub fallback. Safe to call from any thread."""
+    df = _load_from_r2()
+    if df is None or df.empty:
+        df = _load_from_github()
+    if df is None or df.empty:
+        return None
+    return df
+
+
+def _prewarm_worker():
+    """Background worker that downloads + writes the parquet cache."""
+    global _prewarm_started
+    try:
+        with _load_lock:
+            if LOCAL_CACHE_PATH.exists():
+                return
+            df = _fetch_dataset()
+            if df is None or df.empty:
+                # Allow a future call to retry prewarming this process.
+                _prewarm_started = False
+                return
+            _atomic_write_parquet(df)
+    finally:
+        _prewarm_done.set()
+
+
+def start_prewarm():
+    """Kick off a one-time background download so the first user doesn't wait."""
+    global _prewarm_started
+    with _load_lock:
+        if _prewarm_started or LOCAL_CACHE_PATH.exists():
+            _prewarm_started = True
+            _prewarm_done.set()
+            return
+        _prewarm_started = True
+    t = threading.Thread(target=_prewarm_worker, daemon=True, name="jeopardy-prewarm")
+    t.start()
 
 
 @st.cache_resource(ttl=86400)
@@ -22,27 +90,42 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
       2. Local disk Parquet (survives server restarts, ~0.3s read)
       3. R2 / GitHub network fetch (slow, ~5s)
     """
-    if LOCAL_CACHE_PATH.exists():
-        try:
-            return pd.read_parquet(LOCAL_CACHE_PATH)
-        except Exception:
+    # If a prewarm is in flight, wait briefly so we don't double-fetch and
+    # so we don't read a partially-written parquet file.
+    if _prewarm_started and not _prewarm_done.is_set():
+        _prewarm_done.wait(timeout=30)
+
+    with _load_lock:
+        if LOCAL_CACHE_PATH.exists():
             try:
-                LOCAL_CACHE_PATH.unlink()
+                df = pd.read_parquet(LOCAL_CACHE_PATH)
+                _surface_pending_warnings()
+                return df
             except Exception:
-                pass
+                try:
+                    LOCAL_CACHE_PATH.unlink()
+                except Exception:
+                    pass
 
-    df = _load_from_r2()
-    if df is None or df.empty:
-        df = _load_from_github()
-    if df is None or df.empty:
-        df = _load_sample_data()
+        df = _fetch_dataset()
+        if df is None or df.empty:
+            df = _load_sample_data()
+        else:
+            _atomic_write_parquet(df)
 
-    try:
-        df.to_parquet(LOCAL_CACHE_PATH, index=False)
-    except Exception:
-        pass
-
+    _surface_pending_warnings()
     return df
+
+
+def _surface_pending_warnings():
+    """Emit any background-collected warnings on the foreground (Streamlit) thread."""
+    global _warned_r2
+    if _warned_r2:
+        try:
+            st.warning("Unable to load dataset from Cloudflare R2; using fallback source.")
+        except Exception:
+            pass
+        _warned_r2 = False
 
 
 def _load_from_r2() -> Optional[pd.DataFrame]:
@@ -76,7 +159,11 @@ def _load_from_r2() -> Optional[pd.DataFrame]:
         payload = response["Body"].read()
         return pd.read_csv(BytesIO(payload))
     except Exception:
-        st.warning("Unable to load dataset from Cloudflare R2; falling back to public dataset.")
+        # Defer UI notification — this may run on a background thread without
+        # a Streamlit script context. The flag is consumed by the foreground
+        # loader on its next run.
+        global _warned_r2
+        _warned_r2 = True
         return None
 
 
