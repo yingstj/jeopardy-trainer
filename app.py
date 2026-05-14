@@ -1010,10 +1010,16 @@ with st.sidebar:
         
         # Show sample categories in an expander
         with st.expander("View selected categories", expanded=False):
-            # Show first 20 categories as a sample
+            # Show a random, representative sample — sorted alphabetically the
+            # list leads with punctuation-only categories ("!", "&", etc.) which
+            # looks like noise. A random sample better reflects the selection.
+            import random
             sample_size = min(20, len(selected_categories))
-            sample_cats = sorted(selected_categories)[:sample_size]
-            
+            sample_cats = sorted(
+                random.sample(selected_categories, sample_size),
+                key=lambda c: c.lower()
+            )
+
             for i in range(0, sample_size, 2):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -1022,9 +1028,9 @@ with st.sidebar:
                 with col2:
                     if i+1 < len(sample_cats):
                         st.caption(f"• {sample_cats[i+1]}")
-            
+
             if len(selected_categories) > sample_size:
-                st.caption(f"... and {len(selected_categories) - sample_size} more categories")
+                st.caption(f"... and {len(selected_categories) - sample_size:,} more categories")
     
     st.markdown("---")
     
