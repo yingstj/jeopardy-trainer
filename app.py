@@ -799,7 +799,10 @@ if "selected_categories" not in st.session_state:
 
 if "time_limit" not in st.session_state:
     st.session_state.time_limit = 30
-
+if "use_timer" not in st.session_state:
+    st.session_state.use_timer = False
+if "time_limit_slider" not in st.session_state:
+    st.session_state.time_limit_slider = 30
 if "speed_round" not in st.session_state:
     st.session_state.speed_round = False
 
@@ -1025,24 +1028,25 @@ with st.sidebar:
     # Timer toggle - default to off
     use_timer = st.checkbox(
         "⏱️ Use Timer",
-        value=False,
         help="Enable/disable time limit for answers",
         key="use_timer"
     )
     
     # Time limit (only show if timer is enabled)
     if use_timer:
-        # Only update if it's a valid number
-        if isinstance(st.session_state.time_limit, (int, float)) and st.session_state.time_limit != 999999:
-            default_time = int(st.session_state.time_limit)
-        else:
-            default_time = 30
-        
-        st.session_state.time_limit = st.slider(
+        chosen_time = st.slider(
             "Time (seconds):",
-            10, 60, default_time
+            10, 60,
+            key="time_limit_slider"
         )
+        speed_round = st.checkbox(
+            "⚡ Speed Round",
+            help="5-second timer, 2x points",
+            key="speed_round"
+        )
+        st.session_state.time_limit = 5 if speed_round else chosen_time
     else:
+        st.session_state.speed_round = False
         st.session_state.time_limit = 999999  # Very large number instead of infinity
     
     # Study Mode
@@ -1051,17 +1055,6 @@ with st.sidebar:
         value=st.session_state.study_mode,
         help="No timer, see answers immediately"
     )
-    
-    # Speed Round (only available if timer is on)
-    if use_timer:
-        st.session_state.speed_round = st.checkbox(
-            "⚡ Speed Round",
-            help="5-second timer, 2x points"
-        )
-        if st.session_state.speed_round:
-            st.session_state.time_limit = 5
-    else:
-        st.session_state.speed_round = False
     
     # Round selector (difficulty)
     if 'round' in df.columns:
