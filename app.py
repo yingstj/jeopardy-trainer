@@ -1653,6 +1653,56 @@ if show_answer_form:
                             requestAnimationFrame(tick);
                         }} else {{
                             valueEl.textContent = "Time's up!";
+                            autoSubmit();
+                        }}
+                    }}
+                    let didSubmit = false;
+                    function autoSubmit() {{
+                        if (didSubmit) return;
+                        didSubmit = true;
+                        try {{
+                            const parentDoc = window.parent.document;
+                            // Scope strictly to the clue answer form so we don't
+                            // accidentally hit sidebar buttons like "🎯 New Question".
+                            // Streamlit renders st.form as <form data-testid="stForm">.
+                            // Only one such form is mounted on the play screen at a time.
+                            const forms = parentDoc.querySelectorAll('form[data-testid="stForm"]');
+                            let answerForm = null;
+                            for (const f of forms) {{
+                                if (f.querySelector('input[type="text"]')) {{
+                                    answerForm = f;
+                                    break;
+                                }}
+                            }}
+                            if (!answerForm) {{
+                                // Couldn't find the form — fall back to a reload so
+                                // the server-side time-limit check still fires.
+                                try {{ window.parent.location.reload(); }} catch (e2) {{}}
+                                return;
+                            }}
+                            // Disable the answer input so the player can't keep typing.
+                            answerForm.querySelectorAll('input[type="text"]').forEach(function(i) {{
+                                i.disabled = true;
+                                i.blur();
+                            }});
+                            // Pick the form's Submit button — the one that does NOT
+                            // contain the bookmark 🔖 emoji.
+                            const formBtns = answerForm.querySelectorAll(
+                                'button[data-testid="stBaseButton-secondaryFormSubmit"], button[kind="secondaryFormSubmit"], [data-testid="stFormSubmitButton"] button, button'
+                            );
+                            const seen = new Set();
+                            for (const btn of formBtns) {{
+                                if (seen.has(btn)) continue;
+                                seen.add(btn);
+                                const txt = (btn.innerText || btn.textContent || '').trim();
+                                if (txt.indexOf('🔖') !== -1) continue;
+                                btn.click();
+                                return;
+                            }}
+                        }} catch (e) {{
+                            // Cross-origin or DOM access failed; fall back to a reload
+                            // so the server-side time-limit check takes over.
+                            try {{ window.parent.location.reload(); }} catch (e2) {{}}
                         }}
                     }}
                     tick();
