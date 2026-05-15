@@ -1568,6 +1568,11 @@ show_answer_form = (
 )
 
 if show_answer_form:
+    # Reserve a slot for the live countdown timer above the answer form.
+    # We fill it AFTER the form so we can suppress it when the player has
+    # just submitted (which stops the countdown immediately on submit).
+    _timer_slot = st.container()
+
     with st.form(key="clue_form", clear_on_submit=True):
         col_input, col_submit, col_bookmark = st.columns([3, 1, 1])
         with col_input:
@@ -1589,6 +1594,73 @@ if show_answer_form:
             )
         with col_bookmark:
             bookmark_btn = st.form_submit_button("🔖", use_container_width=True, help="Bookmark")
+
+    # Render the live countdown into the reserved slot ABOVE the form, but
+    # only if the player hasn't just submitted/bookmarked this render — that
+    # way submitting an answer stops the countdown instantly.
+    if (
+        not submitted
+        and not bookmark_btn
+        and st.session_state.use_timer
+        and not st.session_state.study_mode
+        and st.session_state.time_limit != 999999
+    ):
+        _start_ms = int(st.session_state.start_time.timestamp() * 1000)
+        _limit_s = int(st.session_state.time_limit)
+        import streamlit.components.v1 as _components
+        with _timer_slot:
+            _components.html(
+                f"""
+                <div style="font-family: 'Fraunces', Georgia, serif; color: #1b1b1b;
+                            background: #fbf8f3; border: 1px solid #e3ddd0;
+                            padding: 0.75rem 1rem; border-radius: 6px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;
+                              font-size: 1rem;">
+                    <span>⏱️ Time remaining</span>
+                    <span id="jpy-timer-value" style="font-variant-numeric: tabular-nums;
+                                                      font-weight: 600;">{_limit_s}.0s</span>
+                  </div>
+                  <div style="margin-top:0.55rem; height:8px; background:rgba(0,0,0,0.08);
+                              border-radius:4px; overflow:hidden;">
+                    <div id="jpy-timer-bar" style="height:100%; width:100%;
+                                                    background:#1f6f43;
+                                                    transition: width 0.12s linear,
+                                                                background-color 0.3s ease;">
+                    </div>
+                  </div>
+                </div>
+                <script>
+                (function() {{
+                    const startMs = {_start_ms};
+                    const limit = {_limit_s};
+                    const valueEl = document.getElementById('jpy-timer-value');
+                    const barEl = document.getElementById('jpy-timer-bar');
+                    if (!valueEl || !barEl) return;
+                    function tick() {{
+                        const elapsed = (Date.now() - startMs) / 1000;
+                        const remaining = Math.max(0, limit - elapsed);
+                        valueEl.textContent = remaining.toFixed(1) + 's';
+                        const pct = Math.max(0, Math.min(100, (remaining / limit) * 100));
+                        barEl.style.width = pct + '%';
+                        if (pct <= 25) {{
+                            barEl.style.background = '#b91c1c';
+                        }} else if (pct <= 50) {{
+                            barEl.style.background = '#d97706';
+                        }} else {{
+                            barEl.style.background = '#1f6f43';
+                        }}
+                        if (remaining > 0) {{
+                            requestAnimationFrame(tick);
+                        }} else {{
+                            valueEl.textContent = "Time's up!";
+                        }}
+                    }}
+                    tick();
+                }})();
+                </script>
+                """,
+                height=70,
+            )
 
 if bookmark_btn:
     if st.session_state.is_premium:
