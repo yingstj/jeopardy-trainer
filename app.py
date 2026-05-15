@@ -540,64 +540,10 @@ if "is_premium" not in st.session_state:
     st.session_state.is_premium = False
     st.session_state.premium_checked = False
 
-STRIPE_ENABLED = False
-
 def check_premium_status():
-    if not STRIPE_ENABLED:
-        st.session_state.is_premium = not st.session_state.get("is_guest", True)
-        st.session_state.premium_checked = True
-        return
-    if st.session_state.get("is_guest", True):
-        st.session_state.is_premium = False
-        st.session_state.premium_checked = True
-        return
-    if st.session_state.get("premium_checked", False):
-        return
-    email = st.session_state.get("user_email", "")
-    if not email or email == "guest@jayopardy.app":
-        st.session_state.is_premium = False
-        st.session_state.premium_checked = True
-        return
-    try:
-        from stripe_manager import check_subscription_status
-        is_active, sub_info = check_subscription_status(email)
-        st.session_state.is_premium = is_active
-        if sub_info:
-            st.session_state.premium_info = sub_info
-        from database import get_db_connection
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO premium_status (user_email, is_premium, stripe_subscription_id, plan_interval, last_checked)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(user_email) DO UPDATE SET
-                is_premium = excluded.is_premium,
-                stripe_subscription_id = excluded.stripe_subscription_id,
-                plan_interval = excluded.plan_interval,
-                last_checked = CURRENT_TIMESTAMP
-        """, (
-            email,
-            1 if is_active else 0,
-            sub_info["id"] if sub_info else None,
-            sub_info["plan_interval"] if sub_info else None,
-        ))
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
+    # All signed-in (non-guest) users have full access.
+    st.session_state.is_premium = not st.session_state.get("is_guest", True)
     st.session_state.premium_checked = True
-
-def handle_checkout_return():
-    if not STRIPE_ENABLED:
-        return
-    params = st.query_params
-    if params.get("checkout") == "success":
-        st.session_state.premium_checked = False
-        check_premium_status()
-        st.query_params.clear()
-        st.rerun()
-    elif params.get("checkout") == "cancelled":
-        st.query_params.clear()
 
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
@@ -897,7 +843,6 @@ with st.sidebar:
     st.markdown(f"👤 **Player:** {current_username}")
 
     check_premium_status()
-    handle_checkout_return()
 
     if st.session_state.is_premium:
         st.markdown('<span style="font-size:0.75rem;color:#9a3412;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Premium</span>', unsafe_allow_html=True)
@@ -1183,13 +1128,7 @@ with st.sidebar:
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
     if not st.session_state.is_premium:
-        st.caption("🔒 Upgrade to Premium to challenge friends.")
-        if not st.session_state.get("is_guest", False):
-            if st.button("Upgrade to Premium", key="upgrade_challenge", use_container_width=True):
-                st.session_state.show_upgrade = True
-                st.rerun()
-        else:
-            st.caption("Sign in with an account to upgrade.")
+        st.caption("Sign in with an account to challenge friends.")
     else:
         st.caption("Challenge friends and track your wins.")
     
@@ -1287,114 +1226,11 @@ with st.sidebar:
 
     st.markdown("---")
 
-    if STRIPE_ENABLED:
-        if st.session_state.is_premium:
-            if st.button("⚙️ Manage Subscription", use_container_width=True, key="manage_sub"):
-                try:
-                    from stripe_manager import create_customer_portal_session
-                    return_domain = os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", "")
-                    if return_domain and not return_domain.startswith("http"):
-                        return_domain = f"https://{return_domain}"
-                    portal_url = create_customer_portal_session(
-                        st.session_state.user_email,
-                        return_domain
-                    )
-                    if portal_url:
-                        st.markdown(f'<a href="{portal_url}" target="_blank" style="color:#9a3412;">Open billing portal →</a>', unsafe_allow_html=True)
-                except Exception:
-                    st.error("Could not open billing portal.")
-        elif not st.session_state.get("is_guest", True):
-            if st.button("⭐ Upgrade to Premium", use_container_width=True, key="upgrade_sidebar"):
-                st.session_state.show_upgrade = True
-                st.rerun()
-
     if st.button("🚪 Logout", use_container_width=True):
         auth.logout()
 
 # MAIN GAME AREA
 
-# Upgrade page
-if "show_upgrade" not in st.session_state:
-    st.session_state.show_upgrade = False
-
-if st.session_state.show_upgrade and not st.session_state.is_premium:
-    st.markdown("""
-    <div style="text-align:center;padding:2rem 0 1rem;">
-        <h1 style="font-family:'Fraunces',Georgia,serif;font-weight:400;font-style:italic;color:#1c1917;font-size:2.2rem;margin:0;">Upgrade to Premium</h1>
-        <p style="color:#78716c;margin-top:0.4rem;font-style:italic;">Unlock the full Jayopardy experience.</p>
-        <div style="width:36px;height:1px;background:#9a3412;margin:1.25rem auto;"></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_free, col_spacer, col_premium = st.columns([5, 1, 5])
-
-    with col_free:
-        st.markdown("""
-        <div style="background:#fff;border:1px solid #ece9e2;border-radius:6px;padding:1.5rem 1.5rem 1.25rem;position:relative;">
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:#78716c;font-weight:600;margin-bottom:0.75rem;">Current Plan</div>
-            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.4rem;font-style:italic;color:#1c1917;margin-bottom:1rem;">Free</div>
-            <ul style="color:#44403c;font-size:0.92rem;line-height:2;padding-left:1.1rem;">
-                <li>All 577,000+ questions</li>
-                <li>Timer &amp; game modes</li>
-                <li>Session statistics</li>
-                <li style="color:#a8a29e;">No saved progress</li>
-                <li style="color:#a8a29e;">No adaptive training</li>
-                <li style="color:#a8a29e;">No bookmarks</li>
-                <li style="color:#a8a29e;">No challenge mode</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_premium:
-        st.markdown("""
-        <div style="background:#fff;border:1px solid #9a3412;border-radius:6px;padding:1.5rem 1.5rem 1.25rem;position:relative;">
-            <div style="position:absolute;top:-1px;left:1.5rem;width:48px;height:2px;background:#9a3412;"></div>
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.2em;color:#9a3412;font-weight:600;margin-bottom:0.75rem;">Premium</div>
-            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.4rem;font-style:italic;color:#1c1917;margin-bottom:1rem;">Everything, unlocked.</div>
-            <ul style="color:#1c1917;font-size:0.92rem;line-height:2;padding-left:1.1rem;">
-                <li><strong>Saved progress</strong> &amp; lifetime stats</li>
-                <li><strong>Adaptive training</strong> — focuses on weak areas</li>
-                <li><strong>Bookmarks</strong> — save &amp; revisit questions</li>
-                <li><strong>Challenge mode</strong> — compete with friends</li>
-                <li><strong>Category analytics</strong> — detailed breakdown</li>
-                <li>Everything in Free</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    col_m, col_s2, col_a = st.columns([5, 1, 5])
-    with col_m:
-        if st.button("$4 / month", use_container_width=True, key="checkout_monthly"):
-            try:
-                from stripe_manager import get_product_and_prices, create_checkout_session
-                _, monthly_id, _ = get_product_and_prices()
-                base_url = st.context.headers.get("Origin", os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", ""))
-                if not base_url.startswith("http"):
-                    base_url = f"https://{base_url}"
-                url = create_checkout_session(st.session_state.user_email, monthly_id, base_url, base_url)
-                st.markdown(f'<meta http-equiv="refresh" content="0;url={url}">', unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"Could not start checkout: {e}")
-    with col_a:
-        if st.button("$25 / year — save 48%", use_container_width=True, key="checkout_annual"):
-            try:
-                from stripe_manager import get_product_and_prices, create_checkout_session
-                _, _, annual_id = get_product_and_prices()
-                base_url = st.context.headers.get("Origin", os.environ.get("REPLIT_DEV_DOMAIN_DEFAULT", ""))
-                if not base_url.startswith("http"):
-                    base_url = f"https://{base_url}"
-                url = create_checkout_session(st.session_state.user_email, annual_id, base_url, base_url)
-                st.markdown(f'<meta http-equiv="refresh" content="0;url={url}">', unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"Could not start checkout: {e}")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Back to game", key="back_from_upgrade"):
-        st.session_state.show_upgrade = False
-        st.rerun()
-    st.stop()
 
 # Check if viewing a bookmark
 if st.session_state.viewing_bookmark:

@@ -532,8 +532,6 @@ REDIRECT_URI = "http://localhost:8501"
         st.session_state.premium_checked = False
         if "premium_info" in st.session_state:
             del st.session_state["premium_info"]
-        if "show_upgrade" in st.session_state:
-            st.session_state.show_upgrade = False
         
         # Clear game state
         for key in ['history', 'score', 'total', 'current_clue', 'weak_categories', 'strong_categories']:

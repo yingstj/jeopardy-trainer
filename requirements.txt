@@ -29,4 +29,3 @@ sentence-transformers
 streamlit
 streamlit-oauth
 psycopg2-binary
-stripe
