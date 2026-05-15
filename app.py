@@ -19,6 +19,12 @@ from auth_manager import AuthManager
 from category_analyzer import JeopardyCategoryAnalyzer
 from database import initialize_database, get_db_connection
 
+# Sentinel value written into the answer input by the JS countdown's
+# auto-submit handler. The Python grader uses this to distinguish a
+# timer-triggered submit from a user-clicked submit. Must match the
+# string used in the JS in the countdown component below.
+AUTO_SUBMIT_TIMEOUT_SENTINEL = "__JPY_AUTO_SUBMIT_TIMEOUT__"
+
 # Initialize the database
 initialize_database()
 
@@ -1680,6 +1686,28 @@ if show_answer_form:
                                 try {{ window.parent.location.reload(); }} catch (e2) {{}}
                                 return;
                             }}
+                            // Stamp the answer input with a sentinel value BEFORE
+                            // clicking submit. This is the explicit "auto-submit"
+                            // signal the Python grader uses to distinguish a
+                            // timer auto-submit from a user-initiated submit.
+                            // We must use the native React value setter +
+                            // 'input' event so React/Streamlit registers the
+                            // change before the form submission.
+                            try {{
+                                const inputs = answerForm.querySelectorAll('input[type="text"]');
+                                const proto = window.parent.HTMLInputElement
+                                              && window.parent.HTMLInputElement.prototype;
+                                const desc = proto && Object.getOwnPropertyDescriptor(proto, 'value');
+                                const nativeSetter = desc && desc.set;
+                                inputs.forEach(function(i) {{
+                                    if (nativeSetter) {{
+                                        nativeSetter.call(i, '{AUTO_SUBMIT_TIMEOUT_SENTINEL}');
+                                    }} else {{
+                                        i.value = '{AUTO_SUBMIT_TIMEOUT_SENTINEL}';
+                                    }}
+                                    i.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                }});
+                            }} catch (e) {{}}
                             // Disable the answer input so the player can't keep typing.
                             answerForm.querySelectorAll('input[type="text"]').forEach(function(i) {{
                                 i.disabled = true;
@@ -1736,27 +1764,60 @@ if submitted:
             st.session_state.current_clue = None
         st.rerun()
     else:
-        elapsed_time = (datetime.datetime.now() - st.session_state.start_time).seconds
+        elapsed_seconds = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+        elapsed_time = int(elapsed_seconds)
+
+        # Explicit signal from the JS countdown: when it auto-submits at
+        # remaining == 0, it stamps this sentinel into the answer input
+        # BEFORE clicking Submit. This is how we tell a timer auto-submit
+        # apart from a user-initiated click.
+        time_expired = (user_input == AUTO_SUBMIT_TIMEOUT_SENTINEL)
+        if time_expired:
+            # Clear the sentinel so it doesn't leak into grading, history,
+            # or anything the player sees.
+            user_input = ""
+
+        # Server-side fallback: if the JS auto-submit didn't fire (browser
+        # tab inactive, JS error, sentinel stripping by an extension, etc.)
+        # and the player still managed to submit well past the deadline,
+        # treat it as a timeout too. A generous 1.5s grace buffer avoids
+        # punishing borderline legitimate manual submits caused by network
+        # round-trip / Streamlit websocket latency.
+        timer_on = (
+            st.session_state.use_timer
+            and not st.session_state.study_mode
+            and st.session_state.time_limit != 999999
+        )
+        if not time_expired and timer_on and elapsed_seconds > st.session_state.time_limit + 1.5:
+            time_expired = True
+
         user_clean = normalize(user_input)
         answer_clean = normalize(clue["correct_response"])
-        
+
         # Calculate points
         points_multiplier = 1
         if st.session_state.speed_round and elapsed_time <= 5:
             points_multiplier = 2
         elif is_daily_double:
             points_multiplier = 2
-            
+
         # Check correctness using fuzzy matching
         answer_matches = fuzzy_match(user_input, clue["correct_response"], threshold=65)
-        
-        # Only enforce timer if it's enabled (not 999999)
-        if st.session_state.time_limit == 999999:  # Timer is off
+
+        # A timed-out submit is always incorrect, regardless of whatever
+        # (typically empty) text was in the box. A manual submit within the
+        # time limit is graded purely on the answer text.
+        if time_expired:
+            correct = False
+        else:
             correct = answer_matches
-        else:  # Timer is on
-            correct = answer_matches and elapsed_time <= st.session_state.time_limit
 
         base_value = parse_clue_value(clue.get("value"))
+
+        if time_expired:
+            st.warning(
+                "⏰ **Time expired!** The countdown ran out before you could submit your answer."
+            )
 
         if correct:
             st.balloons()
@@ -1774,11 +1835,10 @@ if submitted:
                 st.session_state.achievements.append("10_streak")
                 st.success("🏆 Achievement: 10 Question Streak!")
         else:
-            # Only show time expired if timer was actually enabled and time ran out
-            time_msg = ""
-            if st.session_state.time_limit != 999999 and elapsed_time > st.session_state.time_limit:
-                time_msg = "(Time expired!)"
-            st.error(f"❌ **Incorrect** {time_msg}")
+            if time_expired:
+                st.error("❌ **Incorrect** — no answer submitted in time.")
+            else:
+                st.error("❌ **Incorrect**")
             st.info(f"The correct response was: **{clue['correct_response']}**")
             st.session_state.streak = 0
             points_earned = 0
