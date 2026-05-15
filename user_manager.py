@@ -3,7 +3,6 @@ Simple user management system for Jeopardy Trainer
 Stores user data locally in JSON format
 """
 
-import sqlite3
 from typing import Dict, List, Optional
 from database import get_db_connection
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -90,7 +89,7 @@ class UserManager:
                 total_questions = total_questions + ?,
                 correct_answers = correct_answers + ?,
                 total_score = total_score + ?,
-                best_streak = MAX(best_streak, ?),
+                best_streak = GREATEST(best_streak, ?),
                 games_played = games_played + 1
             WHERE user_id = ?
         """

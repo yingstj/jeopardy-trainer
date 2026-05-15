@@ -1,4 +1,3 @@
-import sqlite3
 import json
 from database import get_db_connection
 from user_manager import UserManager
