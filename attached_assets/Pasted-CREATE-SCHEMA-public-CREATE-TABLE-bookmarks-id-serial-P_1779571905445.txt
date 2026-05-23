@@ -1,0 +1,58 @@
+CREATE SCHEMA "public";
+CREATE TABLE "bookmarks" (
+	"id" serial PRIMARY KEY,
+	"user_id" integer NOT NULL UNIQUE,
+	"category" text NOT NULL UNIQUE,
+	"clue" text NOT NULL UNIQUE,
+	"correct_response" text NOT NULL UNIQUE,
+	"bookmarked_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT "bookmarks_user_id_category_clue_correct_response_key" UNIQUE("user_id","category","clue","correct_response")
+);
+CREATE TABLE "challenges" (
+	"id" serial PRIMARY KEY,
+	"challenger_id" integer NOT NULL,
+	"opponent_id" integer NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"num_questions" integer DEFAULT 10,
+	"categories" text,
+	"challenger_score" integer DEFAULT 0,
+	"opponent_score" integer DEFAULT 0,
+	"challenger_completed" integer DEFAULT 0,
+	"opponent_completed" integer DEFAULT 0,
+	"winner_id" integer,
+	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "premium_status" (
+	"user_email" text PRIMARY KEY,
+	"is_premium" integer DEFAULT 0,
+	"stripe_customer_id" text,
+	"stripe_subscription_id" text,
+	"plan_interval" text,
+	"subscription_end" bigint,
+	"last_checked" timestamp DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "user_stats" (
+	"user_id" integer PRIMARY KEY,
+	"games_played" integer DEFAULT 0,
+	"total_score" integer DEFAULT 0,
+	"total_questions" integer DEFAULT 0,
+	"correct_answers" integer DEFAULT 0,
+	"best_streak" integer DEFAULT 0
+);
+CREATE TABLE "users" (
+	"id" serial PRIMARY KEY,
+	"username" text NOT NULL CONSTRAINT "users_username_key" UNIQUE,
+	"password_hash" text NOT NULL
+);
+ALTER TABLE "bookmarks" ADD CONSTRAINT "bookmarks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id");
+ALTER TABLE "challenges" ADD CONSTRAINT "challenges_challenger_id_fkey" FOREIGN KEY ("challenger_id") REFERENCES "users"("id");
+ALTER TABLE "challenges" ADD CONSTRAINT "challenges_opponent_id_fkey" FOREIGN KEY ("opponent_id") REFERENCES "users"("id");
+ALTER TABLE "challenges" ADD CONSTRAINT "challenges_winner_id_fkey" FOREIGN KEY ("winner_id") REFERENCES "users"("id");
+ALTER TABLE "user_stats" ADD CONSTRAINT "user_stats_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id");
+CREATE UNIQUE INDEX "bookmarks_pkey" ON "bookmarks" ("id");
+CREATE UNIQUE INDEX "bookmarks_user_id_category_clue_correct_response_key" ON "bookmarks" ("user_id","category","clue","correct_response");
+CREATE UNIQUE INDEX "challenges_pkey" ON "challenges" ("id");
+CREATE UNIQUE INDEX "premium_status_pkey" ON "premium_status" ("user_email");
+CREATE UNIQUE INDEX "user_stats_pkey" ON "user_stats" ("user_id");
+CREATE UNIQUE INDEX "users_pkey" ON "users" ("id");
+CREATE UNIQUE INDEX "users_username_key" ON "users" ("username");
