@@ -1,7 +1,8 @@
 """
 R2 Jeopardy Data Loader
-Loads Jeopardy data from Cloudflare R2 storage, with a local Parquet cache
-on disk so subsequent server restarts are near-instant.
+Loads Jeopardy data preferring the freshly refreshed bundled CSV, with
+R2 / GitHub fallbacks and a local Parquet cache on disk so subsequent
+server restarts are near-instant.
 """
 import os
 import threading
@@ -14,9 +15,11 @@ import pandas as pd
 import streamlit as st
 
 LOCAL_CACHE_PATH = Path("/tmp/jeopardy_clues.parquet")
+LOCAL_CSV_PATH = Path(__file__).resolve().parent / "data" / "all_jeopardy_clues.csv"
 SOURCE_MARKER_PATH = Path("/tmp/jeopardy_clues.source")
 
 # Human-readable labels for where the current dataset came from.
+SOURCE_LOCAL = "Local dataset"
 SOURCE_R2 = "R2 live"
 SOURCE_GITHUB = "GitHub fallback"
 SOURCE_SAMPLE = "Sample data"
@@ -45,7 +48,7 @@ def _write_source_marker(source: str):
 def _read_source_marker() -> str:
     try:
         text = SOURCE_MARKER_PATH.read_text().strip()
-        if text in (SOURCE_R2, SOURCE_GITHUB, SOURCE_SAMPLE):
+        if text in (SOURCE_LOCAL, SOURCE_R2, SOURCE_GITHUB, SOURCE_SAMPLE):
             return text
     except Exception:
         pass
@@ -79,9 +82,17 @@ def _atomic_write_parquet(df: pd.DataFrame) -> bool:
 
 
 def _fetch_dataset() -> Optional[pd.DataFrame]:
-    """Network fetch with R2 → GitHub fallback. Safe to call from any thread."""
-    df = _load_from_r2()
-    source = SOURCE_R2
+    """Load the dataset, preferring the freshly scraped bundled CSV.
+
+    Order: local bundled CSV → R2 → GitHub. The bundled CSV is refreshed by
+    refresh_dataset.py and is the authoritative copy in this environment;
+    the R2/GitHub copies may lag behind. Safe to call from any thread.
+    """
+    df = _load_from_local_csv()
+    source = SOURCE_LOCAL
+    if df is None or df.empty:
+        df = _load_from_r2()
+        source = SOURCE_R2
     if df is None or df.empty:
         df = _load_from_github()
         source = SOURCE_GITHUB
@@ -90,6 +101,29 @@ def _fetch_dataset() -> Optional[pd.DataFrame]:
     _set_data_source(source)
     _write_source_marker(source)
     return df
+
+
+def _load_from_local_csv() -> Optional[pd.DataFrame]:
+    """Load the bundled, freshly refreshed CSV if present and non-trivial."""
+    try:
+        if not LOCAL_CSV_PATH.exists():
+            return None
+        df = pd.read_csv(LOCAL_CSV_PATH)
+        if df.empty or len(df) <= 100:
+            return None
+        return df
+    except Exception:
+        return None
+
+
+def _invalidate_stale_parquet_cache():
+    """Drop the parquet cache if it predates the bundled CSV refresh."""
+    try:
+        if LOCAL_CACHE_PATH.exists() and LOCAL_CSV_PATH.exists():
+            if LOCAL_CACHE_PATH.stat().st_mtime < LOCAL_CSV_PATH.stat().st_mtime:
+                LOCAL_CACHE_PATH.unlink()
+    except Exception:
+        pass
 
 
 def _prewarm_worker():
@@ -113,6 +147,7 @@ def start_prewarm():
     """Kick off a one-time background download so the first user doesn't wait."""
     global _prewarm_started
     with _load_lock:
+        _invalidate_stale_parquet_cache()
         if _prewarm_started or LOCAL_CACHE_PATH.exists():
             _prewarm_started = True
             _prewarm_done.set()
@@ -122,13 +157,32 @@ def start_prewarm():
     t.start()
 
 
-@st.cache_resource(ttl=86400)
+def _dataset_version() -> float:
+    """Version stamp for the bundled CSV; changes whenever it is refreshed.
+
+    Used as the Streamlit cache key so a running app picks up a refreshed
+    CSV immediately instead of serving a stale in-memory DataFrame for up
+    to the cache TTL.
+    """
+    try:
+        return LOCAL_CSV_PATH.stat().st_mtime
+    except Exception:
+        return 0.0
+
+
 def load_jeopardy_data_from_r2() -> pd.DataFrame:
+    """Public entry point; keys the in-memory cache to the CSV revision."""
+    return _load_jeopardy_data_cached(_dataset_version())
+
+
+@st.cache_resource(ttl=86400)
+def _load_jeopardy_data_cached(dataset_version: float) -> pd.DataFrame:
     """
     Load Jeopardy data with three tiers of caching:
-      1. In-memory (Streamlit cache_resource — same process, no serialization)
+      1. In-memory (Streamlit cache_resource — same process, no serialization),
+         keyed by the bundled CSV's mtime so refreshes invalidate it
       2. Local disk Parquet (survives server restarts, ~0.3s read)
-      3. R2 / GitHub network fetch (slow, ~5s)
+      3. Local bundled CSV → R2 / GitHub network fetch
     """
     # If a prewarm is in flight, wait briefly so we don't double-fetch and
     # so we don't read a partially-written parquet file.
@@ -136,6 +190,7 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
         _prewarm_done.wait(timeout=8)
 
     with _load_lock:
+        _invalidate_stale_parquet_cache()
         if LOCAL_CACHE_PATH.exists():
             try:
                 df = pd.read_parquet(LOCAL_CACHE_PATH)

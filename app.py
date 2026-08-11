@@ -633,8 +633,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load and filter data
-@st.cache_data
 def load_data():
+    """Public entry point; keys the cached load to the bundled CSV revision
+    so a running app serves freshly refreshed clues without a restart."""
+    from r2_jeopardy_data_loader import _dataset_version
+    return _load_data_cached(_dataset_version())
+
+@st.cache_data
+def _load_data_cached(dataset_version: float):
     # Check if we're in a GitHub Actions environment (for CI testing)
     if os.environ.get('GITHUB_ACTIONS') == 'true':
         # Return a small sample dataset for testing

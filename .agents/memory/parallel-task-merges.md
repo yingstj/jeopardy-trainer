@@ -1,9 +1,10 @@
 ---
 name: Parallel task merges can clobber app.py
-description: Verify app.py integrity after merges; merges can reorder/revert recent edits
+description: Rebases/merges in this project have silently dropped whole blocks from app.py; verify integrity before completing a task.
 ---
-Parallel task merges into this project can silently rearrange or revert recent edits in app.py — one merge moved a function definition below its first call site (NameError at render) and reverted call-site argument changes back to their old form.
 
-**Why:** multiple in-flight tasks touch app.py; auto-merge picks main's arrangement and reapplies hunks imperfectly.
+Rebasing a task branch onto main (especially when several tasks merge in parallel) has more than once silently deleted large blocks from `app.py` — e.g. the `auth = AuthManager()` + session-state initialization block — even when no conflict was shown for that region.
 
-**How to apply:** after any merge lands mid-task (watch for MERGED notices), re-grep app.py for your key symbols: confirm defs precede first use and call-site arguments still match your intended version. Compile-check alone is insufficient (NameError at runtime still parses).
+**Why:** the auto-merge tool resolves structural conflicts at function granularity and can drop interstitial top-level code between functions.
+
+**How to apply:** after any rebase/merge and before `markTaskComplete`, diff `app.py` against `main-repl/main` and confirm nothing was removed that the task didn't intend to remove; restore missing blocks from main's copy. A completion review that fails with `AttributeError: st.session_state has no attribute ...` is a symptom of this.
