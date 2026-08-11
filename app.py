@@ -30,6 +30,7 @@ from database import (
     save_bookmark,
     load_bookmarks,
     delete_bookmark,
+    save_bookmark_note,
 )
 from utils import apply_era_filter
 
@@ -756,10 +757,28 @@ def restore_bookmarks_from_db():
     try:
         st.session_state.bookmarks = load_bookmarks(identity)
         st.session_state.bookmarks_loaded_for = identity
+        # Restore personal notes alongside bookmarks (DB copy is authoritative)
+        restored_notes = {}
+        for bm in st.session_state.bookmarks:
+            note = bm.get("note", "")
+            if note:
+                restored_notes[f"{bm['category']}_{bm['clue'][:50]}"] = note
+        st.session_state.notes = restored_notes
     except Exception as e:
         import sys
         print(f"[bookmarks] restore failed: {e}", file=sys.stderr)
 
+def persist_note_if_signed_in(category: str, clue: str, note: str):
+    """Save a note on a bookmarked clue to the database for signed-in
+    players. Guests' notes stay session-only."""
+    identity = bookmark_identity()
+    if not identity:
+        return
+    try:
+        save_bookmark_note(identity, category, clue, note)
+    except Exception as e:
+        import sys
+        print(f"[bookmarks] note save failed: {e}", file=sys.stderr)
 def guest_sign_in_button(key: str, label: str = "🔑 Sign in", use_container_width: bool = True):
     """Render a button that ends the guest session and returns to the login page."""
     if st.button(label, key=key, use_container_width=use_container_width):
@@ -1732,6 +1751,7 @@ if st.session_state.viewing_bookmark:
         )
         if new_note != existing_note:
             st.session_state.notes[note_key] = new_note
+            persist_note_if_signed_in(bookmark['category'], bookmark['clue'], new_note)
     
     if st.button("↩️ Back to Game", use_container_width=True):
         st.session_state.viewing_bookmark = None
@@ -1959,6 +1979,7 @@ if st.session_state.study_mode:
         )
         if new_note != existing_note:
             st.session_state.notes[note_key] = new_note
+            persist_note_if_signed_in(clue['category'], clue['clue'], new_note)
 
 # AI Mode - Handle buzzer and AI responses
 if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.session_state.study_mode:

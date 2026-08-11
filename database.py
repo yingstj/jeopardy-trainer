@@ -251,6 +251,10 @@ def initialize_database():
         )
         """
     )
+    # Personal notes on bookmarked clues (added later; safe/idempotent).
+    cur._cur.execute(
+        "ALTER TABLE bookmarks ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''"
+    )
     # Stripe/premium billing was removed from the app; drop the obsolete
     # premium_status table if it still exists from an older schema. Safe and
     # idempotent for both dev and production databases.
@@ -310,7 +314,7 @@ def load_bookmarks(username: str) -> list[dict]:
         if not row:
             return []
         cur.execute(
-            "SELECT category, clue, correct_response, bookmarked_at FROM bookmarks "
+            "SELECT category, clue, correct_response, bookmarked_at, note FROM bookmarks "
             "WHERE user_id = ? ORDER BY bookmarked_at ASC, id ASC",
             (row["id"],),
         )
@@ -322,8 +326,32 @@ def load_bookmarks(username: str) -> list[dict]:
                 "clue": r["clue"],
                 "correct_response": r["correct_response"],
                 "bookmarked_at": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+                "note": r["note"] or "",
             })
         return result
+    finally:
+        conn.close()
+
+
+def save_bookmark_note(username: str, category: str, clue: str, note: str) -> bool:
+    """Persist a personal note on a user's bookmarked clue. Returns True if a
+    bookmark row was updated (False if the clue isn't bookmarked)."""
+    if not username:
+        return False
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row:
+            return False
+        cur.execute(
+            "UPDATE bookmarks SET note = ? WHERE user_id = ? AND category = ? AND clue = ?",
+            (note, row["id"], category, clue),
+        )
+        updated = cur.rowcount > 0
+        conn.commit()
+        return updated
     finally:
         conn.close()
 
