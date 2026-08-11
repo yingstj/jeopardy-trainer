@@ -164,7 +164,7 @@ st.set_page_config(
     page_title="Jayopardy!",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # Custom CSS — Sophisticated editorial design system
@@ -590,11 +590,43 @@ st.markdown("""
         text-transform: uppercase;
     }
 
+    /* ── BUZZER PANEL (AI mode) ──────────────────────────────────── */
+    .buzzer-panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-top: 2px solid var(--gold);
+        border-radius: 6px;
+        padding: 1rem 1.25rem 0.9rem;
+        text-align: center;
+        margin: 0.5rem 0 1rem;
+        box-shadow: var(--shadow-xs);
+    }
+    .buzzer-panel .bp-title {
+        font: 600 0.65rem 'Inter', sans-serif;
+        color: var(--gold);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+    .buzzer-panel .bp-text {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.15rem;
+        font-weight: 500;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+    }
+
     @media (max-width: 700px) {
         .block-container { padding-top: 1.25rem; }
         .header-stats { gap: 1.25rem; }
         .main-header { margin-bottom: 1.25rem; }
+        .main-header { padding: 1.25rem 0 1rem; }
+        .header-stat-value { font-size: 1.4rem; }
         .clue-text { font-size: 1.1rem; }
+        .clue-card { margin: 0.75rem 0 1rem; }
+        .score-value { font-size: 1.6rem; }
+        .stat-number { font-size: 1.35rem; }
+        .buzzer-panel .bp-text { font-size: 1rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1678,9 +1710,9 @@ if st.session_state.ai_mode:
     # Show who's winning
     if st.session_state.buzzer_winner:
         if st.session_state.buzzer_winner == "player":
-            st.success(f"🎯 You buzzed in first! Your turn to answer.")
+            st.success("You buzzed in first — your turn to answer.")
         else:
-            st.info(f"🤖 {st.session_state.ai_personality} buzzed in first!")
+            st.info(f"{st.session_state.ai_personality} buzzed in first.")
 else:
     # Regular mode header
     st.markdown(f"""
@@ -1842,7 +1874,12 @@ if st.session_state.study_mode:
 # AI Mode - Handle buzzer and AI responses
 if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.session_state.study_mode:
     # Buzzer phase - AI might buzz automatically
-    st.markdown("### 🔔 Ready to buzz in!")
+    st.markdown("""
+    <div class="buzzer-panel">
+        <div class="bp-title">Buzzer Open</div>
+        <div class="bp-text">Buzz in before your opponent to answer</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Check if AI buzzes first (happens automatically based on difficulty)
     import time
@@ -1858,17 +1895,16 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
         ai_buzz_placeholder = st.empty()
         
         with col_buzz1:
-            if st.button("🎯 BUZZ IN!", use_container_width=True, key="buzzer", type="primary"):
+            if st.button("Buzz In", use_container_width=True, key="buzzer", type="primary"):
                 # Player buzzed - determine who was faster
                 winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
                 st.session_state.buzzer_winner = winner
                 st.session_state.current_turn = winner
                 
                 if winner == "player":
-                    st.balloons()
-                    st.success("🎯 You buzzed in first!")
+                    st.success("You buzzed in first — your turn to answer.")
                 else:
-                    st.warning(f"🤖 {st.session_state.ai_personality} was faster!")
+                    st.warning(f"{st.session_state.ai_personality} was faster to the buzzer.")
                 st.rerun()
         
         with col_buzz2:
@@ -1881,14 +1917,14 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
                 st.session_state.current_turn = "ai"
                 st.rerun()
             else:
-                st.info(f"⏱️ Be quick! {st.session_state.ai_personality} is thinking...")
+                st.info(f"{st.session_state.ai_personality} is weighing the clue — buzz while you can.")
     
     # Don't show answer form during buzzer phase
     st.stop()
 
 elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not st.session_state.study_mode:
     # AI is answering
-    st.info(f"🤖 {st.session_state.ai_personality} buzzed in first!")
+    st.info(f"{st.session_state.ai_personality} buzzed in first.")
     
     # Simulate AI response
     with st.spinner(f"{st.session_state.ai_personality} is thinking..."):
@@ -1900,7 +1936,7 @@ elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not
         )
     
     if is_correct:
-        st.error(f"🤖 {st.session_state.ai_personality} got it right! The answer was: **{clue['correct_response']}**")
+        st.error(f"{st.session_state.ai_personality} answered correctly. The response was: **{clue['correct_response']}**")
         
         # Award points to AI using clue value (daily double applies)
         base_value = parse_clue_value(clue.get("value"))
@@ -1916,8 +1952,8 @@ elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not
             st.rerun()
         st.stop()  # Don't show answer form
     else:
-        st.success(f"❌ {st.session_state.ai_personality} got it wrong!")
-        st.info("Your chance to steal the point! Answer below:")
+        st.success(f"{st.session_state.ai_personality} missed it — the board is yours.")
+        st.info("Answer below to steal the points.")
         # Let player try to steal - continue to answer form
 
 # Show answer form if:
@@ -2188,7 +2224,7 @@ if submitted:
         if correct:
             st.balloons()
             points_earned = base_value * points_multiplier
-            st.success(f"🎉 **Correct!** +${points_earned}")
+            st.success(f"**Correct** — well played. +${points_earned}")
             st.session_state.score += int(points_earned)
             st.session_state.streak += 1
             st.session_state.best_streak = max(st.session_state.streak, st.session_state.best_streak)
@@ -2202,9 +2238,9 @@ if submitted:
                 st.success("🏆 Achievement: 10 Question Streak!")
         else:
             if time_expired:
-                st.error("❌ **Incorrect** — no answer submitted in time.")
+                st.error("**Incorrect** — no answer submitted in time.")
             else:
-                st.error("❌ **Incorrect**")
+                st.error("**Incorrect**")
             st.info(f"The correct response was: **{clue['correct_response']}**")
             st.session_state.streak = 0
             points_earned = 0
