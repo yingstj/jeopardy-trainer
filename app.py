@@ -1415,6 +1415,24 @@ def compute_catalogue_stats(_df_sig: int):
         if "category" in df.columns else pd.Series(dtype=int)
     )
 
+    # Time coverage: clues per air-year (from a date column) or per season.
+    # Gracefully empty when the dataset has neither.
+    timeline_counts = pd.Series(dtype=int)
+    timeline_label = None
+    date_col = next((c for c in ("air_date", "airdate", "date") if c in df.columns), None)
+    if date_col is not None:
+        years = pd.to_datetime(df[date_col], errors="coerce").dt.year.dropna()
+        if not years.empty:
+            timeline_counts = years.astype(int).value_counts().sort_index()
+            timeline_label = "Year"
+    if timeline_counts.empty:
+        season_col = next((c for c in ("season", "season_number") if c in df.columns), None)
+        if season_col is not None:
+            seasons = pd.to_numeric(df[season_col], errors="coerce").dropna()
+            if not seasons.empty:
+                timeline_counts = seasons.astype(int).value_counts().sort_index()
+                timeline_label = "Season"
+
     return {
         "total_clues": total_clues,
         "total_games": total_games,
@@ -1422,6 +1440,8 @@ def compute_catalogue_stats(_df_sig: int):
         "round_counts": round_counts,
         "theme_counts": theme_counts,
         "top_categories": top_categories,
+        "timeline_counts": timeline_counts,
+        "timeline_label": timeline_label,
     }
 
 if st.session_state.get("show_dataset_stats"):
@@ -1477,6 +1497,17 @@ if st.session_state.get("show_dataset_stats"):
             )
         else:
             st.info("No theme information available.")
+
+    if stats["timeline_label"] and not stats["timeline_counts"].empty:
+        label = stats["timeline_label"]
+        st.markdown(f"### 📅 Clues by {label}")
+        tl = stats["timeline_counts"]
+        st.caption(
+            f"Catalogue spans {label.lower()}s {tl.index.min()}–{tl.index.max()} "
+            f"({len(tl)} {label.lower()}s covered)"
+        )
+        timeline_df = tl.rename_axis(label).reset_index(name="Clues")
+        st.bar_chart(timeline_df.set_index(label)["Clues"], color="#e5b94f")
 
     st.markdown("### 🏆 Most Frequent Categories")
     if not stats["top_categories"].empty:
