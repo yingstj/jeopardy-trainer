@@ -154,31 +154,35 @@ st.set_page_config(
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..600,0..100&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..600,0..100&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
     :root {
-        --ink: #1c1917;
-        --ink-soft: #292524;
-        --muted: #78716c;
-        --muted-2: #a8a29e;
-        --bg: #faf8f3;
-        --card: #ffffff;
-        --line: #ece9e2;
-        --line-soft: #f3f0e9;
-        --accent: #9a3412;
-        --accent-soft: #fef3e7;
-        --ring: rgba(154, 52, 18, 0.18);
-        --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
-        --shadow-md: 0 4px 16px -8px rgba(28, 25, 23, 0.10);
+        --ink: #f7f4ea;
+        --ink-soft: #d9d5c8;
+        --muted: #a7aec6;
+        --muted-2: #737c9d;
+        --bg: #080d2b;
+        --card: #111944;
+        --line: #293363;
+        --line-soft: #1a2450;
+        --accent: #e5b94f;
+        --accent-soft: #2d2a42;
+        --ring: rgba(229, 185, 79, 0.28);
+        --danger: #ef7777;
+        --success: #72d6b0;
+        --shadow-sm: 0 8px 24px rgba(2, 5, 24, 0.28);
+        --shadow-md: 0 18px 45px rgba(2, 5, 24, 0.42);
     }
 
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
         color: var(--ink);
         font-feature-settings: "ss01", "cv11";
     }
 
-    .stApp { background: var(--bg); }
+    .stApp { background: radial-gradient(circle at 50% -20%, #1d2860 0, var(--bg) 42rem); }
+    .stApp::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.035;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); z-index:0; }
 
     h1, h2, h3 {
         font-family: 'Fraunces', Georgia, serif !important;
@@ -200,8 +204,8 @@ st.markdown("""
     }
 
     /* Main container */
-    .main { padding: 0rem 1rem; }
-    .block-container { padding-top: 2.5rem; padding-bottom: 4rem; max-width: 980px; }
+    .main { padding: 0 1rem; }
+    .block-container { padding-top: 2.25rem; padding-bottom: 4rem; max-width: 1080px; }
 
     /* Custom header — refined editorial masthead */
     .main-header {
@@ -454,6 +458,53 @@ st.markdown("""
         font-weight: 600;
         margin-top: 0.35rem;
     }
+
+    /* Bold Jeopardy Energy: the shared Streamlit surface system */
+    .main-header { padding: 1.8rem 0 2rem; margin-bottom: 2.25rem; border-bottom: 1px solid var(--line); }
+    .main-header::before { content:"JAYOPARDY!  /  TRAINING GROUND"; display:block; color:var(--accent);
+        font:700 .68rem 'Space Mono', monospace; letter-spacing:.2em; margin-bottom:.9rem; }
+    .main-header h1 { color:var(--ink)!important; font-size:clamp(2.7rem,7vw,5.2rem); line-height:.95; font-style:normal; text-shadow:0 4px 30px rgba(229,185,79,.15); }
+    .main-header p { color:var(--muted); font-size:.95rem; letter-spacing:.04em; }
+    .theme-card { color:var(--accent); border:1px solid var(--accent); background:rgba(229,185,79,.07); border-radius:3px;
+        padding:.65rem 1rem .55rem; font:700 .7rem 'Space Mono',monospace; letter-spacing:.16em; }
+    .clue-card { background:linear-gradient(145deg,#172154,#0f163c); border:1px solid #39457c; border-radius:12px;
+        padding:clamp(1.8rem,5vw,3.4rem) clamp(1.25rem,5vw,3rem); box-shadow:var(--shadow-md); }
+    .clue-card::before { left:0; top:22%; width:4px; height:56%; background:var(--accent); }
+    .clue-text { color:var(--ink); font-size:clamp(1.35rem,2.7vw,2.25rem); line-height:1.35; text-align:center; }
+    .score-container,.stat-card,.timer-container { background:rgba(17,25,68,.88); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow-sm); }
+    .score-label,.stat-label { color:var(--muted); font-family:'Space Mono',monospace; }
+    .score-value,.stat-number,.header-stat-value { color:var(--accent); }
+    .progress-bar { background:#252e5b; height:7px; } .progress-fill { background:var(--accent); }
+    .stMarkdown, .stText, label, p, li { color:var(--ink); }
+    .stCaption,[data-testid="stCaptionContainer"] { color:var(--muted)!important; }
+    .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button { background:var(--accent); color:#11162f; border:1px solid var(--accent);
+        border-radius:5px; font-weight:700; box-shadow:0 5px 0 #9b7629; transition:transform .15s ease, background-color .15s ease; }
+    .stButton > button:hover, .stDownloadButton > button:hover, .stFormSubmitButton > button:hover { background:#f3cc6b; border-color:#f3cc6b; transform:translateY(-2px); }
+    .stButton > button:active, .stFormSubmitButton > button:active { transform:translateY(2px); box-shadow:0 2px 0 #9b7629; }
+    .stTextInput input,.stTextArea textarea,.stNumberInput input,
+    .stSelectbox [data-baseweb="select"] > div { color:var(--ink)!important; background:#0d1438!important; border-color:#3b477b!important; border-radius:6px!important; }
+    input::placeholder, textarea::placeholder { color:#747eaa!important; }
+    .stTextInput input:focus,.stTextArea textarea:focus,.stNumberInput input:focus { border-color:var(--accent)!important; box-shadow:0 0 0 2px var(--ring)!important; }
+    [data-baseweb="popover"], [data-baseweb="menu"], [data-baseweb="list"] { background:#111944!important; color:var(--ink)!important; }
+    [data-baseweb="menu"] li:hover,[data-baseweb="menu"] li[aria-selected="true"] { background:#293363!important; }
+    [data-testid="stSidebar"] { background:#0b1235!important; border-right:1px solid var(--line); }
+    [data-testid="stSidebar"] hr { border-color:var(--line); }
+    [data-testid="stSidebar"] .stMarkdown h2 { color:var(--accent)!important; }
+    .stTabs [data-baseweb="tab-list"] { gap:1.4rem; border-color:var(--line); }
+    .stTabs [data-baseweb="tab"] { color:var(--muted); font-weight:600; }
+    .stTabs [aria-selected="true"] { color:var(--accent)!important; }
+    .stTabs [data-baseweb="tab-highlight"] { background:var(--accent)!important; height:3px!important; }
+    [data-testid="stExpander"], [data-testid="stExpander"] details, [data-testid="stExpander"] details summary { background:#111944!important; border-color:var(--line)!important; color:var(--ink)!important; }
+    [data-testid="stAlert"] { border-radius:8px!important; }
+    div[data-testid="stAlertContentSuccess"] { background:#103b3b!important; border-color:#287565!important; color:#b8f2d9!important; }
+    div[data-testid="stAlertContentError"] { background:#42243b!important; border-color:#8b4055!important; color:#ffd0d0!important; }
+    div[data-testid="stAlertContentWarning"] { background:#40351e!important; border-color:#8d722e!important; color:#ffe8a8!important; }
+    div[data-testid="stAlertContentInfo"] { background:#172753!important; border-color:#3b5791!important; color:#c9d8ff!important; }
+    [data-testid="stDataFrame"], .stDataFrame { border-color:var(--line)!important; }
+    [data-testid="stForm"] { border-color:var(--line)!important; background:rgba(17,25,68,.35); border-radius:10px; }
+    [data-testid="stCheckbox"] label, [data-testid="stRadio"] label { color:var(--ink)!important; }
+    [data-testid="stSlider"] [role="slider"] { background:var(--accent)!important; border-color:var(--accent)!important; }
+    @media (max-width: 700px) { .block-container { padding-top:1.25rem; } .header-stats { gap:1rem; } .main-header { margin-bottom:1.3rem; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -854,7 +905,7 @@ with st.sidebar:
     check_premium_status()
 
     if st.session_state.is_premium:
-        st.markdown('<span style="font-size:0.75rem;color:#9a3412;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Premium</span>', unsafe_allow_html=True)
+        st.markdown('<span style="display:inline-block;padding:.28rem .55rem;border:1px solid #e5b94f;border-radius:3px;color:#e5b94f;background:rgba(229,185,79,.08);font:700 .68rem Space Mono,monospace;letter-spacing:.14em;text-transform:uppercase;">Premium access</span>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -1433,12 +1484,12 @@ if not st.session_state.daily_double_used and random.random() < 0.05:
 # Display Daily Double if applicable
 if is_daily_double:
     st.markdown("""
-    <div style="background: #fef3c7; color: #0f172a; padding: 1.25rem 1.5rem; border-radius: 14px;
-                border: 1px solid #fde68a; border-left: 4px solid #f59e0b;
+    <div style="background: linear-gradient(135deg,#312954,#171b4b); color: #f7f4ea; padding: 1.25rem 1.5rem; border-radius: 10px;
+                border: 1px solid #e5b94f; border-left: 4px solid #e5b94f;
                 text-align: center; margin-bottom: 1rem;
-                box-shadow: 0 4px 12px -6px rgba(245, 158, 11, 0.35);">
-        <h2 style="margin: 0; font-size: 1.6rem; color: #92400e;">⭐ DAILY DOUBLE</h2>
-        <p style="margin: 0.3rem 0 0; color: #78350f;">Double points for this question</p>
+                box-shadow: 0 10px 28px rgba(2, 5, 24, .35);">
+        <h2 style="margin: 0; font:600 1.6rem Fraunces,Georgia,serif; color: #e5b94f;">DAILY DOUBLE</h2>
+        <p style="margin: 0.3rem 0 0; color: #d9d5c8;">Double points for this question</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1617,19 +1668,18 @@ if show_answer_form:
         with _timer_slot:
             _components.html(
                 f"""
-                <div style="font-family: 'Fraunces', Georgia, serif; color: #1b1b1b;
-                            background: #fbf8f3; border: 1px solid #e3ddd0;
-                            padding: 0.75rem 1rem; border-radius: 6px;">
+                 <div style="font-family: 'DM Sans', sans-serif; color: #f7f4ea;
+                             background: linear-gradient(135deg,#151e50,#0d1438); border: 1px solid #3b477b;
+                             padding: 0.75rem 1rem; border-radius: 8px; box-shadow: 0 8px 22px rgba(2,5,24,.3);">
                   <div style="display:flex; justify-content:space-between; align-items:center;
-                              font-size: 1rem;">
-                    <span>⏱️ Time remaining</span>
-                    <span id="jpy-timer-value" style="font-variant-numeric: tabular-nums;
-                                                      font-weight: 600;">{_limit_s}.0s</span>
+                               font-size: 0.9rem; letter-spacing:.02em;">
+                     <span style="color:#a7aec6;text-transform:uppercase;font:700 .66rem 'Space Mono',monospace;">Time remaining</span>
+                     <span id="jpy-timer-value" style="font:700 1.05rem 'Space Mono',monospace; color:#e5b94f; font-variant-numeric: tabular-nums;">{_limit_s}.0s</span>
                   </div>
-                  <div style="margin-top:0.55rem; height:8px; background:rgba(0,0,0,0.08);
+                   <div style="margin-top:0.55rem; height:7px; background:#293363;
                               border-radius:4px; overflow:hidden;">
                     <div id="jpy-timer-bar" style="height:100%; width:100%;
-                                                    background:#1f6f43;
+                                                     background:#e5b94f;
                                                     transition: width 0.12s linear,
                                                                 background-color 0.3s ease;">
                     </div>
@@ -1649,11 +1699,11 @@ if show_answer_form:
                         const pct = Math.max(0, Math.min(100, (remaining / limit) * 100));
                         barEl.style.width = pct + '%';
                         if (pct <= 25) {{
-                            barEl.style.background = '#b91c1c';
+                             barEl.style.background = '#ef7777';
                         }} else if (pct <= 50) {{
-                            barEl.style.background = '#d97706';
+                             barEl.style.background = '#f0a957';
                         }} else {{
-                            barEl.style.background = '#1f6f43';
+                             barEl.style.background = '#e5b94f';
                         }}
                         if (remaining > 0) {{
                             requestAnimationFrame(tick);

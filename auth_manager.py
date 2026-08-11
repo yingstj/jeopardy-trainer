@@ -238,35 +238,36 @@ REDIRECT_URI = "http://localhost:8501"
         # Custom CSS for beautiful login page
         st.markdown("""
         <style>
-        /* Login page — editorial masthead */
-        .logo-container { text-align: center; margin-bottom: 2rem; padding-top: 1.5rem; }
+        /* Login page — Bold Jeopardy Energy */
+        .logo-container { text-align: center; margin-bottom: 2.2rem; padding-top: 1.5rem; }
         .logo {
             display: inline-block;
             font-family: 'Fraunces', Georgia, serif;
-            font-size: 44px;
-            font-style: italic;
-            font-weight: 400;
-            color: #1c1917;
-            letter-spacing: -0.04em;
+            font-size: 52px;
+            font-style: normal;
+            font-weight: 600;
+            color: #e5b94f;
+            letter-spacing: -0.06em;
+            text-shadow: 0 4px 24px rgba(229,185,79,.22);
             margin-bottom: 0.4rem;
             line-height: 1;
         }
         .logo-rule {
-            width: 36px; height: 1px;
-            background: #9a3412;
+            width: 44px; height: 3px;
+            background: #e5b94f;
             margin: 0.85rem auto 1rem;
         }
         .login-title {
             font-family: 'Fraunces', Georgia, serif !important;
-            font-size: 2.6rem !important;
-            font-weight: 400 !important;
-            font-style: italic;
-            color: #1c1917 !important;
+            font-size: 3.15rem !important;
+            font-weight: 500 !important;
+            font-style: normal;
+            color: #f7f4ea !important;
             margin: 0 !important;
             letter-spacing: -0.02em;
         }
         .login-subtitle {
-            color: #78716c !important;
+            color: #a7aec6 !important;
             font-size: 0.92rem !important;
             margin-top: 0.4rem !important;
             font-style: italic;
@@ -274,31 +275,31 @@ REDIRECT_URI = "http://localhost:8501"
 
         /* Guest play hero — quiet card */
         .guest-card {
-            background: #ffffff;
-            color: #1c1917;
-            padding: 1.6rem 1.8rem;
-            border-radius: 6px;
+            background: linear-gradient(145deg, #172154, #0f163c);
+            color: #f7f4ea;
+            padding: 1.7rem 1.8rem;
+            border-radius: 10px;
             margin: 1.25rem 0 1rem;
-            border: 1px solid #ece9e2;
+            border: 1px solid #39457c;
             position: relative;
         }
         .guest-card::before {
             content: ""; position: absolute;
             left: 1.8rem; top: -1px;
             width: 32px; height: 2px;
-            background: #9a3412;
+            background: #e5b94f;
         }
         .guest-card h3 {
-            color: #1c1917 !important;
+            color: #f7f4ea !important;
             margin-top: 0; margin-bottom: 0.4rem;
             font-family: 'Fraunces', Georgia, serif !important;
             font-weight: 400 !important;
-            font-style: italic;
+            font-style: normal;
             font-size: 1.5rem;
             letter-spacing: -0.01em;
         }
         .guest-card p {
-            color: #78716c;
+            color: #a7aec6;
             margin-bottom: 0;
             font-size: 0.95rem;
             line-height: 1.55;
@@ -306,37 +307,37 @@ REDIRECT_URI = "http://localhost:8501"
 
         /* Info / warn boxes */
         .info-box {
-            background: transparent;
-            border: none;
-            border-top: 1px solid #ece9e2;
-            border-radius: 0;
+            background: rgba(17,25,68,.58);
+            border: 1px solid #293363;
+            border-top: 2px solid #e5b94f;
+            border-radius: 8px;
             padding: 1rem 0.25rem 0.5rem;
-            color: #1c1917;
+            color: #f7f4ea;
             margin-bottom: 0.5rem;
         }
         .info-box.warn { }
         .info-box .ib-title {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Mono', monospace;
             font-weight: 600;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.2em;
             margin-bottom: 0.6rem;
-            color: #78716c;
+            color: #a7aec6;
         }
-        .info-box.warn .ib-title { color: #9a3412; }
+        .info-box.warn .ib-title { color: #e5b94f; }
         .info-box ul {
             margin: 0; padding-left: 1.1rem;
-            color: #44403c; line-height: 1.7;
+            color: #d9d5c8; line-height: 1.7;
             font-size: 0.92rem;
         }
-        .info-box ul li::marker { color: #a8a29e; }
+        .info-box ul li::marker { color: #e5b94f; }
 
         /* Benefit cards */
         .benefit-card {
-            background: transparent;
-            border: none;
-            border-top: 1px solid #ece9e2;
+            background: rgba(17,25,68,.42);
+            border: 1px solid #293363;
+            border-top: 2px solid #293363;
             padding: 1.5rem 0.5rem 0.5rem;
             text-align: center;
             margin-bottom: 1rem;
@@ -345,15 +346,15 @@ REDIRECT_URI = "http://localhost:8501"
         }
         .benefit-card:hover { opacity: 0.7; }
         .benefit-card h3 {
-            color: #1c1917 !important;
+            color: #f7f4ea !important;
             margin: 0.5rem 0 0.4rem;
             font-family: 'Fraunces', Georgia, serif !important;
             font-size: 1.15rem;
-            font-style: italic;
+            font-style: normal;
             font-weight: 400;
         }
         .benefit-card p {
-            color: #78716c !important;
+            color: #a7aec6 !important;
             margin: 0;
             font-size: 0.88rem;
             line-height: 1.5;
@@ -362,7 +363,7 @@ REDIRECT_URI = "http://localhost:8501"
             display: inline-block;
             font-family: 'Fraunces', Georgia, serif;
             font-size: 0.72rem;
-            color: #9a3412;
+            color: #e5b94f;
             letter-spacing: 0.25em;
             text-transform: uppercase;
             font-weight: 600;
@@ -370,10 +371,10 @@ REDIRECT_URI = "http://localhost:8501"
 
         /* Why-account heading */
         .why-heading {
-            color: #1c1917;
+            color: #f7f4ea;
             text-align: center;
             font-family: 'Fraunces', Georgia, serif !important;
-            font-style: italic;
+            font-style: normal;
             font-weight: 400 !important;
             font-size: 1.4rem;
             margin: 2.5rem 0 1.25rem;
@@ -454,7 +455,7 @@ REDIRECT_URI = "http://localhost:8501"
                     with col_a:
                         remember = st.checkbox("Remember me")
                     with col_b:
-                        st.markdown("<a href='#' style='float: right; color: #9a3412; font-size: 0.88rem; text-decoration: none;'>Forgot password?</a>", unsafe_allow_html=True)
+                        st.markdown("<a href='#' style='float: right; color: #e5b94f; font-size: 0.88rem; text-decoration: none;'>Forgot password?</a>", unsafe_allow_html=True)
 
                     st.markdown("<br>", unsafe_allow_html=True)
 
