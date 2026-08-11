@@ -1970,44 +1970,73 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
     </div>
     """, unsafe_allow_html=True)
     
-    # Check if AI buzzes first (happens automatically based on difficulty)
+    # Give the player a guaranteed reading window before the AI can buzz.
+    # On the first render of a new clue we roll ONCE whether the AI will buzz
+    # and, if so, schedule when — always after a difficulty-scaled delay.
     import time
-    ai_buzz_delay = AI_DIFFICULTY[st.session_state.ai_difficulty]["buzzer_speed"]
-    
+
+    _clue_key = f"{clue.get('category','')}|{clue.get('clue','')}"
+    if st.session_state.get("buzz_phase_clue") != _clue_key:
+        st.session_state.buzz_phase_clue = _clue_key
+        st.session_state.buzz_phase_start = time.time()
+        # Easy: 30% chance, Medium: 50% chance, Hard: 70% chance
+        buzz_chances = {"Easy": 0.3, "Medium": 0.5, "Hard": 0.7}
+        st.session_state.ai_will_buzz = (
+            random.random() < buzz_chances[st.session_state.ai_difficulty]
+        )
+        # AI buzz delay (seconds after clue render), scaled by difficulty.
+        # Even on Hard the player gets a few seconds to read and buzz.
+        ai_delay_windows = {
+            "Easy": (8.0, 12.0),
+            "Medium": (5.0, 8.0),
+            "Hard": (3.0, 5.0),
+        }
+        lo, hi = ai_delay_windows[st.session_state.ai_difficulty]
+        st.session_state.ai_buzz_at = random.uniform(lo, hi)
+
+    elapsed = time.time() - st.session_state.buzz_phase_start
+
     # Create a container for dynamic updates
     buzz_container = st.container()
-    
+
     with buzz_container:
         col_buzz1, col_buzz2 = st.columns(2)
-        
-        # Add a placeholder for AI buzzing notification
-        ai_buzz_placeholder = st.empty()
-        
+
         with col_buzz1:
             if st.button("Buzz In", use_container_width=True, key="buzzer", type="primary"):
-                # Player buzzed - determine who was faster
-                winner, reaction_time = simulate_buzzer_race(st.session_state.ai_difficulty)
+                # Player buzzed. If the AI had already buzzed (its scheduled
+                # time passed), the AI wins; otherwise the player claims it.
+                if st.session_state.get("ai_will_buzz") and elapsed >= st.session_state.get("ai_buzz_at", 0):
+                    winner = "ai"
+                else:
+                    winner = "player"
                 st.session_state.buzzer_winner = winner
                 st.session_state.current_turn = winner
-                
+
                 if winner == "player":
                     st.success("You buzzed in first — your turn to answer.")
                 else:
                     st.warning(f"{st.session_state.ai_personality} was faster to the buzzer.")
                 st.rerun()
-        
+
         with col_buzz2:
-            # Simulate AI potentially buzzing on its own
-            # Easy: 30% chance, Medium: 50% chance, Hard: 70% chance
-            buzz_chances = {"Easy": 0.3, "Medium": 0.5, "Hard": 0.7}
-            if random.random() < buzz_chances[st.session_state.ai_difficulty]:
-                # AI decides to buzz — no thread sleep; state change + rerun handles it
+            if st.session_state.get("ai_will_buzz") and elapsed >= st.session_state.get("ai_buzz_at", 0):
+                # AI's scheduled buzz time has arrived and the player hasn't buzzed
                 st.session_state.buzzer_winner = "ai"
                 st.session_state.current_turn = "ai"
                 st.rerun()
             else:
                 st.info(f"{st.session_state.ai_personality} is weighing the clue — buzz while you can.")
-    
+
+    # If the AI is going to buzz later, keep polling so its buzz fires after
+    # the visible delay. Short sleeps keep the Buzz In button responsive —
+    # a player click is processed on the next rerun.
+    if st.session_state.get("ai_will_buzz"):
+        remaining = st.session_state.ai_buzz_at - elapsed
+        if remaining > 0:
+            time.sleep(min(0.5, remaining))
+            st.rerun()
+
     # Don't show answer form during buzzer phase
     st.stop()
 
