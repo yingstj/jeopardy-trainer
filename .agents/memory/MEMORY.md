@@ -1,0 +1,1 @@
+- [Parallel task merges can clobber app.py](parallel-task-merges.md) — re-verify app.py integrity before completing; on rebase conflicts, take main's file and reapply small additions.

@@ -1063,6 +1063,10 @@ with st.sidebar:
     if st.button("🎯 New Question", use_container_width=True):
         st.session_state.current_clue = None
         st.rerun()
+
+    if st.button("📊 Dataset Stats", use_container_width=True, help="Explore the full clue catalogue"):
+        st.session_state.show_dataset_stats = True
+        st.rerun()
     
     if st.session_state.is_signed_in:
         if st.button("🔁 Adaptive Mode", use_container_width=True, help="Focus on weak themes & missed questions"):
@@ -1214,6 +1218,110 @@ with st.sidebar:
 
 # MAIN GAME AREA
 
+
+# Dataset Stats view
+@st.cache_data
+def compute_catalogue_stats(_df_sig: int):
+    """Derive catalogue metrics from the loaded dataset (cached per dataset signature)."""
+    total_clues = len(df)
+    total_games = df["game_id"].nunique() if "game_id" in df.columns else 0
+    total_categories = df["category"].nunique() if "category" in df.columns else 0
+
+    if "round" in df.columns:
+        round_counts = df["round"].dropna().value_counts()
+    else:
+        round_counts = pd.Series(dtype=int)
+
+    # Map each category to its theme (via the cached analyzer groups) and
+    # count clues per theme.
+    cat_to_theme = {}
+    for theme, cats in theme_groups.items():
+        for cat in cats:
+            cat_to_theme.setdefault(cat, theme)
+    theme_counts = (
+        df["category"].map(cat_to_theme).dropna().value_counts()
+        if "category" in df.columns else pd.Series(dtype=int)
+    )
+
+    top_categories = (
+        df["category"].value_counts().head(15)
+        if "category" in df.columns else pd.Series(dtype=int)
+    )
+
+    return {
+        "total_clues": total_clues,
+        "total_games": total_games,
+        "total_categories": total_categories,
+        "round_counts": round_counts,
+        "theme_counts": theme_counts,
+        "top_categories": top_categories,
+    }
+
+if st.session_state.get("show_dataset_stats"):
+    stats = compute_catalogue_stats(_df_signature)
+
+    st.markdown("""
+    <div class="main-header">
+        <h1>📊 Dataset Stats</h1>
+        <p>The full Jeopardy! clue catalogue powering your training</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Headline metric cards
+    c1, c2, c3, c4 = st.columns(4)
+    headline = [
+        (c1, f"{stats['total_clues']:,}", "Total Clues"),
+        (c2, f"{stats['total_games']:,}", "Games"),
+        (c3, f"{stats['total_categories']:,}", "Unique Categories"),
+        (c4, f"{len(stats['theme_counts']):,}", "Themes"),
+    ]
+    for col, value, label in headline:
+        with col:
+            st.markdown(f"""
+            <div class="stat-card">
+                <div class="stat-number">{value}</div>
+                <div class="stat-label">{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("")
+
+    col_round, col_theme = st.columns(2)
+    with col_round:
+        st.markdown("### 🎰 Clues by Round")
+        if not stats["round_counts"].empty:
+            round_df = stats["round_counts"].rename_axis("Round").reset_index(name="Clues")
+            st.bar_chart(round_df.set_index("Round")["Clues"], color="#e5b94f")
+            st.dataframe(
+                round_df.assign(Clues=round_df["Clues"].map("{:,}".format)),
+                use_container_width=True, hide_index=True,
+            )
+        else:
+            st.info("No round information available in this dataset.")
+
+    with col_theme:
+        st.markdown("### 🗂️ Clues by Theme")
+        if not stats["theme_counts"].empty:
+            theme_df = stats["theme_counts"].head(12).rename_axis("Theme").reset_index(name="Clues")
+            st.bar_chart(theme_df.set_index("Theme")["Clues"], color="#e5b94f", horizontal=True)
+            st.dataframe(
+                theme_df.assign(Clues=theme_df["Clues"].map("{:,}".format)),
+                use_container_width=True, hide_index=True,
+            )
+        else:
+            st.info("No theme information available.")
+
+    st.markdown("### 🏆 Most Frequent Categories")
+    if not stats["top_categories"].empty:
+        top_cat_df = stats["top_categories"].rename_axis("Category").reset_index(name="Clues")
+        top_cat_df["Clues"] = top_cat_df["Clues"].map("{:,}".format)
+        st.dataframe(top_cat_df, use_container_width=True, hide_index=True)
+
+    if st.button("↩️ Back to Game", use_container_width=True):
+        st.session_state.show_dataset_stats = False
+        st.rerun()
+
+    st.stop()  # Don't show the regular game while viewing stats
 
 # Check if viewing a bookmark
 if st.session_state.viewing_bookmark:
