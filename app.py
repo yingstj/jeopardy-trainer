@@ -2421,7 +2421,44 @@ with col_exp2:
         if st.session_state.bookmarks:
             with st.expander(f"🔖 Bookmarks ({len(st.session_state.bookmarks)})", expanded=False):
                 st.markdown("#### Your Bookmarked Questions")
-                for i, bookmark in enumerate(st.session_state.bookmarks[-5:], 1):
+                all_bookmarks = list(reversed(st.session_state.bookmarks))  # newest first
+
+                # Search / filter
+                search = st.text_input(
+                    "🔍 Search bookmarks",
+                    key="bookmark_search",
+                    placeholder="Filter by category, clue, or answer...",
+                )
+                if search:
+                    q = search.strip().lower()
+                    all_bookmarks = [
+                        b for b in all_bookmarks
+                        if q in b["category"].lower()
+                        or q in b["clue"].lower()
+                        or q in b["correct_response"].lower()
+                    ]
+                    if not all_bookmarks:
+                        st.info("No bookmarks match your search.")
+
+                # Pagination
+                PER_PAGE = 5
+                total = len(all_bookmarks)
+                total_pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+                if st.session_state.get("bookmark_page", 1) > total_pages:
+                    st.session_state.bookmark_page = total_pages
+                page = 1
+                if total_pages > 1:
+                    page = st.number_input(
+                        "Page",
+                        min_value=1,
+                        max_value=total_pages,
+                        step=1,
+                        key="bookmark_page",
+                    )
+                start = (page - 1) * PER_PAGE
+                page_bookmarks = all_bookmarks[start:start + PER_PAGE]
+
+                for i, bookmark in enumerate(page_bookmarks, start + 1):
                     st.markdown(f"**{i}. {bookmark['category']}**")
                     st.markdown(f"Q: {bookmark['clue']}")
                     st.markdown(f"A: *{bookmark['correct_response']}*")
@@ -2452,8 +2489,8 @@ with col_exp2:
                                 print(f"[bookmarks] delete failed: {e}", file=sys.stderr)
                             st.rerun()
                     st.markdown("---")
-                if len(st.session_state.bookmarks) > 5:
-                    st.info(f"Showing 5 of {len(st.session_state.bookmarks)} bookmarks")
+                if total_pages > 1:
+                    st.caption(f"Showing {start + 1}–{min(start + PER_PAGE, total)} of {total} bookmarks")
         else:
             with st.expander("🔖 Bookmarks (0)", expanded=False):
                 st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
