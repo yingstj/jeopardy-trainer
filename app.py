@@ -2054,8 +2054,40 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
         }
         lo, hi = ai_delay_windows[st.session_state.ai_difficulty]
         st.session_state.ai_buzz_at = random.uniform(lo, hi)
+        # Fixed visible countdown window for this difficulty. Using the max
+        # of the AI delay window keeps suspense: the bar never reveals the
+        # AI's exact (random) buzz moment.
+        st.session_state.buzz_window_total = hi
 
     elapsed = time.time() - st.session_state.buzz_phase_start
+
+    # Visible countdown: a shrinking bar over the difficulty's max buzz
+    # window. The CSS animation runs client-side; a negative animation-delay
+    # keeps it in sync with server-side elapsed time across reruns.
+    _total = float(st.session_state.get("buzz_window_total", 10.0))
+    _elapsed_capped = min(elapsed, _total)
+    st.markdown(f"""
+    <div style="margin:0.25rem 0 1rem;">
+        <div style="display:flex;justify-content:space-between;font:600 0.65rem 'Inter',sans-serif;
+                    letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem;">
+            <span>Buzzer window</span>
+            <span>⏱</span>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--line);height:8px;
+                    border-radius:99px;overflow:hidden;">
+            <div style="height:100%;border-radius:99px;
+                        background:linear-gradient(90deg, var(--gold-light), var(--gold));
+                        animation: jpyBuzzShrink {_total:.2f}s linear forwards;
+                        animation-delay: -{_elapsed_capped:.2f}s;"></div>
+        </div>
+    </div>
+    <style>
+    @keyframes jpyBuzzShrink {{
+        from {{ width: 100%; }}
+        to   {{ width: 0%; }}
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
     # Create a container for dynamic updates
     buzz_container = st.container()
