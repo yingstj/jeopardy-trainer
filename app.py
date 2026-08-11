@@ -20,6 +20,8 @@ from r2_jeopardy_data_loader import (
 # Kick off background dataset download at server startup so the first user
 # (often a guest) doesn't wait 20s for the R2 fetch.
 start_prewarm()
+from scheduled_refresh import start_scheduler
+start_scheduler()
 from auth_manager import AuthManager, stash_guest_progress
 from category_analyzer import JeopardyCategoryAnalyzer
 from database import initialize_database, get_db_connection
