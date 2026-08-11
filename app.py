@@ -768,6 +768,23 @@ def restore_bookmarks_from_db():
         import sys
         print(f"[bookmarks] restore failed: {e}", file=sys.stderr)
 
+def _guest_sign_in_clicked():
+    """on_click callback: end the guest session and route to the login page.
+
+    Runs before the next script rerun, so the auth gate at the top of the
+    script sees authenticated=False immediately — the login page appears on
+    the first click even if other code paths (e.g. timers) trigger reruns.
+    """
+    # Keep the guest's in-progress game so it survives sign-up
+    stash_guest_progress()
+    st.session_state.bookmarks = []
+    st.session_state.bookmarks_loaded_for = None
+    st.session_state.authenticated = False
+    st.session_state.is_guest = False
+    st.session_state.is_signed_in = False
+    st.session_state.user_email = None
+    st.session_state.user_name = None
+
 def persist_note_if_signed_in(category: str, clue: str, note: str):
     """Save a note on a bookmarked clue to the database for signed-in
     players. Guests' notes stay session-only."""
@@ -781,18 +798,12 @@ def persist_note_if_signed_in(category: str, clue: str, note: str):
         print(f"[bookmarks] note save failed: {e}", file=sys.stderr)
 def guest_sign_in_button(key: str, label: str = "🔑 Sign in", use_container_width: bool = True):
     """Render a button that ends the guest session and returns to the login page."""
-    if st.button(label, key=key, use_container_width=use_container_width):
-        # Keep the guest's in-progress game so it survives sign-up,
-        # then show the login page
-        stash_guest_progress()
-        st.session_state.bookmarks = []
-        st.session_state.bookmarks_loaded_for = None
-        st.session_state.authenticated = False
-        st.session_state.is_guest = False
-        st.session_state.is_signed_in = False
-        st.session_state.user_email = None
-        st.session_state.user_name = None
-        st.rerun()
+    st.button(
+        label,
+        key=key,
+        use_container_width=use_container_width,
+        on_click=_guest_sign_in_clicked,
+    )
 
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
