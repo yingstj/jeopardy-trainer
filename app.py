@@ -535,6 +535,17 @@ def check_signed_in_status():
     # All signed-in (non-guest) users have full access.
     st.session_state.is_signed_in = not st.session_state.get("is_guest", True)
 
+def guest_sign_in_button(key: str, label: str = "🔑 Sign in", use_container_width: bool = True):
+    """Render a button that ends the guest session and returns to the login page."""
+    if st.button(label, key=key, use_container_width=use_container_width):
+        # Clear guest session safely and show the login page
+        st.session_state.authenticated = False
+        st.session_state.is_guest = False
+        st.session_state.is_signed_in = False
+        st.session_state.user_email = None
+        st.session_state.user_name = None
+        st.rerun()
+
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
     st.session_state.ai_difficulty = "Medium"
@@ -1098,6 +1109,7 @@ with st.sidebar:
     else:
         st.button("🔁 Adaptive Mode", use_container_width=True, disabled=True, help="Sign in to use adaptive mode")
         st.caption("🔒 Sign in to unlock")
+        guest_sign_in_button("signin_adaptive")
     
     if st.button("🔄 Reset Game", use_container_width=True):
         for key in ["score", "total", "streak", "history", "daily_double_used"]:
@@ -1116,6 +1128,7 @@ with st.sidebar:
     st.markdown("### 🏆 Challenge Mode")
     if not st.session_state.is_signed_in:
         st.caption("Sign in with an account to challenge friends.")
+        guest_sign_in_button("signin_challenge")
     else:
         st.caption("Challenge friends and track your wins.")
     
@@ -1846,6 +1859,7 @@ if bookmark_btn:
             st.success("🔖 Bookmarked!")
     else:
         st.info("🔒 Sign in to save bookmarks — it's free.")
+        guest_sign_in_button("signin_bookmark_save", use_container_width=False)
 
 if submitted:
     if st.session_state.study_mode:
@@ -2049,6 +2063,7 @@ with col_exp2:
     else:
         with st.expander("🔖 Bookmarks", expanded=False):
             st.info("🔒 Sign in to save and review bookmarks.")
+            guest_sign_in_button("signin_bookmarks_panel")
 
 with col_exp3:
     if st.session_state.is_signed_in:
@@ -2078,3 +2093,4 @@ with col_exp3:
     else:
         with st.expander("📈 Theme Performance", expanded=False):
             st.info("🔒 Sign in to see detailed analytics.")
+            guest_sign_in_button("signin_analytics")
