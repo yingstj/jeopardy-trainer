@@ -48,6 +48,7 @@ def clean_parse_game(game_url):
         return []
     soup = BeautifulSoup(resp.text, "html.parser")
     game_id = game_url.split("game_id=")[-1]
+    air_date = scraper.extract_air_date(resp.text)
     clues = []
 
     for round_name, div_id in [
@@ -70,6 +71,7 @@ def clean_parse_game(game_url):
                     clue_tag.get_text(strip=True),
                     resp_tag.get_text(strip=True) if resp_tag else "UNKNOWN",
                     round_name,
+                    air_date,
                 ])
             continue
 
@@ -94,6 +96,7 @@ def clean_parse_game(game_url):
                 clue_text,
                 correct or "UNKNOWN",
                 round_name,
+                air_date,
             ])
     return clues
 PARQUET_CACHE = Path("/tmp/jeopardy_clues.parquet")
@@ -157,6 +160,86 @@ def scrape_and_append(missing, csv_path: Path):
     return scraped_games, total_clues
 
 
+def build_air_date_map(num_seasons: int = 0) -> dict:
+    """Map game_id -> ISO air date by scanning season list pages.
+
+    Each season page links games with text like '#9143, aired 2025-06-02',
+    so one request per season covers every game. num_seasons=0 scans all.
+    """
+    import re as _re
+    import requests
+    from bs4 import BeautifulSoup
+
+    seasons = scraper.extract_season_links()
+    if not seasons:
+        raise RuntimeError("Could not fetch season list from J! Archive")
+    if num_seasons:
+        seasons = seasons[:num_seasons]
+    date_map = {}
+    for i, season_url in enumerate(seasons, 1):
+        scraper.logger.info(f"[{i}/{len(seasons)}] Scanning {season_url}")
+        try:
+            resp = requests.get(season_url, timeout=30)
+            resp.raise_for_status()
+        except Exception as e:
+            scraper.logger.error(f"  Failed to fetch season page: {e}")
+            continue
+        soup = BeautifulSoup(resp.text, "html.parser")
+        for a in soup.select("a[href*='showgame.php']"):
+            href = a.get("href", "")
+            m = _re.search(r"game_id=(\d+)", href)
+            if not m:
+                continue
+            gid = m.group(1)
+            dm = _re.search(r"aired\s+(\d{4}-\d{2}-\d{2})", a.get_text(" ", strip=True))
+            if dm:
+                date_map[gid] = dm.group(1)
+        time.sleep(RATE_LIMIT_SECONDS)
+    return date_map
+
+
+def backfill_air_dates(csv_path: Path, num_seasons: int = 0) -> int:
+    """Add/fill an air_date column on the existing CSV using season pages.
+
+    Returns the number of rows that received an air date.
+    """
+    date_map = build_air_date_map(num_seasons)
+    print(f"Collected air dates for {len(date_map):,} games.")
+
+    tmp_path = csv_path.with_suffix(".csv.tmp")
+    filled = 0
+    with open(csv_path, newline="", encoding="utf-8") as fin, \
+         open(tmp_path, "w", newline="", encoding="utf-8") as fout:
+        reader = csv.reader(fin)
+        writer = csv.writer(fout)
+        header = next(reader)
+        if "air_date" in header:
+            date_idx = header.index("air_date")
+            writer.writerow(header)
+            for row in reader:
+                if not row:
+                    continue
+                while len(row) <= date_idx:
+                    row.append("")
+                if not row[date_idx]:
+                    d = date_map.get(str(row[0]))
+                    if d:
+                        row[date_idx] = d
+                        filled += 1
+                writer.writerow(row)
+        else:
+            writer.writerow(header + ["air_date"])
+            for row in reader:
+                if not row:
+                    continue
+                d = date_map.get(str(row[0]), "")
+                if d:
+                    filled += 1
+                writer.writerow(row + [d])
+    tmp_path.replace(csv_path)
+    return filled
+
+
 def upload_to_r2(csv_path: Path) -> bool:
     """Upload refreshed CSV to R2 when credentials are configured; skip gracefully otherwise."""
     endpoint = os.getenv("R2_ENDPOINT_URL")
@@ -204,7 +287,26 @@ def main():
     ap.add_argument("--seasons", type=int, default=2, help="Most-recent seasons to scan")
     ap.add_argument("--limit", type=int, default=0, help="Max new games to scrape (0 = no limit)")
     ap.add_argument("--dry-run", action="store_true", help="List missing games without scraping")
+    ap.add_argument("--backfill-dates", action="store_true",
+                    help="Backfill air_date for existing rows from season pages (all seasons unless --seasons > 0 is given with this flag)")
     args = ap.parse_args()
+
+    if args.backfill_dates:
+        backup = CSV_PATH.with_suffix(".csv.bak")
+        shutil.copy2(CSV_PATH, backup)
+        print(f"Backed up CSV to {backup}")
+        filled = backfill_air_dates(CSV_PATH, 0)
+        print(f"✅ Backfilled air dates on {filled:,} rows.")
+        from validate_data import validate_csv
+        if not validate_csv(str(CSV_PATH)):
+            print("❌ Validation failed — restoring backup.")
+            shutil.copy2(backup, CSV_PATH)
+            return 1
+        backup.unlink(missing_ok=True)
+        upload_to_r2(CSV_PATH)
+        invalidate_parquet_cache()
+        print("Backfill complete.")
+        return 0
 
     known = existing_game_ids(CSV_PATH)
     print(f"Existing dataset: {len(known):,} games in {CSV_PATH}")

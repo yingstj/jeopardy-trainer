@@ -111,12 +111,36 @@ def extract_season_links():
         return []
     return [BASE_URL + a["href"] for a in soup.select("a") if "showseason.php" in a["href"]]
 
+MONTHS = {m: i for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July",
+     "August", "September", "October", "November", "December"], start=1)}
+
+
+def extract_air_date(soup_or_html):
+    """Extract the ISO air date (YYYY-MM-DD) from a J! Archive game page.
+
+    The page title looks like: 'J! Archive - Show #9143, aired 2025-06-02'
+    and the h1 like: 'Show #9143 - Monday, June 2, 2025'.
+    Returns '' when no date can be found.
+    """
+    text = str(soup_or_html)
+    m = re.search(r"aired\s+(\d{4}-\d{2}-\d{2})", text)
+    if m:
+        return m.group(1)
+    m = re.search(
+        r"(January|February|March|April|May|June|July|August|September|October|November|December)"
+        r"\s+(\d{1,2}),\s+(\d{4})", text)
+    if m:
+        return f"{int(m.group(3)):04d}-{MONTHS[m.group(1)]:02d}-{int(m.group(2)):02d}"
+    return ""
+
 def parse_game(game_url):
     soup = get_soup(game_url)
     if not soup:
         return []
 
     game_id = game_url.split("game_id=")[-1]
+    air_date = extract_air_date(soup)
     clues = []
     missing_answers_count = 0
 
@@ -159,7 +183,8 @@ def parse_game(game_url):
                 category_text,
                 clue_text,
                 correct_response,
-                round_name
+                round_name,
+                air_date
             ])
             continue
 
@@ -204,7 +229,8 @@ def parse_game(game_url):
                 category,
                 clue_text,
                 correct_response,
-                round_name
+                round_name,
+                air_date
             ])
     
     if missing_answers_count > 0:
@@ -216,7 +242,7 @@ def write_header(filepath):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["game_id", "category", "clue", "correct_response", "round"])
+        writer.writerow(["game_id", "category", "clue", "correct_response", "round", "air_date"])
 
 def append_to_csv(clues, filepath):
     with open(filepath, "a", newline="", encoding="utf-8") as f:
