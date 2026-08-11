@@ -1,1 +1,2 @@
 - [Parallel task merges can clobber app.py](parallel-task-merges.md) — re-verify app.py integrity before completing; on rebase conflicts, take main's file and reapply small additions.
+- [J! Archive scraping](jarchive-scraping.md) — legacy scraper's div→td preprocessing corrupts current site HTML (3 bogus clues/game); use refresh_dataset.py's clean parser and check ~61 clues/game.
