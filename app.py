@@ -31,6 +31,7 @@ from database import (
     load_bookmarks,
     delete_bookmark,
 )
+from utils import apply_era_filter
 
 # Sentinel value written into the answer input by the JS countdown's
 # auto-submit handler. The Python grader uses this to distinguish a
@@ -1079,6 +1080,30 @@ _df_signature = len(df)
 all_categories = get_all_categories(_df_signature)
 theme_groups = get_theme_groups(_df_signature)
 
+@st.cache_data
+def get_era_metadata(_df_sig: int):
+    """Detect an air-date or season column and summarize the eras available.
+
+    Returns None when the dataset has neither, so the era filter can be
+    hidden gracefully. Mirrors the column-detection pattern used by
+    compute_catalogue_stats.
+    """
+    date_col = next((c for c in ("air_date", "airdate", "date") if c in df.columns), None)
+    if date_col is not None:
+        years = pd.to_datetime(df[date_col], errors="coerce").dt.year.dropna()
+        if not years.empty:
+            decades = sorted((years.astype(int) // 10 * 10).unique().tolist())
+            return {"kind": "year", "col": date_col, "decades": decades}
+    season_col = next((c for c in ("season", "season_number") if c in df.columns), None)
+    if season_col is not None:
+        seasons = pd.to_numeric(df[season_col], errors="coerce").dropna()
+        if not seasons.empty:
+            svals = sorted(seasons.astype(int).unique().tolist())
+            return {"kind": "season", "col": season_col, "seasons": svals}
+    return None
+
+era_metadata = get_era_metadata(_df_signature)
+
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
     st.markdown("## Jayopardy")
@@ -1309,7 +1334,45 @@ with st.sidebar:
             help="Filter by Jeopardy round"
         )
         st.session_state.selected_round = selected_round
-    
+
+    # Era / season filter (hidden gracefully when the dataset has no
+    # air-date or season data).
+    if era_metadata is not None:
+        prev_era = st.session_state.get("era_filter")
+        if era_metadata["kind"] == "year":
+            era_options = ["All Eras"] + [f"{d}s" for d in era_metadata["decades"]]
+            selected_era_label = st.selectbox(
+                "🕰️ Era:",
+                era_options,
+                help="Practice clues only from episodes that aired in this decade"
+            )
+            if selected_era_label == "All Eras":
+                st.session_state.era_filter = None
+            else:
+                st.session_state.era_filter = ("year", int(selected_era_label[:-1]))
+        else:
+            seasons = era_metadata["seasons"]
+            if len(seasons) > 1:
+                season_lo, season_hi = st.select_slider(
+                    "🕰️ Seasons:",
+                    options=seasons,
+                    value=(seasons[0], seasons[-1]),
+                    help="Practice clues only from this range of seasons"
+                )
+                if (season_lo, season_hi) == (seasons[0], seasons[-1]):
+                    st.session_state.era_filter = None
+                else:
+                    st.session_state.era_filter = ("season", int(season_lo), int(season_hi))
+            else:
+                st.session_state.era_filter = None
+        # Discard the current clue when the era selection changes so the
+        # next question comes from the newly filtered pool.
+        if st.session_state.get("era_filter") != prev_era:
+            st.session_state.current_clue = None
+            st.session_state.challenge_current_clue = None
+    else:
+        st.session_state.era_filter = None
+
     st.markdown("---")
     
     # Quick actions
@@ -1739,26 +1802,32 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# Check if categories are selected
-if not st.session_state.selected_categories:
+# Whether an active challenge is driving question selection (challenges use
+# their own category pool, so normal theme/pool checks must not block them).
+_in_challenge_mode = bool(st.session_state.get("challenge_mode"))
+
+# Check if categories are selected (normal gameplay only)
+if not st.session_state.selected_categories and not _in_challenge_mode:
     st.warning("⚠️ Please select themes from the sidebar to start playing!")
     st.stop()
 
 @st.cache_data
-def get_filtered_df(selected_cats_tuple: tuple, selected_round: str, _df_sig: int):
+def get_filtered_df(selected_cats_tuple: tuple, selected_round: str, era_filter, _df_sig: int):
     fdf = df[df["category"].isin(selected_cats_tuple)]
     if selected_round and selected_round != 'All Rounds':
         fdf = fdf[fdf['round'] == selected_round]
+    fdf = apply_era_filter(fdf, era_filter, era_metadata)
     return fdf
 
 filtered_df = get_filtered_df(
     tuple(st.session_state.selected_categories),
     st.session_state.get('selected_round', 'All Rounds'),
+    st.session_state.get('era_filter'),
     _df_signature,
 )
 
-if filtered_df.empty:
-    st.warning("No clues found for selected themes/round. Please adjust your selection.")
+if filtered_df.empty and not _in_challenge_mode:
+    st.warning("No clues found for selected themes/round/era. Please adjust your selection.")
     st.stop()
 
 # Challenge Mode Game Logic
@@ -1806,7 +1875,21 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
             ch_categories = []
     challenge_df = df[df["category"].isin(ch_categories)]
     if challenge_df.empty:
-        challenge_df = filtered_df  # Fallback to regular filtered df
+        # Challenge categories missing from dataset: fall back to the regular
+        # filtered pool (which already respects the era/season filter).
+        challenge_df = filtered_df
+    else:
+        # Respect the era/season filter in challenges too (round filter is
+        # intentionally not applied: challenges are defined by their categories).
+        challenge_df = apply_era_filter(
+            challenge_df, st.session_state.get("era_filter"), era_metadata
+        )
+    if challenge_df.empty:
+        st.warning(
+            "⏳ This challenge has no clues from the selected era/season. "
+            "Set the era filter back to All in the sidebar to continue the challenge."
+        )
+        st.stop()
     
     # Get challenge question
     if "challenge_current_clue" not in st.session_state or st.session_state.challenge_current_clue is None:

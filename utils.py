@@ -76,3 +76,28 @@ def fuzzy_match(user_answer, correct_answer, threshold=70):
     
     similarity = ((max_len - differences) / max_len) * 100
     return similarity >= threshold
+
+
+# Era / season filtering (pure pandas — shared by regular and challenge modes)
+def apply_era_filter(fdf, era_filter, era_metadata):
+    """Filter a clue dataframe to the selected era.
+
+    era_filter: None, ("year", decade_start) or ("season", lo, hi).
+    era_metadata: dict with "col" naming the air-date/season column, or None.
+    Returns fdf unchanged when no filter/metadata applies.
+    """
+    import pandas as pd
+    if not era_filter or not era_metadata:
+        return fdf
+    col = era_metadata.get("col")
+    if col not in fdf.columns:
+        return fdf
+    if era_filter[0] == "year":
+        decade = era_filter[1]
+        years = pd.to_datetime(fdf[col], errors="coerce").dt.year
+        return fdf[(years >= decade) & (years <= decade + 9)]
+    if era_filter[0] == "season":
+        lo, hi = era_filter[1], era_filter[2]
+        seasons = pd.to_numeric(fdf[col], errors="coerce")
+        return fdf[(seasons >= lo) & (seasons <= hi)]
+    return fdf
