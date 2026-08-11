@@ -806,7 +806,7 @@ if "selected_categories" not in st.session_state:
 if "time_limit" not in st.session_state:
     st.session_state.time_limit = 30
 if "use_timer" not in st.session_state:
-    st.session_state.use_timer = False
+    st.session_state.use_timer = True
 if "time_limit_slider" not in st.session_state:
     st.session_state.time_limit_slider = 30
 if "speed_round" not in st.session_state:
@@ -1031,7 +1031,7 @@ with st.sidebar:
     # Game settings
     st.markdown("### ⚙️ Settings")
     
-    # Timer toggle - default to off
+    # Timer toggle - default to on (state initialized via key="use_timer")
     use_timer = st.checkbox(
         "⏱️ Use Timer",
         help="Enable/disable time limit for answers",
