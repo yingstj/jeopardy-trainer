@@ -14,6 +14,42 @@ import pandas as pd
 import streamlit as st
 
 LOCAL_CACHE_PATH = Path("/tmp/jeopardy_clues.parquet")
+SOURCE_MARKER_PATH = Path("/tmp/jeopardy_clues.source")
+
+# Human-readable labels for where the current dataset came from.
+SOURCE_R2 = "R2 live"
+SOURCE_GITHUB = "GitHub fallback"
+SOURCE_SAMPLE = "Sample data"
+SOURCE_UNKNOWN = "Unknown"
+
+_data_source = SOURCE_UNKNOWN
+
+
+def get_data_source() -> str:
+    """Return a label describing which source the loaded dataset came from."""
+    return _data_source
+
+
+def _set_data_source(source: str):
+    global _data_source
+    _data_source = source
+
+
+def _write_source_marker(source: str):
+    try:
+        SOURCE_MARKER_PATH.write_text(source)
+    except Exception:
+        pass
+
+
+def _read_source_marker() -> str:
+    try:
+        text = SOURCE_MARKER_PATH.read_text().strip()
+        if text in (SOURCE_R2, SOURCE_GITHUB, SOURCE_SAMPLE):
+            return text
+    except Exception:
+        pass
+    return SOURCE_UNKNOWN
 
 # Coordinates the background prewarm thread with the foreground loader so
 # they don't race on the parquet file or do duplicate network fetches.
@@ -45,10 +81,14 @@ def _atomic_write_parquet(df: pd.DataFrame) -> bool:
 def _fetch_dataset() -> Optional[pd.DataFrame]:
     """Network fetch with R2 → GitHub fallback. Safe to call from any thread."""
     df = _load_from_r2()
+    source = SOURCE_R2
     if df is None or df.empty:
         df = _load_from_github()
+        source = SOURCE_GITHUB
     if df is None or df.empty:
         return None
+    _set_data_source(source)
+    _write_source_marker(source)
     return df
 
 
@@ -99,6 +139,7 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
         if LOCAL_CACHE_PATH.exists():
             try:
                 df = pd.read_parquet(LOCAL_CACHE_PATH)
+                _set_data_source(_read_source_marker())
                 _surface_pending_warnings()
                 return df
             except Exception:
@@ -110,6 +151,7 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
         df = _fetch_dataset()
         if df is None or df.empty:
             df = _load_sample_data()
+            _set_data_source(SOURCE_SAMPLE)
         else:
             _atomic_write_parquet(df)
 

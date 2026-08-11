@@ -10,7 +10,12 @@ from typing import Dict, List
 import numpy as np
 
 # Import the R2 data loader
-from r2_jeopardy_data_loader import load_jeopardy_data_from_r2, start_prewarm
+from r2_jeopardy_data_loader import (
+    load_jeopardy_data_from_r2,
+    start_prewarm,
+    get_data_source,
+    SOURCE_SAMPLE,
+)
 
 # Kick off background dataset download at server startup so the first user
 # (often a guest) doesn't wait 20s for the R2 fetch.
@@ -602,12 +607,12 @@ def load_data():
         })
     
     try:
-        # Load from R2
-        with st.spinner("🎯 Loading dataset from Cloudflare R2..."):
+        # Load from R2 (with GitHub / sample fallbacks handled inside the loader)
+        with st.spinner("📚 Loading clue library… this can take a few seconds on a fresh start."):
             df = load_jeopardy_data_from_r2()
-        
+
         if df.empty:
-            st.error("Failed to load dataset from R2. Please check your connection and credentials.")
+            st.error("The clue library couldn't be loaded. Please check your connection and try again.")
             return pd.DataFrame()
         
         df = df.dropna(subset=["clue", "correct_response"])
@@ -965,6 +970,25 @@ if df.empty:
     st.info("Check your internet connection or contact the administrator.")
     st.stop()
 
+if get_data_source() == SOURCE_SAMPLE:
+    st.warning(
+        "⚠️ The full clue library couldn't be reached, so you're playing with a "
+        "small built-in sample set. Refresh in a minute to try again."
+    )
+
+# Database health check (cached briefly so we don't ping the DB on every rerun)
+@st.cache_data(ttl=60, show_spinner=False)
+def is_database_available() -> bool:
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
 # Initialize analyzer and categories (cached so this only runs once per server lifetime)
 @st.cache_resource
 def get_analyzer():
@@ -1271,9 +1295,12 @@ with st.sidebar:
 
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
+    _db_ok = is_database_available()
     if not st.session_state.is_signed_in:
         st.caption("Sign in with an account to challenge friends.")
         guest_sign_in_button("signin_challenge")
+    elif not _db_ok:
+        st.info("⏳ Challenges are temporarily unavailable — the database can't be reached right now. Please try again shortly.")
     else:
         st.caption("Challenge friends and track your wins.")
     
@@ -1281,93 +1308,96 @@ with st.sidebar:
         st.session_state.challenge_manager = ChallengeManager()
     challenge_manager = st.session_state.challenge_manager
 
-    if st.session_state.is_signed_in:
-      with st.expander("➕ Create Challenge", expanded=False):
-        opponent_name = st.text_input("Opponent username or email", key="challenge_opponent")
-        num_q = st.number_input("Number of questions", min_value=5, max_value=20, value=10, step=1)
-        if st.button("Send Challenge", use_container_width=True):
-            if opponent_name and st.session_state.get("selected_categories"):
-                cid = challenge_manager.create_challenge(
-                    st.session_state.username,
-                    opponent_name.strip(),
-                    st.session_state.selected_categories[:10],
-                    int(num_q)
-                )
-                st.success(f"Challenge created (ID {cid}) for {opponent_name}")
-            else:
-                st.warning("Please provide an opponent and select themes first.")
+    if st.session_state.is_signed_in and _db_ok:
+      try:
+        with st.expander("➕ Create Challenge", expanded=False):
+          opponent_name = st.text_input("Opponent username or email", key="challenge_opponent")
+          num_q = st.number_input("Number of questions", min_value=5, max_value=20, value=10, step=1)
+          if st.button("Send Challenge", use_container_width=True):
+              if opponent_name and st.session_state.get("selected_categories"):
+                  cid = challenge_manager.create_challenge(
+                      st.session_state.username,
+                      opponent_name.strip(),
+                      st.session_state.selected_categories[:10],
+                      int(num_q)
+                  )
+                  st.success(f"Challenge created (ID {cid}) for {opponent_name}")
+              else:
+                  st.warning("Please provide an opponent and select themes first.")
 
-        # Show active challenges
-        active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
-        if active_challenges:
-            with st.expander(f"⚔️ Active Challenges ({len(active_challenges)})", expanded=False):
-                for challenge in active_challenges:
-                    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
-                    st.write(f"🎮 vs **{opponent}**")
+          # Show active challenges
+          active_challenges = challenge_manager.get_active_challenges(st.session_state.username)
+          if active_challenges:
+              with st.expander(f"⚔️ Active Challenges ({len(active_challenges)})", expanded=False):
+                  for challenge in active_challenges:
+                      opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                      st.write(f"🎮 vs **{opponent}**")
 
-                    # Show scores
-                    your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
-                    their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
-                    your_done = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
-                    their_done = challenge["opponent_completed"] if challenge["challenger"] == st.session_state.username else challenge["challenger_completed"]
+                      # Show scores
+                      your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
+                      their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
+                      your_done = challenge["challenger_completed"] if challenge["challenger"] == st.session_state.username else challenge["opponent_completed"]
+                      their_done = challenge["opponent_completed"] if challenge["challenger"] == st.session_state.username else challenge["challenger_completed"]
 
-                    st.write(f"You: {your_score} {'✅' if your_done else '⏳'}")
-                    st.write(f"{opponent}: {their_score if their_done else '---'} {'✅' if their_done else '⏳'}")
+                      st.write(f"You: {your_score} {'✅' if your_done else '⏳'}")
+                      st.write(f"{opponent}: {their_score if their_done else '---'} {'✅' if their_done else '⏳'}")
 
-                    if not your_done:
-                        if st.button("🎮 Play", key=f"play_{challenge['id']}"):
-                            # Ensure categories are parsed
-                            ch_copy = dict(challenge)
-                            if isinstance(ch_copy.get("categories"), str):
-                                try:
-                                    ch_copy["categories"] = json.loads(ch_copy["categories"])
-                                except Exception:
-                                    ch_copy["categories"] = []
-                            st.session_state.current_challenge = ch_copy
-                            st.session_state.challenge_mode = True
-                            st.session_state.challenge_question_num = 0
-                            st.session_state.challenge_score = 0
-                            st.rerun()
-                    st.markdown("---")
+                      if not your_done:
+                          if st.button("🎮 Play", key=f"play_{challenge['id']}"):
+                              # Ensure categories are parsed
+                              ch_copy = dict(challenge)
+                              if isinstance(ch_copy.get("categories"), str):
+                                  try:
+                                      ch_copy["categories"] = json.loads(ch_copy["categories"])
+                                  except Exception:
+                                      ch_copy["categories"] = []
+                              st.session_state.current_challenge = ch_copy
+                              st.session_state.challenge_mode = True
+                              st.session_state.challenge_question_num = 0
+                              st.session_state.challenge_score = 0
+                              st.rerun()
+                      st.markdown("---")
 
-        # Show pending challenges
-        pending_challenges = challenge_manager.get_pending_challenges(st.session_state.username)
-        if pending_challenges:
-            with st.expander(f"⏳ Pending Challenges ({len(pending_challenges)})", expanded=False):
-                for challenge in pending_challenges:
-                    if challenge['opponent'] == st.session_state.username:
-                        challenger = challenge['challenger']
-                        st.write(f"⚔️ From **{challenger}**")
-                        if st.button("✅ Accept", key=f"accept_{challenge['id']}"):
-                            challenge_manager.accept_challenge(challenge["id"], st.session_state.username)
-                            st.success("Challenge accepted!")
-                            st.rerun()
-                    else:
-                        opponent = challenge['opponent']
-                        st.write(f"⏳ Waiting for **{opponent}**")
-                    st.markdown("---")
+          # Show pending challenges
+          pending_challenges = challenge_manager.get_pending_challenges(st.session_state.username)
+          if pending_challenges:
+              with st.expander(f"⏳ Pending Challenges ({len(pending_challenges)})", expanded=False):
+                  for challenge in pending_challenges:
+                      if challenge['opponent'] == st.session_state.username:
+                          challenger = challenge['challenger']
+                          st.write(f"⚔️ From **{challenger}**")
+                          if st.button("✅ Accept", key=f"accept_{challenge['id']}"):
+                              challenge_manager.accept_challenge(challenge["id"], st.session_state.username)
+                              st.success("Challenge accepted!")
+                              st.rerun()
+                      else:
+                          opponent = challenge['opponent']
+                          st.write(f"⏳ Waiting for **{opponent}**")
+                      st.markdown("---")
 
-        # Show completed challenges
-        completed_challenges = challenge_manager.get_completed_challenges(st.session_state.username)
-        if completed_challenges:
-            with st.expander(f"🏅 Results ({len(completed_challenges)})", expanded=False):
-                for challenge in completed_challenges[-5:]:  # Show last 5
-                    opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
-                    # Determine user's score side
-                    your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
-                    their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
-                    result_emoji = "🤝"
-                    result_text = "Tied"
-                    if challenge.get('winner_id'):
-                        if (challenge['winner_id'] == challenge['challenger_id'] and challenge["challenger"] == st.session_state.username) or \
-                           (challenge['winner_id'] == challenge['opponent_id'] and challenge["opponent"] == st.session_state.username):
-                            result_emoji = "🏆"
-                            result_text = "Won"
-                        else:
-                            result_emoji = "😔"
-                            result_text = "Lost"
-                    st.write(f"{result_emoji} **{result_text}** vs {opponent} ({your_score} - {their_score})")
-                    st.markdown("---")
+          # Show completed challenges
+          completed_challenges = challenge_manager.get_completed_challenges(st.session_state.username)
+          if completed_challenges:
+              with st.expander(f"🏅 Results ({len(completed_challenges)})", expanded=False):
+                  for challenge in completed_challenges[-5:]:  # Show last 5
+                      opponent = challenge["opponent"] if challenge["challenger"] == st.session_state.username else challenge["challenger"]
+                      # Determine user's score side
+                      your_score = challenge["challenger_score"] if challenge["challenger"] == st.session_state.username else challenge["opponent_score"]
+                      their_score = challenge["opponent_score"] if challenge["challenger"] == st.session_state.username else challenge["challenger_score"]
+                      result_emoji = "🤝"
+                      result_text = "Tied"
+                      if challenge.get('winner_id'):
+                          if (challenge['winner_id'] == challenge['challenger_id'] and challenge["challenger"] == st.session_state.username) or \
+                             (challenge['winner_id'] == challenge['opponent_id'] and challenge["opponent"] == st.session_state.username):
+                              result_emoji = "🏆"
+                              result_text = "Won"
+                          else:
+                              result_emoji = "😔"
+                              result_text = "Lost"
+                      st.write(f"{result_emoji} **{result_text}** vs {opponent} ({your_score} - {their_score})")
+                      st.markdown("---")
+      except Exception:
+          st.info("⏳ Challenges are temporarily unavailable — the database can't be reached right now. Please try again shortly.")
 
     st.markdown("---")
 
@@ -1375,6 +1405,15 @@ with st.sidebar:
         auth.logout()
 
     st.markdown("---")
+    _source_label = get_data_source()
+    _db_label = "Connected" if _db_ok else "Unavailable"
+    st.markdown(f"""
+<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);line-height:1.6;padding:.25rem 0;">
+<strong style="color:rgba(255,255,255,0.55);letter-spacing:.05em;">Status</strong><br>
+Clue data: {_source_label}<br>
+Database: {_db_label}
+</div>
+""", unsafe_allow_html=True)
     st.markdown("""
 <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);line-height:1.6;padding:.25rem 0;">
 <strong style="color:rgba(255,255,255,0.55);letter-spacing:.05em;">About</strong><br>
