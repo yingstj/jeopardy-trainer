@@ -593,12 +593,12 @@ if "weak_themes" not in st.session_state:
 if "viewing_bookmark" not in st.session_state:
     st.session_state.viewing_bookmark = None
 
-if "is_premium" not in st.session_state:
-    st.session_state.is_premium = False
+if "is_signed_in" not in st.session_state:
+    st.session_state.is_signed_in = False
 
-def check_premium_status():
+def check_signed_in_status():
     # All signed-in (non-guest) users have full access.
-    st.session_state.is_premium = not st.session_state.get("is_guest", True)
+    st.session_state.is_signed_in = not st.session_state.get("is_guest", True)
 
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False
@@ -900,10 +900,10 @@ with st.sidebar:
     st.session_state.username = current_username
     st.markdown(f"👤 **Player:** {current_username}")
 
-    check_premium_status()
+    check_signed_in_status()
 
-    if st.session_state.is_premium:
-        st.markdown('<span style="display:inline-block;padding:.28rem .55rem;border:1px solid #e5b94f;border-radius:3px;color:#e5b94f;background:rgba(229,185,79,.08);font:700 .68rem Space Mono,monospace;letter-spacing:.14em;text-transform:uppercase;">Premium access</span>', unsafe_allow_html=True)
+    if st.session_state.is_signed_in:
+        st.markdown('<span style="display:inline-block;padding:.28rem .55rem;border:1px solid #e5b94f;border-radius:3px;color:#e5b94f;background:rgba(229,185,79,.08);font:700 .68rem Space Mono,monospace;letter-spacing:.14em;text-transform:uppercase;">Signed in</span>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -1129,7 +1129,7 @@ with st.sidebar:
         st.session_state.current_clue = None
         st.rerun()
     
-    if st.session_state.is_premium:
+    if st.session_state.is_signed_in:
         if st.button("🔁 Adaptive Mode", use_container_width=True, help="Focus on weak themes & missed questions"):
             if st.session_state.history:
                 history_df = pd.DataFrame(st.session_state.history)
@@ -1157,8 +1157,8 @@ with st.sidebar:
             else:
                 st.info("Play some questions first to enable adaptive mode!")
     else:
-        st.button("🔁 Adaptive Mode", use_container_width=True, disabled=True, help="Premium feature")
-        st.caption("🔒 Premium")
+        st.button("🔁 Adaptive Mode", use_container_width=True, disabled=True, help="Sign in to use adaptive mode")
+        st.caption("🔒 Sign in to unlock")
     
     if st.button("🔄 Reset Game", use_container_width=True):
         for key in ["score", "total", "streak", "history", "daily_double_used"]:
@@ -1175,7 +1175,7 @@ with st.sidebar:
 
     # Challenge Mode Section
     st.markdown("### 🏆 Challenge Mode")
-    if not st.session_state.is_premium:
+    if not st.session_state.is_signed_in:
         st.caption("Sign in with an account to challenge friends.")
     else:
         st.caption("Challenge friends and track your wins.")
@@ -1184,7 +1184,7 @@ with st.sidebar:
         st.session_state.challenge_manager = ChallengeManager()
     challenge_manager = st.session_state.challenge_manager
 
-    if st.session_state.is_premium:
+    if st.session_state.is_signed_in:
       with st.expander("➕ Create Challenge", expanded=False):
         opponent_name = st.text_input("Opponent username or email", key="challenge_opponent")
         num_q = st.number_input("Number of questions", min_value=5, max_value=20, value=10, step=1)
@@ -1789,7 +1789,7 @@ if show_answer_form:
             )
 
 if bookmark_btn:
-    if st.session_state.is_premium:
+    if st.session_state.is_signed_in:
         bookmark_entry = {
             "category": clue["category"],
             "clue": clue["clue"],
@@ -1800,7 +1800,7 @@ if bookmark_btn:
             st.session_state.bookmarks.append(bookmark_entry)
             st.success("🔖 Bookmarked!")
     else:
-        st.info("🔒 Bookmarks are a Premium feature. Upgrade to save questions.")
+        st.info("🔒 Sign in to save bookmarks — it's free.")
 
 if submitted:
     if st.session_state.study_mode:
@@ -1980,7 +1980,7 @@ with col_exp1:
             st.dataframe(recent, use_container_width=True, height=200)
 
 with col_exp2:
-    if st.session_state.is_premium:
+    if st.session_state.is_signed_in:
         if st.session_state.bookmarks:
             with st.expander(f"🔖 Bookmarks ({len(st.session_state.bookmarks)})", expanded=False):
                 st.markdown("#### Your Bookmarked Questions")
@@ -2003,10 +2003,10 @@ with col_exp2:
                 st.info("No bookmarks yet! Click the 🔖 button during gameplay to bookmark questions.")
     else:
         with st.expander("🔖 Bookmarks", expanded=False):
-            st.info("🔒 Bookmarks are a Premium feature.")
+            st.info("🔒 Sign in to save and review bookmarks.")
 
 with col_exp3:
-    if st.session_state.is_premium:
+    if st.session_state.is_signed_in:
         if st.session_state.weak_themes:
             with st.expander("📈 Theme Performance", expanded=False):
                 st.markdown("#### Your Performance by Theme")
@@ -2032,4 +2032,4 @@ with col_exp3:
                 st.info("Play some questions to see your performance by theme!")
     else:
         with st.expander("📈 Theme Performance", expanded=False):
-            st.info("🔒 Detailed analytics are a Premium feature.")
+            st.info("🔒 Sign in to see detailed analytics.")

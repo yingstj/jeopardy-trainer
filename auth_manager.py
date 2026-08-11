@@ -529,7 +529,7 @@ REDIRECT_URI = "http://localhost:8501"
         st.session_state.user_name = None
         
         # Clear access state so next login re-checks
-        st.session_state.is_premium = False
+        st.session_state.is_signed_in = False
         
         # Clear game state
         for key in ['history', 'score', 'total', 'current_clue', 'weak_categories', 'strong_categories']:
