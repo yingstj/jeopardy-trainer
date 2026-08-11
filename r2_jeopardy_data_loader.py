@@ -275,15 +275,19 @@ def _load_from_github() -> Optional[pd.DataFrame]:
     from io import StringIO
 
     sources = [
+        # The CSV is stored in Git LFS; both URLs below resolve the real file
+        # content (raw.githubusercontent.com would return only the LFS pointer).
         "https://github.com/yingstj/jeopardy-trainer/raw/main/data/all_jeopardy_clues.csv",
-        "https://raw.githubusercontent.com/yingstj/jeopardy-trainer/main/data/all_jeopardy_clues.csv",
+        "https://media.githubusercontent.com/media/yingstj/jeopardy-trainer/main/data/all_jeopardy_clues.csv",
     ]
 
     for url in sources:
         try:
-            resp = requests.get(url, timeout=30)
+            resp = requests.get(url, timeout=60)
             resp.raise_for_status()
-            df = pd.read_csv(StringIO(resp.text))
+            # Decode explicitly as UTF-8: GitHub may omit a charset header,
+            # in which case resp.text would mis-decode non-ASCII clues.
+            df = pd.read_csv(StringIO(resp.content.decode("utf-8")))
             if not df.empty and len(df) > 100:
                 return df
         except Exception:
