@@ -595,12 +595,10 @@ if "viewing_bookmark" not in st.session_state:
 
 if "is_premium" not in st.session_state:
     st.session_state.is_premium = False
-    st.session_state.premium_checked = False
 
 def check_premium_status():
     # All signed-in (non-guest) users have full access.
     st.session_state.is_premium = not st.session_state.get("is_guest", True)
-    st.session_state.premium_checked = True
 
 if "ai_mode" not in st.session_state:
     st.session_state.ai_mode = False

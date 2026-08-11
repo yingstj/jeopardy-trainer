@@ -107,7 +107,7 @@ class _Cursor:
         translated, needs_returning = self._translate(sql)
         self.lastrowid = None
         # Suppress RETURNING id for tables that don't have an id column
-        # (e.g. user_stats, premium_status). This avoids the savepoint /
+        # (e.g. user_stats). This avoids the savepoint /
         # exception path on every insert to those tables.
         if needs_returning:
             m = _TABLE_NAME_RE.match(sql)
@@ -235,19 +235,6 @@ def initialize_database():
     )
     cur._cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS premium_status (
-            user_email TEXT PRIMARY KEY,
-            is_premium INTEGER DEFAULT 0,
-            stripe_customer_id TEXT,
-            stripe_subscription_id TEXT,
-            plan_interval TEXT,
-            subscription_end BIGINT,
-            last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    cur._cur.execute(
-        """
         CREATE TABLE IF NOT EXISTS challenges (
             id SERIAL PRIMARY KEY,
             challenger_id INTEGER NOT NULL REFERENCES users(id),
@@ -264,6 +251,10 @@ def initialize_database():
         )
         """
     )
+    # Stripe/premium billing was removed from the app; drop the obsolete
+    # premium_status table if it still exists from an older schema. Safe and
+    # idempotent for both dev and production databases.
+    cur._cur.execute("DROP TABLE IF EXISTS premium_status")
     conn.commit()
     conn.close()
 
