@@ -615,6 +615,12 @@ REDIRECT_URI = "http://localhost:8501"
         # Clear access state so next login re-checks
         st.session_state.is_signed_in = False
         
+        # Clear bookmark state so the next signed-in user never sees or
+        # inherits the previous player's bookmarks
+        st.session_state.bookmarks = []
+        st.session_state.bookmarks_loaded_for = None
+        st.session_state.viewing_bookmark = None
+
         # Clear game state
         for key in ['history', 'score', 'total', 'current_clue', 'weak_categories', 'strong_categories']:
             if key in st.session_state:

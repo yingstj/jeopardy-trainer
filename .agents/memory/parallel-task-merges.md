@@ -1,9 +1,9 @@
 ---
 name: Parallel task merges can clobber app.py
-description: Verify file integrity after other tasks merge before marking a task complete
+description: Verify app.py integrity after merges; merges can reorder/revert recent edits
 ---
-Rule: In this project, several tasks edit the single large `app.py`; when other tasks merge into main mid-session, the working copy can end up truncated/clobbered or hit big interstitial rebase conflicts.
+Parallel task merges into this project can silently rearrange or revert recent edits in app.py — one merge moved a function definition below its first call site (NameError at render) and reverted call-site argument changes back to their old form.
 
-**Why:** A stats-page task passed testing, then completion review found `app.py` missing the whole sidebar/game area — a merge had rewritten it. Resolution required rebuilding from `main-repl/main`'s copy and reapplying the task's edits.
+**Why:** multiple in-flight tasks touch app.py; auto-merge picks main's arrangement and reapplies hunks imperfectly.
 
-**How to apply:** Before `markTaskComplete`, re-check `app.py` (line count, key markers like `with st.sidebar`). For rebase conflicts, prefer taking main's full `app.py` and reapplying the task's small additions rather than hand-merging huge hunks.
+**How to apply:** after any merge lands mid-task (watch for MERGED notices), re-grep app.py for your key symbols: confirm defs precede first use and call-site arguments still match your intended version. Compile-check alone is insufficient (NameError at runtime still parses).

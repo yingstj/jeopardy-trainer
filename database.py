@@ -259,6 +259,98 @@ def initialize_database():
     conn.close()
 
 
+# ── Bookmark persistence ────────────────────────────────────────────
+
+
+def _get_or_create_user_id(cur, username: str):
+    """Return the users.id for `username`, creating the row if needed."""
+    if not username:
+        return None
+    cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+    row = cur.fetchone()
+    if row:
+        return int(row["id"])
+    cur.execute(
+        "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+        (username, ""),
+    )
+    user_id = cur.lastrowid
+    cur.execute("INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)", (user_id,))
+    return int(user_id) if user_id is not None else None
+
+
+def save_bookmark(username: str, category: str, clue: str, correct_response: str) -> bool:
+    """Persist a bookmark for a signed-in user. Idempotent."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        user_id = _get_or_create_user_id(cur, username)
+        if user_id is None:
+            return False
+        cur.execute(
+            "INSERT OR IGNORE INTO bookmarks (user_id, category, clue, correct_response) "
+            "VALUES (?, ?, ?, ?)",
+            (user_id, category, clue, correct_response),
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def load_bookmarks(username: str) -> list[dict]:
+    """Load all bookmarks for a user, oldest first."""
+    if not username:
+        return []
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row:
+            return []
+        cur.execute(
+            "SELECT category, clue, correct_response, bookmarked_at FROM bookmarks "
+            "WHERE user_id = ? ORDER BY bookmarked_at ASC, id ASC",
+            (row["id"],),
+        )
+        result = []
+        for r in cur.fetchall():
+            ts = r["bookmarked_at"]
+            result.append({
+                "category": r["category"],
+                "clue": r["clue"],
+                "correct_response": r["correct_response"],
+                "bookmarked_at": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+            })
+        return result
+    finally:
+        conn.close()
+
+
+def delete_bookmark(username: str, category: str, clue: str, correct_response: str) -> bool:
+    """Remove a persisted bookmark. Returns True if a row was deleted."""
+    if not username:
+        return False
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        row = cur.fetchone()
+        if not row:
+            return False
+        cur.execute(
+            "DELETE FROM bookmarks WHERE user_id = ? AND category = ? AND clue = ? "
+            "AND correct_response = ?",
+            (row["id"], category, clue, correct_response),
+        )
+        deleted = cur.rowcount > 0
+        conn.commit()
+        return deleted
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     initialize_database()
     print("Database initialized successfully.")

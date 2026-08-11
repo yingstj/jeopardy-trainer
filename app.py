@@ -24,7 +24,13 @@ from scheduled_refresh import start_scheduler
 start_scheduler()
 from auth_manager import AuthManager, stash_guest_progress
 from category_analyzer import JeopardyCategoryAnalyzer
-from database import initialize_database, get_db_connection
+from database import (
+    initialize_database,
+    get_db_connection,
+    save_bookmark,
+    load_bookmarks,
+    delete_bookmark,
+)
 
 # Sentinel value written into the answer input by the JS countdown's
 # auto-submit handler. The Python grader uses this to distinguish a
@@ -685,12 +691,44 @@ def check_signed_in_status():
     # All signed-in (non-guest) users have full access.
     st.session_state.is_signed_in = not st.session_state.get("is_guest", True)
 
+def _bookmark_key(b: dict):
+    return (b.get("category"), b.get("clue"), b.get("correct_response"))
+
+def bookmark_identity():
+    """Stable, unique identity for bookmark ownership: the authenticated
+    email (normalized to lowercase). Never a display name, which is not
+    unique across accounts. Returns None for guests or unauthenticated
+    sessions."""
+    if not st.session_state.get("is_signed_in"):
+        return None
+    email = (st.session_state.get("user_email") or "").strip().lower()
+    if not email or email == "guest@jayopardy.app":
+        return None
+    return email
+
+def restore_bookmarks_from_db():
+    """Load a signed-in player's bookmarks from the database into session
+    state (once per sign-in). The database copy is authoritative — session
+    bookmarks are replaced, never migrated into another account. Guests are
+    untouched — their bookmarks stay session-only."""
+    identity = bookmark_identity()
+    if not identity or st.session_state.get("bookmarks_loaded_for") == identity:
+        return
+    try:
+        st.session_state.bookmarks = load_bookmarks(identity)
+        st.session_state.bookmarks_loaded_for = identity
+    except Exception as e:
+        import sys
+        print(f"[bookmarks] restore failed: {e}", file=sys.stderr)
+
 def guest_sign_in_button(key: str, label: str = "🔑 Sign in", use_container_width: bool = True):
     """Render a button that ends the guest session and returns to the login page."""
     if st.button(label, key=key, use_container_width=use_container_width):
         # Keep the guest's in-progress game so it survives sign-up,
         # then show the login page
         stash_guest_progress()
+        st.session_state.bookmarks = []
+        st.session_state.bookmarks_loaded_for = None
         st.session_state.authenticated = False
         st.session_state.is_guest = False
         st.session_state.is_signed_in = False
@@ -1018,6 +1056,7 @@ with st.sidebar:
     st.markdown(f"👤 **Player:** {current_username}")
 
     check_signed_in_status()
+    restore_bookmarks_from_db()
 
     if st.session_state.is_signed_in:
         st.markdown('<span class="signed-in-badge">Signed in</span>', unsafe_allow_html=True)
@@ -2064,8 +2103,18 @@ if bookmark_btn:
             "correct_response": clue["correct_response"],
             "bookmarked_at": datetime.datetime.now().isoformat()
         }
-        if bookmark_entry not in st.session_state.bookmarks:
+        if _bookmark_key(bookmark_entry) not in {_bookmark_key(b) for b in st.session_state.bookmarks}:
             st.session_state.bookmarks.append(bookmark_entry)
+            try:
+                save_bookmark(
+                    bookmark_identity(),
+                    bookmark_entry["category"],
+                    bookmark_entry["clue"],
+                    bookmark_entry["correct_response"],
+                )
+            except Exception as e:
+                import sys
+                print(f"[bookmarks] save failed: {e}", file=sys.stderr)
             st.success("🔖 Bookmarked!")
     else:
         st.info("🔒 Sign in to save bookmarks — it's free.")
@@ -2257,13 +2306,32 @@ with col_exp2:
                     st.markdown(f"**{i}. {bookmark['category']}**")
                     st.markdown(f"Q: {bookmark['clue']}")
                     st.markdown(f"A: *{bookmark['correct_response']}*")
-                    if st.button(f"Practice #{i}", key=f"practice_bookmark_{i}"):
-                        st.session_state.current_clue = {
-                            "category": bookmark["category"],
-                            "clue": bookmark["clue"],
-                            "correct_response": bookmark["correct_response"]
-                        }
-                        st.rerun()
+                    col_bm1, col_bm2 = st.columns(2)
+                    with col_bm1:
+                        if st.button(f"Practice #{i}", key=f"practice_bookmark_{i}"):
+                            st.session_state.current_clue = {
+                                "category": bookmark["category"],
+                                "clue": bookmark["clue"],
+                                "correct_response": bookmark["correct_response"]
+                            }
+                            st.rerun()
+                    with col_bm2:
+                        if st.button(f"🗑️ Remove #{i}", key=f"remove_bookmark_{i}"):
+                            st.session_state.bookmarks = [
+                                b for b in st.session_state.bookmarks
+                                if _bookmark_key(b) != _bookmark_key(bookmark)
+                            ]
+                            try:
+                                delete_bookmark(
+                                    bookmark_identity(),
+                                    bookmark["category"],
+                                    bookmark["clue"],
+                                    bookmark["correct_response"],
+                                )
+                            except Exception as e:
+                                import sys
+                                print(f"[bookmarks] delete failed: {e}", file=sys.stderr)
+                            st.rerun()
                     st.markdown("---")
                 if len(st.session_state.bookmarks) > 5:
                     st.info(f"Showing 5 of {len(st.session_state.bookmarks)} bookmarks")
