@@ -20,7 +20,7 @@ from r2_jeopardy_data_loader import (
 # Kick off background dataset download at server startup so the first user
 # (often a guest) doesn't wait 20s for the R2 fetch.
 start_prewarm()
-from scheduled_refresh import start_scheduler
+from scheduled_refresh import start_scheduler, read_status as read_refresh_status
 start_scheduler()
 from auth_manager import AuthManager, stash_guest_progress
 from category_analyzer import JeopardyCategoryAnalyzer
@@ -1579,11 +1579,40 @@ with st.sidebar:
     st.markdown("---")
     _source_label = get_data_source()
     _db_label = "Connected" if _db_ok else "Unavailable"
+
+    # Clue-library refresh status (from the weekly auto-refresh scheduler)
+    _refresh_status = read_refresh_status()
+    _last_success_label = "Never"
+    _ts = _refresh_status.get("last_success")
+    if _ts:
+        try:
+            _last_dt = datetime.datetime.fromisoformat(_ts)
+            _age = datetime.datetime.now(datetime.timezone.utc) - _last_dt
+            _days = _age.days
+            if _days <= 0:
+                _hours = int(_age.total_seconds() // 3600)
+                _last_success_label = "Today" if _hours < 1 else f"{_hours}h ago"
+            elif _days == 1:
+                _last_success_label = "1 day ago"
+            else:
+                _last_success_label = f"{_days} days ago"
+        except Exception:
+            _last_success_label = "Unknown"
+    _refresh_failed = _refresh_status.get("state") == "failed"
+
     st.markdown(f"""
 <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);line-height:1.6;padding:.25rem 0;">
 <strong style="color:rgba(255,255,255,0.55);letter-spacing:.05em;">Status</strong><br>
 Clue data: {_source_label}<br>
-Database: {_db_label}
+Database: {_db_label}<br>
+Clues updated: {_last_success_label}
+</div>
+""", unsafe_allow_html=True)
+    if _refresh_failed:
+        _err = _refresh_status.get("last_error") or "unknown error"
+        st.markdown(f"""
+<div style="font-size:0.68rem;color:#fbbf24;line-height:1.6;padding:.25rem 0;">
+⚠️ Last clue refresh failed: {_err}
 </div>
 """, unsafe_allow_html=True)
     st.markdown("""
