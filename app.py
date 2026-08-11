@@ -15,7 +15,7 @@ from r2_jeopardy_data_loader import load_jeopardy_data_from_r2, start_prewarm
 # Kick off background dataset download at server startup so the first user
 # (often a guest) doesn't wait 20s for the R2 fetch.
 start_prewarm()
-from auth_manager import AuthManager
+from auth_manager import AuthManager, stash_guest_progress
 from category_analyzer import JeopardyCategoryAnalyzer
 from database import initialize_database, get_db_connection
 
@@ -681,7 +681,9 @@ def check_signed_in_status():
 def guest_sign_in_button(key: str, label: str = "🔑 Sign in", use_container_width: bool = True):
     """Render a button that ends the guest session and returns to the login page."""
     if st.button(label, key=key, use_container_width=use_container_width):
-        # Clear guest session safely and show the login page
+        # Keep the guest's in-progress game so it survives sign-up,
+        # then show the login page
+        stash_guest_progress()
         st.session_state.authenticated = False
         st.session_state.is_guest = False
         st.session_state.is_signed_in = False

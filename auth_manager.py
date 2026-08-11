@@ -26,6 +26,75 @@ def _ensure_oauth():
         OAUTH_AVAILABLE = False
         return False
 
+GUEST_PROGRESS_KEYS = [
+    'score', 'total', 'streak', 'best_streak', 'history',
+    'weak_categories', 'strong_categories', 'daily_double_used'
+]
+
+
+def stash_guest_progress():
+    """Capture the current guest session's game progress so it can be
+    restored after the user signs in or creates an account."""
+    if not st.session_state.get('is_guest', False):
+        return
+    progress = {}
+    for key in GUEST_PROGRESS_KEYS:
+        if key in st.session_state:
+            progress[key] = st.session_state[key]
+    # Only stash if there is actual progress to keep
+    if progress.get('total', 0) or progress.get('history'):
+        st.session_state.pending_guest_progress = progress
+        # Reset the live keys so the merge after sign-in doesn't double-count
+        # (if no saved session exists, these would otherwise persist as-is).
+        for key in GUEST_PROGRESS_KEYS:
+            if key not in st.session_state:
+                continue
+            if key in ('score', 'total', 'streak', 'best_streak'):
+                st.session_state[key] = 0
+            elif key == 'history':
+                st.session_state[key] = []
+            elif key in ('weak_categories', 'strong_categories'):
+                st.session_state[key] = {}
+            elif key == 'daily_double_used':
+                st.session_state[key] = False
+
+
+def apply_pending_guest_progress():
+    """Merge stashed guest progress into the (possibly restored) signed-in
+    session so the in-progress game carries over."""
+    progress = st.session_state.pop('pending_guest_progress', None)
+    if not progress:
+        return False
+
+    # Additive stats
+    for key in ('score', 'total'):
+        st.session_state[key] = st.session_state.get(key, 0) + progress.get(key, 0)
+
+    # Current streak continues from the guest session
+    if 'streak' in progress:
+        st.session_state.streak = progress['streak']
+    st.session_state.best_streak = max(
+        st.session_state.get('best_streak', 0), progress.get('best_streak', 0)
+    )
+
+    # History: append guest session entries after any saved history
+    guest_history = progress.get('history', [])
+    if guest_history:
+        existing = st.session_state.get('history', [])
+        st.session_state.history = list(existing) + list(guest_history)
+
+    # Category tracking: merge counts
+    for cat_key in ('weak_categories', 'strong_categories'):
+        merged = dict(st.session_state.get(cat_key, {}) or {})
+        for cat, count in (progress.get(cat_key, {}) or {}).items():
+            merged[cat] = merged.get(cat, 0) + count
+        st.session_state[cat_key] = merged
+
+    if 'daily_double_used' in progress:
+        st.session_state.daily_double_used = progress['daily_double_used']
+    return True
+
+
 class AuthManager:
     def __init__(self):
         self.users_dir = Path("user_data")
@@ -63,6 +132,8 @@ class AuthManager:
             'history': st.session_state.get('history', []),
             'score': st.session_state.get('score', 0),
             'total': st.session_state.get('total', 0),
+            'streak': st.session_state.get('streak', 0),
+            'best_streak': st.session_state.get('best_streak', 0),
             'weak_categories': st.session_state.get('weak_categories', {}),
             'strong_categories': st.session_state.get('strong_categories', {}),
             'settings': {
@@ -95,6 +166,8 @@ class AuthManager:
             st.session_state.history = session_data.get('history', [])
             st.session_state.score = session_data.get('score', 0)
             st.session_state.total = session_data.get('total', 0)
+            st.session_state.streak = session_data.get('streak', 0)
+            st.session_state.best_streak = session_data.get('best_streak', 0)
             st.session_state.weak_categories = session_data.get('weak_categories', {})
             st.session_state.strong_categories = session_data.get('strong_categories', {})
             
@@ -128,12 +201,16 @@ class AuthManager:
             st.session_state.authenticated = True
             st.session_state.user_email = email
             st.session_state.user_name = email.split('@')[0]
+            st.session_state.is_guest = False
             
             # Try to load existing session
             if self.load_user_session():
                 st.success(f"Welcome back, {st.session_state.user_name}! Your progress has been restored.")
             else:
                 st.success(f"Welcome, {st.session_state.user_name}!")
+            if apply_pending_guest_progress():
+                self.save_user_session()
+                st.info("Your guest session progress has been carried over!")
             
             st.rerun()
         
@@ -142,7 +219,11 @@ class AuthManager:
             st.session_state.authenticated = True
             st.session_state.user_email = email
             st.session_state.user_name = email.split('@')[0]
+            st.session_state.is_guest = False
             st.success(f"Account created! Welcome, {st.session_state.user_name}!")
+            if apply_pending_guest_progress():
+                self.save_user_session()
+                st.info("Your guest session progress has been carried over!")
             st.rerun()
     
     def simple_login(self):
@@ -224,12 +305,16 @@ REDIRECT_URI = "http://localhost:8501"
                 st.session_state.authenticated = True
                 st.session_state.user_email = user_info.get("email")
                 st.session_state.user_name = user_info.get("name", user_info.get("email", "").split('@')[0])
+                st.session_state.is_guest = False
                 
                 # Load existing session
                 if self.load_user_session():
                     st.success(f"Welcome back, {st.session_state.user_name}!")
                 else:
                     st.success(f"Welcome, {st.session_state.user_name}!")
+                if apply_pending_guest_progress():
+                    self.save_user_session()
+                    st.info("Your guest session progress has been carried over!")
                 
                 st.rerun()
     
@@ -468,6 +553,9 @@ REDIRECT_URI = "http://localhost:8501"
                         st.success(f"👋 Welcome back, {st.session_state.user_name}!")
                     else:
                         st.success(f"🎉 Welcome, {st.session_state.user_name}!")
+                    if apply_pending_guest_progress():
+                        self.save_user_session()
+                        st.info("✨ Your guest session progress has been carried over!")
                     time.sleep(1)
                     st.rerun()
                 
@@ -478,6 +566,9 @@ REDIRECT_URI = "http://localhost:8501"
                     st.session_state.is_guest = False
                     st.balloons()
                     st.success(f"🎊 Account created! Welcome, {st.session_state.user_name}!")
+                    if apply_pending_guest_progress():
+                        self.save_user_session()
+                        st.info("✨ Your guest session progress has been carried over!")
                     time.sleep(1)
                     st.rerun()
             
@@ -543,7 +634,8 @@ REDIRECT_URI = "http://localhost:8501"
                 st.warning("⚠️ Progress not saved")
                 
                 if st.button("📝 Create Account", use_container_width=True, type="primary"):
-                    # Clear guest session and show login
+                    # Keep the guest's in-progress game, then show login
+                    stash_guest_progress()
                     st.session_state.authenticated = False
                     st.session_state.is_guest = False
                     st.rerun()
