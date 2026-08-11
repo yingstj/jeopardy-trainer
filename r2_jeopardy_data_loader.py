@@ -93,7 +93,7 @@ def load_jeopardy_data_from_r2() -> pd.DataFrame:
     # If a prewarm is in flight, wait briefly so we don't double-fetch and
     # so we don't read a partially-written parquet file.
     if _prewarm_started and not _prewarm_done.is_set():
-        _prewarm_done.wait(timeout=30)
+        _prewarm_done.wait(timeout=8)
 
     with _load_lock:
         if LOCAL_CACHE_PATH.exists():
@@ -151,7 +151,12 @@ def _load_from_r2() -> Optional[pd.DataFrame]:
             endpoint_url=endpoint,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4",
+                connect_timeout=10,
+                read_timeout=45,
+                retries={"max_attempts": 1},
+            ),
             region_name=region_name,
         )
 
@@ -169,6 +174,9 @@ def _load_from_r2() -> Optional[pd.DataFrame]:
 
 def _load_from_github() -> Optional[pd.DataFrame]:
     """Fallback to the public GitHub dataset."""
+    import requests
+    from io import StringIO
+
     sources = [
         "https://github.com/yingstj/jeopardy-trainer/raw/main/data/all_jeopardy_clues.csv",
         "https://raw.githubusercontent.com/yingstj/jeopardy-trainer/main/data/all_jeopardy_clues.csv",
@@ -176,7 +184,9 @@ def _load_from_github() -> Optional[pd.DataFrame]:
 
     for url in sources:
         try:
-            df = pd.read_csv(url)
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            df = pd.read_csv(StringIO(resp.text))
             if not df.empty and len(df) > 100:
                 return df
         except Exception:

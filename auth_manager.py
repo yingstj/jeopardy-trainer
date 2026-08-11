@@ -238,151 +238,140 @@ REDIRECT_URI = "http://localhost:8501"
         # Custom CSS for beautiful login page
         st.markdown("""
         <style>
-        /* ── LOGIN PAGE — RETRO ARCADE ────────────────────────── */
+        /* ── LOGIN PAGE — EDITORIAL DESIGN SYSTEM ─────────────── */
         .logo-container { text-align: center; margin-bottom: 2rem; padding-top: 1.5rem; }
         .logo {
             display: inline-block;
-            font-family: 'Space Mono', 'Courier New', monospace;
-            font-size: 52px;
-            font-weight: 700;
-            color: #00ff88;
-            letter-spacing: 0.02em;
-            text-shadow: 0 0 20px rgba(0,255,136,0.6), 0 0 40px rgba(0,255,136,0.2);
-            margin-bottom: 0.4rem;
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 3rem;
+            font-style: italic;
+            font-weight: 400;
+            color: #1e1b4b;
+            letter-spacing: -0.04em;
             line-height: 1;
+            font-variation-settings: "opsz" 96, "SOFT" 50;
         }
         .logo-rule {
-            width: 44px; height: 2px;
-            background: #0066ff;
-            margin: 0.7rem auto 0.9rem;
-            box-shadow: 0 0 8px rgba(0,102,255,0.6);
+            width: 32px; height: 2px;
+            background: #92681d;
+            margin: 0.65rem auto 0.85rem;
         }
         .login-title {
-            font-family: 'Space Mono', monospace !important;
-            font-size: 2.4rem !important;
-            font-weight: 700 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #00ff88 !important;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-size: 2.25rem !important;
+            font-weight: 400 !important;
+            font-style: italic;
+            color: #1e1b4b !important;
             margin: 0 !important;
-            text-shadow: 0 0 16px rgba(0,255,136,0.4);
+            letter-spacing: -0.03em;
+            font-variation-settings: "opsz" 72, "SOFT" 40;
         }
         .login-subtitle {
-            color: #5a9a5a !important;
-            font-size: 0.78rem !important;
-            margin-top: 0.5rem !important;
-            font-family: 'Space Mono', monospace !important;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            color: #7c7492 !important;
+            font-size: 0.88rem !important;
+            margin-top: 0.4rem !important;
+            font-style: italic;
         }
 
         /* Guest play hero */
         .guest-card {
-            background: #0a0a0a;
-            color: #e8ffe8;
-            padding: 1.5rem 1.7rem;
+            background: #ffffff;
+            color: #1a1625;
+            padding: 1.5rem 1.75rem;
             margin: 1.25rem 0 1rem;
-            border: 2px solid #0066ff;
-            position: relative;
-        }
-        .guest-card::before {
-            content: "";
-            position: absolute; left: 0; top: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #0066ff, #00ff88, #0066ff);
+            border: 1px solid #e8e3dc;
+            border-left: 3px solid #1e1b4b;
+            border-radius: 6px;
         }
         .guest-card h3 {
-            color: #e8ffe8 !important;
+            color: #1a1625 !important;
             margin-top: 0; margin-bottom: 0.4rem;
-            font-family: 'Space Mono', monospace !important;
-            font-weight: 700 !important;
-            font-size: 1.05rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-weight: 500 !important;
+            font-size: 1.2rem;
+            letter-spacing: -0.015em;
+            font-variation-settings: "opsz" 32;
         }
         .guest-card p {
-            color: #5a9a5a;
+            color: #7c7492;
             margin-bottom: 0;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             line-height: 1.55;
-            font-family: 'Space Mono', monospace;
         }
 
-        /* Info / warn boxes */
+        /* Info boxes */
         .info-box {
-            background: #050505;
-            border: 1px solid #1a3a1a;
-            border-top: 2px solid #0066ff;
-            padding: 1rem 0.25rem 0.5rem;
-            color: #e8ffe8;
+            background: #f9f7f4;
+            border: 1px solid #e8e3dc;
+            border-top: 2px solid #1e1b4b;
+            border-radius: 5px;
+            padding: 1rem 0.85rem 0.75rem;
+            color: #1a1625;
             margin-bottom: 0.5rem;
         }
-        .info-box.warn { border-top-color: #00ff88; }
+        .info-box.warn { border-top-color: #92681d; }
         .info-box .ib-title {
-            font-family: 'Space Mono', monospace;
-            font-weight: 700;
-            font-size: 0.65rem;
+            font: 700 0.63rem 'Inter', sans-serif;
             text-transform: uppercase;
-            letter-spacing: 0.25em;
-            margin-bottom: 0.6rem;
-            color: #5a9a5a;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+            color: #7c7492;
         }
-        .info-box.warn .ib-title { color: #00ff88; }
+        .info-box.warn .ib-title { color: #92681d; }
         .info-box ul {
             margin: 0; padding-left: 1.1rem;
-            color: #a8f0a8; line-height: 1.8;
-            font-size: 0.82rem;
-            font-family: 'Space Mono', monospace;
+            color: #3d3654; line-height: 1.75;
+            font-size: 0.88rem;
         }
-        .info-box ul li::marker { color: #0066ff; }
+        .info-box ul li::marker { color: #1e1b4b; }
 
         /* Benefit cards */
         .benefit-card {
-            background: #050505;
-            border: 1px solid #1a3a1a;
-            border-top: 2px solid #0066ff;
-            padding: 1.5rem 0.5rem 0.5rem;
+            background: #ffffff;
+            border: 1px solid #e8e3dc;
+            border-top: 2px solid #1e1b4b;
+            border-radius: 5px;
+            padding: 1.25rem 0.75rem 0.85rem;
             text-align: center;
             margin-bottom: 1rem;
-            transition: border-color 0.18s ease;
+            transition: border-top-color 0.18s ease, box-shadow 0.18s ease;
         }
-        .benefit-card:hover { border-color: #00ff88; }
+        .benefit-card:hover {
+            border-top-color: #92681d;
+            box-shadow: 0 2px 12px rgba(26,22,37,0.08);
+        }
         .benefit-card h3 {
-            color: #e8ffe8 !important;
-            margin: 0.5rem 0 0.4rem;
-            font-family: 'Space Mono', monospace !important;
-            font-size: 0.9rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            color: #1a1625 !important;
+            margin: 0.4rem 0 0.35rem;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-size: 1.05rem;
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
         .benefit-card p {
-            color: #5a9a5a !important;
+            color: #7c7492 !important;
             margin: 0;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             line-height: 1.5;
-            font-family: 'Space Mono', monospace;
         }
         .benefit-icon {
             display: inline-block;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.65rem;
-            color: #00ff88;
-            letter-spacing: 0.25em;
+            font: 700 0.62rem 'Inter', sans-serif;
+            color: #92681d;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            font-weight: 700;
         }
 
-        /* Why-account heading */
+        /* Section heading */
         .why-heading {
-            color: #e8ffe8;
+            color: #1a1625;
             text-align: center;
-            font-family: 'Space Mono', monospace !important;
-            font-weight: 700 !important;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin: 2.5rem 0 1.25rem;
+            font-family: 'Fraunces', Georgia, serif !important;
+            font-weight: 400 !important;
+            font-style: italic;
+            font-size: 1.25rem;
+            margin: 2.25rem 0 1.25rem;
+            letter-spacing: -0.015em;
         }
         </style>
         """, unsafe_allow_html=True)

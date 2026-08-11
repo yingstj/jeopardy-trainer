@@ -190,7 +190,7 @@ def get_db_connection() -> _Connection:
         raise RuntimeError(
             "DATABASE_URL is not set. Provision a Postgres database for this project."
         )
-    raw = psycopg2.connect(DATABASE_URL)
+    raw = psycopg2.connect(DATABASE_URL, connect_timeout=8)
     return _Connection(raw)
 
 

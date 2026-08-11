@@ -25,8 +25,12 @@ from database import initialize_database, get_db_connection
 # string used in the JS in the countdown component below.
 AUTO_SUBMIT_TIMEOUT_SENTINEL = "__JPY_AUTO_SUBMIT_TIMEOUT__"
 
-# Initialize the database
-initialize_database()
+# Initialize the database (wrapped so a DB outage doesn't blank the app)
+try:
+    initialize_database()
+except Exception as _db_init_err:
+    import sys
+    print(f"[startup] DB init warning: {_db_init_err}", file=sys.stderr)
 
 class ChallengeManager:
     """SQLite-backed challenge manager using database.py schema."""
@@ -150,296 +154,435 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for enhanced styling
+# Custom CSS — Sophisticated editorial design system
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,0..100;1,9..144,300..700,0..100&display=swap" rel="stylesheet">
 <style>
-    /* ── RETRO ARCADE DESIGN SYSTEM ─────────────────────────────── */
+    /* ── DESIGN TOKENS ───────────────────────────────────────────── */
     :root {
-        --ink:        #e8ffe8;        /* phosphor green-white */
-        --ink-soft:   #a8f0a8;
-        --muted:      #5a9a5a;
-        --muted-2:    #3a6a3a;
-        --bg:         #000000;        /* true black */
-        --card:       #0a0a0a;
-        --card-2:     #111111;
-        --line:       #1a3a1a;
-        --line-soft:  #0d200d;
-        --accent:     #0066ff;        /* electric blue */
-        --accent-2:   #0044cc;
-        --accent-soft:#001a44;
-        --green:      #00ff88;        /* phosphor score green */
-        --green-dim:  #00cc66;
-        --ring:       rgba(0,102,255,0.35);
-        --danger:     #ff3333;
-        --warning:    #ffaa00;
-        --shadow-sm:  0 4px 16px rgba(0,255,136,0.06);
-        --shadow-md:  0 8px 32px rgba(0,102,255,0.12);
-        --scanline:   repeating-linear-gradient(
-                        0deg,
-                        transparent,
-                        transparent 2px,
-                        rgba(0,0,0,0.18) 2px,
-                        rgba(0,0,0,0.18) 4px
-                      );
+        /* Palette */
+        --ink:        #1a1625;
+        --ink-soft:   #3d3654;
+        --muted:      #7c7492;
+        --muted-2:    #a99fba;
+        --bg:         #f9f7f4;
+        --surface:    #ffffff;
+        --surface-2:  #f4f1ed;
+        --line:       #e8e3dc;
+        --line-soft:  #f0ece6;
+
+        /* Indigo sidebar / header */
+        --indigo:     #1e1b4b;
+        --indigo-mid: #312e81;
+        --indigo-soft:#4338ca;
+
+        /* Gold accent */
+        --gold:       #92681d;
+        --gold-light: #c9964a;
+        --gold-bg:    #fdf8ef;
+        --gold-line:  #e8d5a8;
+
+        /* Feedback */
+        --success:    #166534;
+        --success-bg: #f0fdf4;
+        --success-ln: #bbf7d0;
+        --error:      #9b1c1c;
+        --error-bg:   #fef2f2;
+        --error-ln:   #fecaca;
+        --warn-bg:    #fffbeb;
+        --warn-ln:    #fde68a;
+        --info-bg:    #eff6ff;
+        --info-ln:    #bfdbfe;
+
+        /* Ring / shadow */
+        --ring:       rgba(146,104,29,0.22);
+        --shadow-xs:  0 1px 3px rgba(26,22,37,0.06);
+        --shadow-sm:  0 2px 8px rgba(26,22,37,0.08);
+        --shadow-md:  0 4px 20px rgba(26,22,37,0.10);
     }
 
-    /* ── BASE ───────────────────────────────────────────────────── */
+    /* ── BASE ────────────────────────────────────────────────────── */
     html, body, [class*="css"] {
-        font-family: 'Space Mono', 'Courier New', monospace !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         color: var(--ink);
         background: var(--bg);
+        -webkit-font-smoothing: antialiased;
     }
+    .stApp { background: var(--bg); }
 
-    /* Scanline overlay */
-    .stApp {
-        background: var(--bg);
-        min-height: 100vh;
-    }
-    .stApp::after {
-        content: "";
-        position: fixed; inset: 0;
-        background: var(--scanline);
-        pointer-events: none;
-        z-index: 9999;
-        opacity: 0.4;
-    }
-
-    /* ── TYPOGRAPHY ─────────────────────────────────────────────── */
-    h1, h2, h3, h4 {
-        font-family: 'Space Mono', monospace !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--green) !important;
-    }
-
-    /* ── LAYOUT ─────────────────────────────────────────────────── */
+    /* ── LAYOUT ──────────────────────────────────────────────────── */
     .main { padding: 0 1rem; }
-    .block-container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1080px; }
+    .block-container { padding-top: 2rem; padding-bottom: 5rem; max-width: 860px; }
 
-    /* ── MASTHEAD ───────────────────────────────────────────────── */
+    /* ── TYPOGRAPHY ──────────────────────────────────────────────── */
+    h1, h2, h3 {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 500 !important;
+        color: var(--ink) !important;
+        letter-spacing: -0.02em;
+        font-variation-settings: "opsz" 72, "SOFT" 30;
+    }
+
+    /* ── MASTHEAD ────────────────────────────────────────────────── */
     .main-header {
-        padding: 1.5rem 0 1.75rem;
+        padding: 1.75rem 0 1.5rem;
         margin-bottom: 2rem;
         border-bottom: 1px solid var(--line);
         text-align: center;
-        position: relative;
     }
     .main-header::before {
-        content: "INSERT COIN TO CONTINUE";
+        content: "TRIVIA TRAINING";
         display: block;
-        color: var(--accent);
-        font: 700 .64rem 'Space Mono', monospace;
-        letter-spacing: .28em;
-        margin-bottom: .85rem;
-        animation: blink 1.4s step-end infinite;
+        color: var(--gold);
+        font: 600 0.65rem 'Inter', sans-serif;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .main-header h1 {
-        color: var(--green) !important;
-        font-size: clamp(2.4rem, 6vw, 4.5rem);
-        line-height: 1;
-        margin: 0;
-        text-shadow: 0 0 20px rgba(0,255,136,0.5), 0 0 40px rgba(0,255,136,0.2);
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: clamp(2rem, 5vw, 3rem) !important;
+        font-weight: 400 !important;
+        font-style: italic;
+        color: var(--indigo) !important;
+        margin: 0 !important;
+        letter-spacing: -0.03em;
+        font-variation-settings: "opsz" 96, "SOFT" 50;
     }
     .main-header p {
         color: var(--muted);
-        font-size: .82rem;
-        letter-spacing: .12em;
-        margin-top: .6rem;
+        font-size: 0.88rem;
+        margin-top: 0.4rem;
+        font-style: italic;
     }
-    .header-stats { display:flex; justify-content:center; gap:3rem; margin-top:1.25rem; }
-    .header-stat { text-align:center; }
+    .header-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2.5rem;
+        margin-top: 1.5rem;
+    }
+    .header-stat { text-align: center; }
     .header-stat-value {
-        font-family: 'Space Mono', monospace;
-        font-size: 1.5rem; font-weight: 700;
-        color: var(--green);
-        text-shadow: 0 0 12px rgba(0,255,136,0.6);
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.75rem;
+        font-weight: 400;
+        color: var(--indigo);
+        letter-spacing: -0.02em;
         line-height: 1;
+        font-variation-settings: "opsz" 48;
     }
     .header-stat-label {
-        font-size: .62rem; color: var(--muted);
-        text-transform: uppercase; letter-spacing: .22em;
-        font-weight: 700; margin-top: .3rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        margin-top: 0.3rem;
     }
 
-    /* ── CATEGORY + CLUE CARD ───────────────────────────────────── */
+    /* ── CATEGORY LABEL ──────────────────────────────────────────── */
     .theme-card {
-        color: var(--accent);
-        border: 1px solid var(--accent);
-        background: var(--accent-soft);
-        padding: .55rem 1rem .45rem;
-        margin-bottom: .75rem;
-        font: 700 .72rem 'Space Mono', monospace;
-        letter-spacing: .2em;
+        color: var(--gold);
+        background: var(--gold-bg);
+        border: 1px solid var(--gold-line);
+        padding: 0.45rem 0.9rem 0.4rem;
+        margin-bottom: 0.75rem;
+        font: 600 0.7rem 'Inter', sans-serif;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
+        border-radius: 3px;
+        display: inline-block;
     }
+
+    /* ── CLUE CARD ───────────────────────────────────────────────── */
     .clue-card {
-        background: var(--card);
-        border: 2px solid var(--accent);
-        padding: clamp(1.6rem,4vw,2.8rem) clamp(1.25rem,4vw,2.5rem);
-        margin: 1rem 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        padding: clamp(1.75rem,4vw,2.5rem) clamp(1.5rem,4vw,2.25rem);
+        border-radius: 8px;
+        margin: 1rem 0 1.25rem;
+        box-shadow: var(--shadow-sm);
         position: relative;
-        box-shadow: 0 0 0 1px var(--accent-2), var(--shadow-md), inset 0 0 60px rgba(0,102,255,0.04);
     }
     .clue-card::before {
         content: "";
-        position: absolute; left: 0; top: 0; right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, var(--accent), var(--green), var(--accent));
+        position: absolute;
+        left: 0; top: 0;
+        width: 3px; height: 100%;
+        background: var(--indigo-soft);
+        border-radius: 8px 0 0 8px;
     }
     .clue-text {
-        font-family: 'Space Mono', monospace;
-        font-size: clamp(1.1rem,2.4vw,1.7rem);
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 400;
+        font-size: clamp(1.2rem, 2.5vw, 1.6rem);
         color: var(--ink);
-        line-height: 1.55;
-        letter-spacing: .02em;
+        line-height: 1.6;
+        letter-spacing: -0.01em;
         text-align: center;
+        font-variation-settings: "opsz" 48, "SOFT" 20;
     }
 
-    /* ── SCORE ──────────────────────────────────────────────────── */
-    .score-container {
-        background: var(--card);
+    /* ── SCORE / STAT CARDS ──────────────────────────────────────── */
+    .score-container, .stat-card {
+        background: var(--surface);
         border: 1px solid var(--line);
-        padding: 1rem;
+        padding: 1rem 0.9rem;
+        border-radius: 6px;
         text-align: center;
+        box-shadow: var(--shadow-xs);
     }
-    .score-label {
-        font-size: .62rem; color: var(--muted);
-        letter-spacing: .2em; text-transform: uppercase; font-weight: 700;
-        margin-bottom: .3rem;
+    .score-label, .stat-label {
+        font-size: 0.63rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        margin-bottom: 0.3rem;
     }
     .score-value {
-        font-size: 2rem; font-weight: 700;
-        font-family: 'Space Mono', monospace;
-        color: var(--green);
-        letter-spacing: .04em;
-        text-shadow: 0 0 16px rgba(0,255,136,0.55);
-    }
-
-    /* ── STAT CARDS ─────────────────────────────────────────────── */
-    .stat-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        padding: 1rem .85rem;
-        text-align: center;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.9rem;
+        font-weight: 400;
+        color: var(--indigo);
+        letter-spacing: -0.025em;
+        font-variation-settings: "opsz" 48;
     }
     .stat-number {
-        font-size: 1.6rem; font-weight: 700;
-        color: var(--green);
-        font-family: 'Space Mono', monospace;
-        text-shadow: 0 0 10px rgba(0,255,136,0.4);
-    }
-    .stat-label {
-        font-size: .62rem; color: var(--muted);
-        text-transform: uppercase; letter-spacing: .2em;
-        font-weight: 700; margin-top: .2rem;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1.65rem;
+        font-weight: 400;
+        color: var(--indigo);
+        letter-spacing: -0.025em;
     }
 
-    /* ── TIMER ──────────────────────────────────────────────────── */
+    /* ── TIMER ───────────────────────────────────────────────────── */
     .timer-container {
-        background: var(--card);
-        border: 1px solid var(--accent);
-        padding: .75rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        padding: 0.7rem 1rem;
+        border-radius: 6px;
         text-align: center;
         margin-bottom: 1rem;
-        font-family: 'Space Mono', monospace;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--green);
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--ink);
     }
 
-    /* ── PROGRESS BAR ───────────────────────────────────────────── */
-    .progress-bar { background: var(--card-2); border:1px solid var(--line); height:6px; overflow:hidden; margin:.75rem 0; }
-    .progress-fill { height:100%; background:var(--green); box-shadow:0 0 8px rgba(0,255,136,0.6); transition:width .4s ease; font-size:0; }
+    /* ── PROGRESS BAR ────────────────────────────────────────────── */
+    .progress-bar {
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        height: 5px;
+        border-radius: 99px;
+        overflow: hidden;
+        margin: 0.65rem 0;
+    }
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--indigo-soft), var(--indigo));
+        transition: width 0.45s ease;
+        font-size: 0;
+    }
 
-    /* ── BUTTONS ────────────────────────────────────────────────── */
-    .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button {
-        background: var(--accent);
+    /* ── BUTTONS ─────────────────────────────────────────────────── */
+    .stButton > button,
+    .stDownloadButton > button,
+    .stFormSubmitButton > button {
+        background: var(--indigo);
         color: #ffffff !important;
-        border: 2px solid var(--accent);
-        padding: .55rem 1.4rem;
-        font-family: 'Space Mono', monospace !important;
-        font-size: .82rem !important;
-        font-weight: 700 !important;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        border-radius: 0 !important;
-        box-shadow: 3px 3px 0 var(--accent-2);
-        transition: transform .1s, box-shadow .1s;
+        border: 1px solid var(--indigo);
+        padding: 0.55rem 1.4rem;
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em;
+        border-radius: 5px;
+        box-shadow: none;
+        transition: background 0.15s ease, transform 0.1s ease;
     }
-    .stButton > button:hover, .stDownloadButton > button:hover, .stFormSubmitButton > button:hover {
-        background: #0055dd;
-        border-color: #0055dd;
-        transform: translate(-1px,-1px);
-        box-shadow: 4px 4px 0 #003399;
+    .stButton > button:hover,
+    .stDownloadButton > button:hover,
+    .stFormSubmitButton > button:hover {
+        background: var(--indigo-mid);
+        border-color: var(--indigo-mid);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
     }
-    .stButton > button:active, .stFormSubmitButton > button:active {
-        transform: translate(2px,2px);
-        box-shadow: 1px 1px 0 var(--accent-2);
-    }
-    .stButton > button:focus { box-shadow: 0 0 0 3px var(--ring) !important; }
+    .stButton > button:active,
+    .stFormSubmitButton > button:active { transform: translateY(0); box-shadow: none; }
+    .stButton > button:focus,
+    .stFormSubmitButton > button:focus { box-shadow: 0 0 0 3px var(--ring) !important; }
 
-    /* ── INPUTS ─────────────────────────────────────────────────── */
+    /* Gold variant for primary actions */
+    .stButton > button[kind="primary"],
+    .stFormSubmitButton > button[kind="primary"] {
+        background: var(--gold);
+        border-color: var(--gold);
+    }
+    .stButton > button[kind="primary"]:hover { background: #7a571a; border-color: #7a571a; }
+
+    /* ── INPUTS ──────────────────────────────────────────────────── */
     .stTextInput > div > div > input,
     .stTextArea textarea,
     .stNumberInput input,
     .stSelectbox [data-baseweb="select"] > div {
-        background: #050505 !important;
-        border: 1px solid var(--accent) !important;
-        border-radius: 0 !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 5px !important;
         color: var(--ink) !important;
-        font-family: 'Space Mono', monospace !important;
-        font-size: .88rem !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.93rem !important;
+        transition: border-color 0.15s, box-shadow 0.15s;
     }
     .stTextInput > div > div > input:focus,
     .stTextArea textarea:focus,
     .stNumberInput input:focus {
-        border-color: var(--green) !important;
-        box-shadow: 0 0 0 2px rgba(0,255,136,0.25) !important;
+        border-color: var(--indigo-soft) !important;
+        box-shadow: 0 0 0 3px rgba(67,56,202,0.12) !important;
     }
     input::placeholder, textarea::placeholder { color: var(--muted-2) !important; }
 
-    /* ── TABS ───────────────────────────────────────────────────── */
-    .stTabs [data-baseweb="tab-list"] { gap:1.5rem; border-bottom:1px solid var(--line); }
-    .stTabs [data-baseweb="tab"] { padding:.6rem 0; font-weight:700; color:var(--muted); font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; }
-    .stTabs [aria-selected="true"] { color:var(--green) !important; }
-    .stTabs [data-baseweb="tab-highlight"] { background:var(--green) !important; height:2px !important; box-shadow:0 0 8px rgba(0,255,136,0.6); }
+    /* ── TABS ────────────────────────────────────────────────────── */
+    .stTabs [data-baseweb="tab-list"] { gap: 1.75rem; border-bottom: 1px solid var(--line); }
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.6rem 0;
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 0.9rem;
+        letter-spacing: 0.005em;
+    }
+    .stTabs [aria-selected="true"] { color: var(--indigo) !important; font-weight: 600; }
+    .stTabs [data-baseweb="tab-highlight"] { background: var(--indigo) !important; height: 2px !important; }
 
-    /* ── SIDEBAR ────────────────────────────────────────────────── */
-    [data-testid="stSidebar"] { background:#050505 !important; border-right:1px solid var(--line); }
-    [data-testid="stSidebar"] hr { border-color:var(--line); }
+    /* ── SIDEBAR ─────────────────────────────────────────────────── */
+    [data-testid="stSidebar"] {
+        background: var(--indigo) !important;
+        border-right: none;
+    }
+    [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.12); }
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li { color: rgba(255,255,255,0.85) !important; }
     [data-testid="stSidebar"] .stMarkdown h2,
-    [data-testid="stSidebar"] .stMarkdown h3 { color:var(--accent) !important; }
-    [data-testid="stSidebar"] .stMarkdown { color:var(--ink-soft); }
-    [data-testid="stCheckbox"] label,
-    [data-testid="stRadio"] label { color:var(--ink) !important; font-family:'Space Mono',monospace !important; font-size:.8rem !important; }
-    [data-testid="stSlider"] [role="slider"] { background:var(--green) !important; border-color:var(--green) !important; }
+    [data-testid="stSidebar"] .stMarkdown h3 {
+        color: var(--gold-light) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+    [data-testid="stSidebar"] .stTextInput > div > div > input,
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.18) !important;
+        color: #fff !important;
+    }
+    [data-testid="stSidebar"] .stButton > button {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,255,255,0.2);
+        color: #fff !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background: rgba(255,255,255,0.2);
+        transform: none;
+        box-shadow: none;
+    }
+    [data-testid="stCheckbox"] label { color: rgba(255,255,255,0.85) !important; }
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] span { border-color: rgba(255,255,255,0.35) !important; }
+    [data-testid="stSlider"] [role="slider"] { background: var(--gold-light) !important; border-color: var(--gold-light) !important; }
+    [data-testid="stSlider"] [data-testid="stSlider"] div[role="progressbar"] { background: var(--gold-light) !important; }
 
-    /* ── ALERTS ─────────────────────────────────────────────────── */
-    [data-testid="stAlert"] { border-radius:0 !important; }
-    div[data-testid="stAlertContentSuccess"] { background:#001a0d !important; border:1px solid var(--green-dim) !important; color:var(--green) !important; }
-    div[data-testid="stAlertContentError"]   { background:#1a0000 !important; border:1px solid #cc0000 !important; color:#ff6666 !important; }
-    div[data-testid="stAlertContentWarning"] { background:#1a0d00 !important; border:1px solid #cc7700 !important; color:#ffcc55 !important; }
-    div[data-testid="stAlertContentInfo"]    { background:#00001a !important; border:1px solid var(--accent) !important; color:#88aaff !important; }
+    /* ── ALERTS ──────────────────────────────────────────────────── */
+    [data-testid="stAlert"] { border-radius: 6px !important; }
+    div[data-testid="stAlertContentSuccess"] {
+        background: var(--success-bg) !important;
+        border: 1px solid var(--success-ln) !important;
+        color: var(--success) !important;
+    }
+    div[data-testid="stAlertContentError"] {
+        background: var(--error-bg) !important;
+        border: 1px solid var(--error-ln) !important;
+        color: var(--error) !important;
+    }
+    div[data-testid="stAlertContentWarning"] {
+        background: var(--warn-bg) !important;
+        border: 1px solid var(--warn-ln) !important;
+        color: #78350f !important;
+    }
+    div[data-testid="stAlertContentInfo"] {
+        background: var(--info-bg) !important;
+        border: 1px solid var(--info-ln) !important;
+        color: #1e40af !important;
+    }
 
-    /* ── EXPANDER / FORM / DATAFRAME ────────────────────────────── */
-    [data-testid="stExpander"], [data-testid="stExpander"] details,
-    [data-testid="stExpander"] details summary { background:var(--card) !important; border:1px solid var(--line) !important; color:var(--ink) !important; border-radius:0 !important; }
-    [data-testid="stForm"] { border:1px solid var(--line) !important; background:rgba(0,102,255,.04); border-radius:0; }
-    [data-testid="stDataFrame"], .stDataFrame { border:1px solid var(--line) !important; border-radius:0; }
-    [data-baseweb="popover"],[data-baseweb="menu"],[data-baseweb="list"] { background:#050505 !important; color:var(--ink) !important; }
-    [data-baseweb="menu"] li:hover,[data-baseweb="menu"] li[aria-selected="true"] { background:var(--accent-soft) !important; }
+    /* ── EXPANDER / FORM / DATAFRAME ─────────────────────────────── */
+    [data-testid="stExpander"],
+    [data-testid="stExpander"] details,
+    [data-testid="stExpander"] details summary {
+        background: var(--surface) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 6px !important;
+        color: var(--ink) !important;
+    }
+    [data-testid="stForm"] {
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        background: var(--surface);
+    }
+    [data-testid="stDataFrame"], .stDataFrame {
+        border: 1px solid var(--line) !important;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    [data-baseweb="popover"],
+    [data-baseweb="menu"],
+    [data-baseweb="list"] { background: var(--surface) !important; color: var(--ink) !important; }
+    [data-baseweb="menu"] li:hover,
+    [data-baseweb="menu"] li[aria-selected="true"] { background: var(--surface-2) !important; }
 
-    /* ── MISC ───────────────────────────────────────────────────── */
-    .stMarkdown, .stText, label, p, li { color:var(--ink); }
-    .stCaption,[data-testid="stCaptionContainer"] { color:var(--muted) !important; font-style:normal; font-size:.78rem !important; letter-spacing:.04em; }
-    footer { visibility:hidden; }
-    #MainMenu { visibility:hidden; }
-    @media (max-width:700px) { .block-container{padding-top:1.25rem;} .header-stats{gap:1rem;} .main-header{margin-bottom:1.25rem;} }
+    /* ── OVERLINE ────────────────────────────────────────────────── */
+    .overline {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+    }
+
+    /* ── MISC ────────────────────────────────────────────────────── */
+    .stMarkdown, .stText, p, li { color: var(--ink); }
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: var(--muted) !important;
+        font-style: italic;
+        font-size: 0.83rem !important;
+    }
+    footer { visibility: hidden; }
+    #MainMenu { visibility: hidden; }
+
+    /* Signed-in badge */
+    .signed-in-badge {
+        display: inline-block;
+        padding: 0.22rem 0.55rem;
+        background: rgba(201,150,74,0.15);
+        border: 1px solid rgba(201,150,74,0.35);
+        border-radius: 3px;
+        color: var(--gold-light);
+        font: 600 0.63rem 'Inter', sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 700px) {
+        .block-container { padding-top: 1.25rem; }
+        .header-stats { gap: 1.25rem; }
+        .main-header { margin-bottom: 1.25rem; }
+        .clue-text { font-size: 1.1rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -840,7 +983,7 @@ theme_groups = get_theme_groups(_df_signature)
 
 # SIDEBAR FOR SETTINGS
 with st.sidebar:
-    st.markdown("## 🎯 Jayopardy!")
+    st.markdown("## Jayopardy")
     # Derive username from AuthManager
     current_username = st.session_state.get("user_name") or st.session_state.get("username") or "Player"
     st.session_state.username = current_username
@@ -849,7 +992,7 @@ with st.sidebar:
     check_signed_in_status()
 
     if st.session_state.is_signed_in:
-        st.markdown('<span style="display:inline-block;padding:.28rem .55rem;border:1px solid #e5b94f;border-radius:3px;color:#e5b94f;background:rgba(229,185,79,.08);font:700 .68rem Space Mono,monospace;letter-spacing:.14em;text-transform:uppercase;">Signed in</span>', unsafe_allow_html=True)
+        st.markdown('<span class="signed-in-badge">Signed in</span>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -1226,8 +1369,17 @@ with st.sidebar:
 
     st.markdown("---")
 
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("Sign out", use_container_width=True):
         auth.logout()
+
+    st.markdown("---")
+    st.markdown("""
+<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);line-height:1.6;padding:.25rem 0;">
+<strong style="color:rgba(255,255,255,0.55);letter-spacing:.05em;">About</strong><br>
+Jayopardy is an independent trivia training tool. It is not affiliated with, endorsed by, or connected to Jeopardy! Productions, Sony Pictures, or any official Jeopardy! entity.<br><br>
+Built by <a href="https://julieyingst.com" target="_blank" style="color:rgba(201,150,74,0.8);text-decoration:none;">Julie Yingst</a>.
+</div>
+""", unsafe_allow_html=True)
 
 # MAIN GAME AREA
 
@@ -1376,36 +1528,37 @@ if st.session_state.viewing_bookmark:
 # Show different header for AI mode vs regular mode
 if st.session_state.ai_mode:
     # AI Mode - Show both player and AI scores
-    st.markdown("""<div class="main-header"><h1>🎯 Jayopardy!</h1></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="main-header"><h1>Jayopardy</h1></div>""", unsafe_allow_html=True)
     
     col_player, col_vs, col_ai = st.columns([2, 1, 2])
-    
+    _lead_color = "#1e1b4b"
+    _trail_color = "#7c7492"
     with col_player:
-        player_color = "#667eea" if st.session_state.score >= st.session_state.ai_score else "#6c757d"
+        player_color = _lead_color if st.session_state.score >= st.session_state.ai_score else _trail_color
         st.markdown(f"""
-        <div style="text-align: center; padding: 1rem; background: #ffffff; border: 1px solid #e7e5e4;
-                    border-top: 3px solid {player_color}; border-radius: 12px; color: #0f172a;">
-            <div style="font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">👤 {st.session_state.username}</div>
-            <div style="font-size: 2.5rem; font-weight: 800;">${st.session_state.score}</div>
-            <div style="font-size: 0.8rem; color: #64748b;">Streak: {st.session_state.streak}</div>
+        <div style="text-align:center;padding:1rem;background:#ffffff;border:1px solid #e8e3dc;
+                    border-top:3px solid {player_color};border-radius:8px;color:#1a1625;">
+            <div style="font-size:0.7rem;color:#7c7492;text-transform:uppercase;letter-spacing:0.16em;font-weight:600;margin-bottom:.4rem;">{st.session_state.username}</div>
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:2.2rem;font-weight:400;color:#1e1b4b;">{st.session_state.score}</div>
+            <div style="font-size:0.78rem;color:#7c7492;margin-top:.25rem;">Streak: {st.session_state.streak}</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col_vs:
         st.markdown("""
-        <div style="text-align: center; padding: 2rem 0;">
-            <div style="font-size: 1.5rem; font-weight: bold; color: #6c757d;">VS</div>
+        <div style="text-align:center;padding:2rem 0;">
+            <div style="font-size:0.75rem;font-weight:700;color:#7c7492;letter-spacing:.2em;">VS</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col_ai:
-        ai_color = "#dc3545" if st.session_state.ai_score > st.session_state.score else "#6c757d"
+        ai_color = "#9b1c1c" if st.session_state.ai_score > st.session_state.score else _trail_color
         st.markdown(f"""
-        <div style="text-align: center; padding: 1rem; background: #ffffff; border: 1px solid #e7e5e4;
-                    border-top: 3px solid {ai_color}; border-radius: 12px; color: #0f172a;">
-            <div style="font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">🤖 {st.session_state.ai_personality}</div>
-            <div style="font-size: 2.5rem; font-weight: 800;">${st.session_state.ai_score}</div>
-            <div style="font-size: 0.8rem; color: #64748b;">Streak: {st.session_state.ai_streak}</div>
+        <div style="text-align:center;padding:1rem;background:#ffffff;border:1px solid #e8e3dc;
+                    border-top:3px solid {ai_color};border-radius:8px;color:#1a1625;">
+            <div style="font-size:0.7rem;color:#7c7492;text-transform:uppercase;letter-spacing:0.16em;font-weight:600;margin-bottom:.4rem;">{st.session_state.ai_personality}</div>
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:2.2rem;font-weight:400;color:#1e1b4b;">{st.session_state.ai_score}</div>
+            <div style="font-size:0.78rem;color:#7c7492;margin-top:.25rem;">Streak: {st.session_state.ai_streak}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1419,7 +1572,7 @@ else:
     # Regular mode header
     st.markdown(f"""
     <div class="main-header">
-        <h1>🎯 Jayopardy!</h1>
+        <h1>Jayopardy</h1>
         <div class="header-stats">
             <div class="header-stat">
                 <div class="header-stat-value">{st.session_state.score}</div>
@@ -1470,14 +1623,11 @@ if "challenge_mode" in st.session_state and st.session_state.challenge_mode:
     
     # Display challenge header
     st.markdown(f"""
-    <div style="background: #0f172a; color: #ffffff; padding: 1.5rem; border-radius: 14px;
-                border-left: 4px solid #f59e0b;
-                text-align: center; margin-bottom: 1rem;
-                box-shadow: 0 10px 24px -12px rgba(15,23,42,0.35);">
-        <h2 style="margin: 0; color: #ffffff;">⚔️ Challenge Mode</h2>
-        <p style="margin: 0.5rem 0; color: rgba(255,255,255,0.78);">You vs {opponent}</p>
-        <p style="margin: 0; color: rgba(255,255,255,0.78);">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']}</p>
-        <p style="margin: 0.4rem 0 0; font-size: 1.2rem; color: #f59e0b; font-weight: 700;">Your Score: {st.session_state.challenge_score}</p>
+    <div style="background:#1e1b4b;color:#ffffff;padding:1.25rem 1.5rem;border-radius:6px;
+                border-left:3px solid #c9964a;text-align:center;margin-bottom:1rem;">
+        <div style="font:600 0.65rem 'Inter',sans-serif;color:#c9964a;letter-spacing:.22em;text-transform:uppercase;margin-bottom:.5rem;">Challenge Mode</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:1.15rem;font-weight:400;color:#fff;">You vs {opponent}</div>
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.65);margin-top:.35rem;">Question {st.session_state.challenge_question_num + 1} of {challenge['num_questions']} &nbsp;·&nbsp; Score: {st.session_state.challenge_score}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1538,14 +1688,10 @@ if not st.session_state.daily_double_used and random.random() < 0.05:
 # Display Daily Double if applicable
 if is_daily_double:
     st.markdown("""
-    <div style="background:#000; color:#e8ffe8; padding:1.25rem 1.5rem;
-                border:2px solid #00ff88; border-top:4px solid #00ff88;
-                text-align:center; margin-bottom:1rem;
-                box-shadow:0 0 24px rgba(0,255,136,0.3), inset 0 0 40px rgba(0,255,136,0.04);">
-        <div style="font:700 .65rem 'Space Mono',monospace; color:#5a9a5a; letter-spacing:.3em; margin-bottom:.5rem;">★ ★ ★</div>
-        <div style="font:700 2rem 'Space Mono',monospace; color:#00ff88; letter-spacing:.12em;
-                    text-shadow:0 0 20px rgba(0,255,136,0.7);">DAILY DOUBLE</div>
-        <p style="margin:.4rem 0 0; font:400 .78rem 'Space Mono',monospace; color:#5a9a5a; letter-spacing:.08em;">DOUBLE POINTS FOR THIS QUESTION</p>
+    <div style="background:#fdf8ef;border:1px solid #e8d5a8;border-left:3px solid #92681d;
+                padding:1rem 1.25rem;border-radius:6px;text-align:center;margin-bottom:1rem;">
+        <div style="font:700 0.62rem 'Inter',sans-serif;color:#92681d;letter-spacing:.22em;text-transform:uppercase;margin-bottom:.4rem;">Daily Double</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:500;color:#1a1625;letter-spacing:-.01em;">Double points on this question</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1617,12 +1763,9 @@ if st.session_state.ai_mode and not st.session_state.buzzer_winner and not st.se
             # Easy: 30% chance, Medium: 50% chance, Hard: 70% chance
             buzz_chances = {"Easy": 0.3, "Medium": 0.5, "Hard": 0.7}
             if random.random() < buzz_chances[st.session_state.ai_difficulty]:
-                # AI decides to buzz
-                with st.spinner(f"🤖 {st.session_state.ai_personality} is buzzing in..."):
-                    time.sleep(ai_buzz_delay)
+                # AI decides to buzz — no thread sleep; state change + rerun handles it
                 st.session_state.buzzer_winner = "ai"
                 st.session_state.current_turn = "ai"
-                st.warning(f"🤖 {st.session_state.ai_personality} buzzed in!")
                 st.rerun()
             else:
                 st.info(f"⏱️ Be quick! {st.session_state.ai_personality} is thinking...")
@@ -1642,10 +1785,6 @@ elif st.session_state.ai_mode and st.session_state.buzzer_winner == "ai" and not
             st.session_state.ai_difficulty,
             st.session_state.ai_personality
         )
-        
-        # Add artificial delay for realism
-        import time
-        time.sleep(min(thinking_time, 2))
     
     if is_correct:
         st.error(f"🤖 {st.session_state.ai_personality} got it right! The answer was: **{clue['correct_response']}**")
@@ -1724,17 +1863,17 @@ if show_answer_form:
         with _timer_slot:
             _components.html(
                 f"""
-                 <div style="font-family:'Space Mono',monospace; color:#e8ffe8;
-                             background:#000; border:2px solid #0066ff;
-                             padding:0.6rem 1rem; box-shadow:0 0 12px rgba(0,102,255,0.3);">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                     <span style="color:#5a9a5a;text-transform:uppercase;font:700 .62rem 'Space Mono',monospace;letter-spacing:.2em;">TIME REMAINING</span>
-                     <span id="jpy-timer-value" style="font:700 1.1rem 'Space Mono',monospace; color:#00ff88; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(0,255,136,0.7);">{_limit_s}.0s</span>
+                 <div style="font-family:'Inter',sans-serif;color:#1a1625;
+                             background:#ffffff;border:1px solid #e8e3dc;border-radius:6px;
+                             padding:0.6rem 1rem;box-shadow:0 1px 4px rgba(26,22,37,0.06);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                     <span style="font:600 0.63rem 'Inter',sans-serif;color:#7c7492;text-transform:uppercase;letter-spacing:.18em;">Time remaining</span>
+                     <span id="jpy-timer-value" style="font:600 1rem 'Inter',sans-serif;color:#1e1b4b;font-variant-numeric:tabular-nums;">{_limit_s}.0s</span>
                   </div>
-                   <div style="margin-top:0.45rem; height:5px; background:#050505; border:1px solid #1a3a1a; overflow:hidden;">
-                    <div id="jpy-timer-bar" style="height:100%; width:100%;
-                                                     background:#00ff88; box-shadow:0 0 6px rgba(0,255,136,0.6);
-                                                    transition: width 0.12s linear, background-color 0.3s ease;">
+                   <div style="margin-top:0.45rem;height:4px;background:#f0ece6;border-radius:99px;overflow:hidden;">
+                    <div id="jpy-timer-bar" style="height:100%;width:100%;
+                                                     background:#4338ca;border-radius:99px;
+                                                    transition:width 0.12s linear,background-color 0.3s ease;">
                     </div>
                   </div>
                 </div>
@@ -1752,14 +1891,11 @@ if show_answer_form:
                         const pct = Math.max(0, Math.min(100, (remaining / limit) * 100));
                         barEl.style.width = pct + '%';
                         if (pct <= 25) {{
-                             barEl.style.background = '#ff3333';
-                             barEl.style.boxShadow = '0 0 8px rgba(255,51,51,0.7)';
+                             barEl.style.background = '#dc2626';
                         }} else if (pct <= 50) {{
-                             barEl.style.background = '#ffaa00';
-                             barEl.style.boxShadow = '0 0 8px rgba(255,170,0,0.6)';
+                             barEl.style.background = '#d97706';
                         }} else {{
-                             barEl.style.background = '#00ff88';
-                             barEl.style.boxShadow = '0 0 6px rgba(0,255,136,0.6)';
+                             barEl.style.background = '#4338ca';
                         }}
                         if (remaining > 0) {{
                             requestAnimationFrame(tick);
@@ -2094,3 +2230,14 @@ with col_exp3:
         with st.expander("📈 Theme Performance", expanded=False):
             st.info("🔒 Sign in to see detailed analytics.")
             guest_sign_in_button("signin_analytics")
+
+
+# ── FOOTER DISCLAIMER ─────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("""
+<div style="text-align:center;padding:1.5rem 0 0.5rem;font-size:0.78rem;color:#a99fba;line-height:1.7;max-width:600px;margin:0 auto;">
+<strong style="color:#7c7492;">Jayopardy</strong> is an independent trivia training tool built for serious quiz preparation.<br>
+It is not affiliated with, sponsored by, or endorsed by Jeopardy! Productions, Sony Pictures Television, or any official <em>Jeopardy!</em> entity.<br>
+Question data is sourced from publicly available archives. No personal data beyond session scores is stored for guest players.
+</div>
+""", unsafe_allow_html=True)
